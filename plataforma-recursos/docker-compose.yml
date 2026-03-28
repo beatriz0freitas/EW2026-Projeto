@@ -1,0 +1,77 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: ew2026_mongo
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - ew2026-net
+
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: ew2026_api
+    volumes:
+      - ./data/aip:/aip
+    environment:
+      - PORT=16025
+      - MONGO_URL=mongodb://mongodb:27017/ew2026
+    depends_on:
+      - mongodb
+    networks:
+      - ew2026-net
+
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: ew2026_auth
+    environment:
+      - PORT=16027
+      - MONGO_URL=mongodb://mongodb:27017/ew2026
+    depends_on:
+      - mongodb
+    networks:
+      - ew2026-net
+
+  interface:
+    build:
+      context: ./services/interface
+      dockerfile: Dockerfile
+    container_name: ew2026_interface
+    environment:
+      - PORT=16026
+      - API_URL=http://api:16025
+      - AUTH_URL=http://auth:16027
+    depends_on:
+      - api
+      - auth
+    networks:
+      - ew2026-net
+
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: ew2026_gateway
+    ports:
+      - "16020:16020"
+    environment:
+      - PORT=16020
+      - API_URL=http://api:16025
+      - AUTH_URL=http://auth:16027
+      - INTERFACE_URL=http://interface:16026
+    depends_on:
+      - api
+      - auth
+      - interface
+    networks:
+      - ew2026-net
+
+networks:
+  ew2026-net:
+    driver: bridge
+
+volumes:
+  mongo_data:

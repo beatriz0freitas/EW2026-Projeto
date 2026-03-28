@@ -1,0 +1,17 @@
+{
+  "resource": {
+    "id": "",
+    "tipo": "",
+    "titulo": "",
+    "subtitulo": "",
+    "dataCriacao": "",
+    "dataRegisto": "",
+    "visibilidade": "publico",
+    "autorId": "",
+    "classificacao": {
+      "ano": "",
+      "tags": [],
+      "temas": []
+    }
+  }
+}

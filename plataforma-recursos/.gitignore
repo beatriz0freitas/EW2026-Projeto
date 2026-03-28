@@ -1,0 +1,4 @@
+node_modules/
+.env
+data/aip/*
+!data/aip/.gitkeep
