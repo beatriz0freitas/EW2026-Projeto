@@ -1,2 +1,0 @@
-Bagging-Date: 2026-03-28
-Bag-Software-Agent: EW2026-PlataformaRecursos (placeholder)

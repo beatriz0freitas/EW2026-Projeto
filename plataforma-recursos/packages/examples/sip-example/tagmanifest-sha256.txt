@@ -1,2 +1,0 @@
-# Placeholder: SHA-256 manifest for tag files (bagit.txt, bag-info.txt, etc.)
-# Format (BagIt style): <checksum> <path>

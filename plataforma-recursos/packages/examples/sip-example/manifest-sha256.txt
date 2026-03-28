@@ -1,2 +1,0 @@
-# Placeholder: SHA-256 manifest for files inside data/
-# Format (BagIt style): <checksum> <path>
