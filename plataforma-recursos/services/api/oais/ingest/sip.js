@@ -133,7 +133,7 @@ function validateMetadata(metadata) {
 }
 
 // Ingest (SIP ZIP -> validação -> guardar AIP em disco -> registo no Mongo).
-async function ingestSipZip({ zipBuffer, aipDir }) {
+async function ingestSipZip({ zipBuffer, aipDir, producerId }) {
 	const errors = []
 
 	// 1) Extrair o SIP para uma pasta temporária.
@@ -217,6 +217,7 @@ async function ingestSipZip({ zipBuffer, aipDir }) {
 		const resourceDoc = new Resource({
 			metadata,
 			aipPath: '__pending__',
+			produtor: producerId || null,
 		})
 
 		const resourceId = String(resourceDoc._id)
@@ -243,4 +244,3 @@ async function ingestSipZip({ zipBuffer, aipDir }) {
 }
 
 module.exports = { ingestSipZip }
-

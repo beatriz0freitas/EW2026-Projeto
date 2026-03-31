@@ -1,7 +1,7 @@
 const express = require('express')
 
-const ingestRouter = require('./oais/ingest')
-const accessRouter = require('./oais/access')
+const ingestRouter = require('../oais/ingest')
+const accessRouter = require('../oais/access')
 
 const router = express.Router()
 
@@ -13,4 +13,3 @@ router.use('/oais', ingestRouter)
 router.use('/oais', accessRouter)
 
 module.exports = router
-

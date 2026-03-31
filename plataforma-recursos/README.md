@@ -26,7 +26,6 @@ Cliente → **Gateway** → (**Interface** + **API** + **Auth**) → **DB**
 	- `interface/` — UI (Pug) e chamadas para API/Auth
 	- `api/` — domínio: recursos/posts/comentários/ratings/notícias + OAIS
 	- `auth/` — autenticação/autorização e gestão de utilizadores/roles
-- `packages/examples/sip-example/` — exemplo mínimo de SIP BagIt-inspired
 - `data/aip/` — **Archival Storage** (placeholder para AIP: ficheiros/binários)
 
 ## Onde entra OAIS no código (API)
