@@ -2,13 +2,16 @@ const express = require('express')
 const router = express.Router()
 
 const User = require('../models/User')
+const { requireAuth, requireAdmin } = require('../middleware/auth')
+
+const NIVEIS = ['admin', 'produtor', 'consumidor']
 
 // POST /auth/register
 // Cria um novo utilizador. Nível por defeito: consumidor.
 // Admin pode passar nivel=produtor|admin no body.
-router.post('/', async (req, res) => {
+router.post('/register', async (req, res) => {
 	try {
-		const { nome, email, password, nivel, filiacao } = req.body
+		const { nome, email, password, filiacao } = req.body
 
 		if (!nome || !email || !password) {
 			return res.status(400).json({ ok: false, error: 'nome, email e password são obrigatórios' })
@@ -25,7 +28,7 @@ router.post('/', async (req, res) => {
 			nome,
 			email,
 			password,
-			nivel: nivel || 'consumidor',
+			nivel: 'consumidor',
 			filiacao: filiacao || {},
 		})
 
@@ -42,7 +45,7 @@ router.post('/', async (req, res) => {
 })
 
 // GET /auth/users  (admin: lista todos os utilizadores)
-router.get('/', async (req, res) => {
+router.get('/users', requireAuth, requireAdmin, async (req, res) => {
 	try {
 		const users = await User.find().select('-password')
 		res.json({ ok: true, users })
@@ -52,15 +55,38 @@ router.get('/', async (req, res) => {
 })
 
 // PATCH /auth/users/:id  (admin: atualizar nivel ou dados)
-router.patch('/:id', async (req, res) => {
+router.patch('/users/:id', requireAuth, requireAdmin, async (req, res) => {
 	try {
 		const allowed = ['nome', 'nivel', 'filiacao']
 		const update = {}
 		for (const key of allowed) {
 			if (req.body[key] !== undefined) update[key] = req.body[key]
 		}
+
+		if (update.nivel && !NIVEIS.includes(update.nivel)) {
+			return res.status(400).json({ ok: false, error: 'nivel inválido' })
+		}
+
 		const user = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select('-password')
 		if (!user) return res.status(404).json({ ok: false, error: 'utilizador não encontrado' })
+		res.json({ ok: true, user })
+	} catch (err) {
+		res.status(500).json({ ok: false, error: 'erro interno' })
+	}
+})
+
+// DELETE /auth/users/:id  (admin: remover utilizador)
+router.delete('/users/:id', requireAuth, requireAdmin, async (req, res) => {
+	try {
+		if (String(req.user.sub) === String(req.params.id)) {
+			return res.status(400).json({ ok: false, error: 'não podes remover o teu próprio utilizador' })
+		}
+
+		const user = await User.findByIdAndDelete(req.params.id).select('-password')
+		if (!user) {
+			return res.status(404).json({ ok: false, error: 'utilizador não encontrado' })
+		}
+
 		res.json({ ok: true, user })
 	} catch (err) {
 		res.status(500).json({ ok: false, error: 'erro interno' })
