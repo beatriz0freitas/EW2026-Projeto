@@ -5,8 +5,12 @@ const User = require('../models/User')
 
 const router = express.Router()
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '24h'
+
+if (!JWT_SECRET) {
+	throw new Error('JWT_SECRET em falta. Define JWT_SECRET no ambiente para arrancar o serviço auth.')
+}
 
 // POST /auth/sessions  →  login
 // Body: { email, password }
