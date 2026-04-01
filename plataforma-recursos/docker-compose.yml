@@ -17,6 +17,8 @@ services:
     environment:
       - PORT=16025
       - MONGO_URL=mongodb://mongodb:27017/ew2026
+      - AIP_DIR=/aip
+      - AUTH_URL=http://auth:16027
     depends_on:
       - mongodb
     networks:
@@ -31,6 +33,7 @@ services:
       - PORT=16027
       - MONGO_URL=mongodb://mongodb:27017/ew2026
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES=${JWT_EXPIRES:-24h}
     depends_on:
       - mongodb
     networks:
