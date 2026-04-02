@@ -1,0 +1,28 @@
+extends ../layout
+
+block content
+	section.card
+		h1 Recursos educativos
+		p.info Total: #{pagination.total}
+
+		if !items.length
+			p Não existem recursos disponíveis.
+		else
+			table.table
+				thead
+					tr
+						th Título
+						th Tipo
+						th Ano
+						th Ação
+				tbody
+					each item in items
+						tr
+							td= item.metadata?.resource?.titulo || 'Sem título'
+							td= item.metadata?.resource?.tipo || '-'
+							td= item.metadata?.resource?.ano || '-'
+							td
+								a(href=`/resources/${item._id}`) Ver detalhe
+
+		p.info Página #{pagination.page} de #{pagination.totalPages}
+

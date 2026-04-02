@@ -4,6 +4,9 @@ const session = require('express-session')
 
 const indexRouter = require('./routes/index')
 const authRouter = require('./routes/auth')
+const resourcesRouter = require('./routes/resources')
+const postsRouter = require('./routes/posts')
+const adminRouter = require('./routes/admin')
 
 const PORT = Number(process.env.PORT || 16026)
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-me'
@@ -56,11 +59,22 @@ app.get('/health', (req, res) => {
 
 app.use('/', indexRouter)
 app.use('/auth', authRouter)
+app.use('/resources', resourcesRouter)
+app.use('/posts', postsRouter)
+app.use('/admin', adminRouter)
 
 app.use((req, res) => {
 	res.status(404).render('error', {
 		title: 'Página não encontrada',
 		message: 'A página pedida não existe.',
+	})
+})
+
+app.use((err, req, res, next) => {
+	console.error('[interface] unexpected error:', err)
+	res.status(500).render('error', {
+		title: 'Erro interno',
+		message: 'Ocorreu um erro inesperado. Tente novamente.',
 	})
 })
 

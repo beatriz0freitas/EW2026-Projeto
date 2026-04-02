@@ -10,6 +10,13 @@ html(lang='pt')
 			nav.nav
 				a.brand(href='/') EW2026
 				ul.nav-links
+					li
+						a(href='/resources') Recursos
+					li
+						a(href='/posts') Posts
+					if user && user.nivel === 'admin'
+						li
+							a(href='/admin/users') Admin
 					if user
 						li
 							span.nav-user Olá, #{user.nome}
