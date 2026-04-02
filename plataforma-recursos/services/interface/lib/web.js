@@ -30,7 +30,7 @@ function requireLevel(minLevel) {
 }
 
 function apiErrorMessage(responseData, fallback) {
-	return responseData?.error || fallback
+	return responseData?.message || responseData?.error || fallback
 }
 
 module.exports = {

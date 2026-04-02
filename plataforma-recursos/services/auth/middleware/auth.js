@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken')
+const { jsonError } = require('../lib/http')
 
 const JWT_SECRET = process.env.JWT_SECRET
 
@@ -16,20 +17,20 @@ function requireAuth(req, res, next) {
 	try {
 		const token = getBearerToken(req)
 		if (!token) {
-			return res.status(401).json({ ok: false, error: 'token ausente' })
+			return jsonError(res, 401, { code: 'TOKEN_MISSING', message: 'token ausente' })
 		}
 
 		const payload = jwt.verify(token, JWT_SECRET)
 		req.user = payload
 		next()
 	} catch (err) {
-		return res.status(401).json({ ok: false, error: 'token inválido ou expirado' })
+		return jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token inválido ou expirado' })
 	}
 }
 
 function requireAdmin(req, res, next) {
 	if (!req.user || req.user.nivel !== 'admin') {
-		return res.status(403).json({ ok: false, error: 'acesso reservado a admin' })
+		return jsonError(res, 403, { code: 'FORBIDDEN', message: 'acesso reservado a admin' })
 	}
 	next()
 }

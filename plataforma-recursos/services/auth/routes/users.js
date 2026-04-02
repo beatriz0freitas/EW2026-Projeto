@@ -3,6 +3,7 @@ const router = express.Router()
 
 const User = require('../models/User')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
+const { jsonError } = require('../lib/http')
 
 const NIVEIS = ['admin', 'produtor', 'consumidor']
 const UPDATABLE_FIELDS = ['nome', 'nivel', 'filiacao']
@@ -38,7 +39,7 @@ router.post('/register', async (req, res) => {
 		const validationError = validateRegistrationInput({ nome, email, password })
 
 		if (validationError) {
-			return res.status(400).json({ ok: false, error: validationError })
+			return jsonError(res, 400, { code: 'INVALID_INPUT', message: validationError })
 		}
 
 		// Apenas admins podem criar outros admins/produtores diretamente.
@@ -57,10 +58,10 @@ router.post('/register', async (req, res) => {
 		res.status(201).json({ ok: true, user })
 	} catch (err) {
 		if (err.code === 11000) {
-			return res.status(409).json({ ok: false, error: 'email já registado' })
+			return jsonError(res, 409, { code: 'DUPLICATE_EMAIL', message: 'email já registado' })
 		}
 		console.error('[auth] register error:', err)
-		res.status(500).json({ ok: false, error: 'erro interno' })
+		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}
 })
 
@@ -70,7 +71,7 @@ router.get('/users', requireAuth, requireAdmin, async (req, res) => {
 		const users = await User.find().select('-password')
 		res.json({ ok: true, users })
 	} catch (err) {
-		res.status(500).json({ ok: false, error: 'erro interno' })
+		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}
 })
 
@@ -80,14 +81,14 @@ router.patch('/users/:id', requireAuth, requireAdmin, async (req, res) => {
 		const update = buildAdminUpdate(req.body)
 
 		if (update.nivel && !NIVEIS.includes(update.nivel)) {
-			return res.status(400).json({ ok: false, error: 'nivel inválido' })
+			return jsonError(res, 400, { code: 'INVALID_LEVEL', message: 'nivel inválido' })
 		}
 
 		const user = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select('-password')
-		if (!user) return res.status(404).json({ ok: false, error: 'utilizador não encontrado' })
+		if (!user) return jsonError(res, 404, { code: 'USER_NOT_FOUND', message: 'utilizador não encontrado' })
 		res.json({ ok: true, user })
 	} catch (err) {
-		res.status(500).json({ ok: false, error: 'erro interno' })
+		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}
 })
 
@@ -95,17 +96,20 @@ router.patch('/users/:id', requireAuth, requireAdmin, async (req, res) => {
 router.delete('/users/:id', requireAuth, requireAdmin, async (req, res) => {
 	try {
 		if (String(req.user.sub) === String(req.params.id)) {
-			return res.status(400).json({ ok: false, error: 'não podes remover o teu próprio utilizador' })
+			return jsonError(res, 400, {
+				code: 'SELF_DELETE_FORBIDDEN',
+				message: 'não podes remover o teu próprio utilizador',
+			})
 		}
 
 		const user = await User.findByIdAndDelete(req.params.id).select('-password')
 		if (!user) {
-			return res.status(404).json({ ok: false, error: 'utilizador não encontrado' })
+			return jsonError(res, 404, { code: 'USER_NOT_FOUND', message: 'utilizador não encontrado' })
 		}
 
 		res.json({ ok: true, user })
 	} catch (err) {
-		res.status(500).json({ ok: false, error: 'erro interno' })
+		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}
 })
 

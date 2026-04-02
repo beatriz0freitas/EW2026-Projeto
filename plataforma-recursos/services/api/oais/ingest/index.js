@@ -3,6 +3,7 @@ const multer = require('multer')
 
 const { ingestSipZip } = require('./sip')
 const { requireLevel } = require('../../middleware/auth')
+const { jsonError } = require('../../lib/http')
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } })
@@ -16,7 +17,11 @@ router.post(
 	upload.single('sip'),
 	async (req, res) => {
 		if (!req.file) {
-			return res.status(400).json({ ok: false, errors: [{ code: 'MISSING_FILE', message: 'Ficheiro SIP (ZIP) em falta' }] })
+			return jsonError(res, 400, {
+				code: 'MISSING_FILE',
+				message: 'Ficheiro SIP (ZIP) em falta',
+				details: [{ code: 'MISSING_FILE', message: 'Ficheiro SIP (ZIP) em falta' }],
+			})
 		}
 
 		const aipDir = process.env.AIP_DIR || '/aip'
@@ -29,7 +34,11 @@ router.post(
 		})
 
 		if (!result.ok) {
-			return res.status(422).json({ ok: false, errors: result.errors })
+			return jsonError(res, 422, {
+				code: 'INVALID_SIP',
+				message: 'SIP inválido',
+				details: result.errors,
+			})
 		}
 
 		res.status(201).json({ ok: true, resourceId: result.resourceId })

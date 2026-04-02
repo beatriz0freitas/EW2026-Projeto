@@ -12,12 +12,28 @@ function totalPages(total, limit) {
 	return Math.ceil(total / limit) || 1
 }
 
-function jsonError(res, status, error) {
-	return res.status(status).json({ ok: false, error })
+function jsonError(res, status, errorOrOptions) {
+	const options =
+		typeof errorOrOptions === 'string'
+			? { message: errorOrOptions }
+			: errorOrOptions || {}
+
+	const message = options.message || 'erro interno'
+	const payload = {
+		ok: false,
+		code: options.code || `HTTP_${status}`,
+		message,
+		details: options.details || null,
+		requestId: res.locals?.requestId || null,
+		// Compatibilidade com clientes antigos
+		error: message,
+	}
+
+	return res.status(status).json(payload)
 }
 
 function invalidId(res) {
-	return jsonError(res, 400, 'id inválido')
+	return jsonError(res, 400, { code: 'INVALID_ID', message: 'id inválido' })
 }
 
 function isMongoId(value) {
