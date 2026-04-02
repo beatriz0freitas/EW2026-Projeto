@@ -452,24 +452,24 @@ Para considerar o projeto completo a nível funcional:
 
 **Tarefas exatas:**
 
-1. ❌ Configurar app Express com `view engine` Pug, `views`, static files e parser de formulários.
-2. ❌ Adicionar gestão de sessão (cookie HTTP-only) para guardar token JWT da interface.
-3. ❌ Criar helper central para chamadas ao `auth` e `api` com token da sessão.
-4. ❌ Middleware global para injetar `user` em `res.locals`.
-5. ❌ Implementar páginas e fluxos de autenticação:
+1. ✅ Configurar app Express com `view engine` Pug, `views`, static files e parser de formulários.
+2. ✅ Adicionar gestão de sessão (cookie HTTP-only) para guardar token JWT da interface.
+3. ✅ Criar helper central para chamadas ao `auth` e `api` com token da sessão.
+4. ✅ Middleware global para injetar `user` em `res.locals`.
+5. ✅ Implementar páginas e fluxos de autenticação:
 
 * GET/POST login
 * GET/POST registo
 * POST/GET logout
 
-6. ❌ Criar layout base com navbar dinâmica por estado de login (`Entrar/Registar` vs `Logout/Área`), zona de mensagens e rodapé.
+6. ✅ Criar layout base com navbar dinâmica por estado de login (`Entrar/Registar` vs `Logout/Área`), zona de mensagens e rodapé.
 
 **Critérios de aceite (DoD do Bloco A):**
 
-* ❌ Aceder a `/` já renderiza Pug (não placeholder texto).
-* ❌ Utilizador consegue registar e login pela interface.
-* ❌ Sessão persiste entre pedidos e logout limpa sessão.
-* ❌ Navbar mostra links diferentes para autenticado vs anónimo.
+* ✅ Aceder a `/` já renderiza Pug (não placeholder texto).
+* ✅ Utilizador consegue registar e login pela interface.
+* ✅ Sessão persiste entre pedidos e logout limpa sessão.
+* ✅ Navbar mostra links diferentes para autenticado vs anónimo.
 
 ---
 
