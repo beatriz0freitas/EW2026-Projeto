@@ -1,4 +1,4 @@
-# vPlataforma de Gestão e Disponibilização de Recursos Educativos (EW2026)
+# Plataforma de Gestão e Disponibilização de Recursos Educativos (EW2026)
 
 ## Lista de Tarefas — Do Início ao Fim
 
@@ -7,6 +7,21 @@
 > **Objetivo do projeto (Proposta 1):** disponibilizar recursos educativos com controlo de acesso por perfil (`consumidor`, `produtor`, `admin`), ingestão OAIS (SIP→AIP), download (AIP→DIP), interação social (posts/comentários/ratings) e gestão administrativa.
 
 > **Atualizado em:** 2026-04-02
+
+## Resumo executivo em 12 linhas
+
+- ✅ Arquitetura (`gateway`, `api`, `auth`, `interface`) funcional.
+- ✅ Auth funcional com JWT, perfis e rotas admin protegidas.
+- ✅ API funcional com OAIS essencial e domínio principal implementado.
+- ✅ Gateway modularizado e ativo por routers.
+- ✅ Interface funcional para auth, recursos, posts e administração.
+- ⚠️ Upload SIP e download DIP ainda não fechados na UI.
+- ⚠️ Filtros avançados de recursos ainda parciais na UI.
+- ⚠️ Uniformização de erro em progresso (base aplicada; ainda não 100%).
+- ❌ Rate limiting no login.
+- ❌ `helmet` e CORS explícito.
+- ❌ Testes automáticos mínimos (unit + integração).
+- ❌ Fecho final de documentação e limpeza técnica residual.
 
 ---
 
@@ -71,7 +86,6 @@
 
 ### 1.2 Estrutura de Pastas por Serviço
 
-* ✅ `services/gateway/` — proxy reverso
 * ✅ `services/api/` — lógica de negócio
 * ✅ `services/auth/` — autenticação e utilizadores
 * ✅ `services/interface/` — frontend Pug
@@ -175,7 +189,6 @@
 **Checklist de aceite do access (já feito):**
 
 * ✅ Recurso público disponível sem autenticação
-* ✅ Recurso privado exige autenticação
 * ✅ Recurso privado só para admin ou produtor dono
 
 ### 4.3 Módulos OAIS Vazios (por implementar)
@@ -262,7 +275,6 @@
 
 * ✅ `GET /api/news` — listar notícias (página principal)
 * ✅ `POST /api/news` — criar notícia (admin)
-* ✅ `DELETE /api/news/:id` — remover notícia (admin)
 
 ### 6.7 Estado global da API
 
@@ -313,9 +325,6 @@
 
 * ✅ Layout consistente em todas as páginas principais
 * ✅ Mensagens de sucesso/erro visíveis ao utilizador
-
-### 8.3 Autenticação (Interface)
-
 * ✅ `routes/auth.js` + `views/auth/login.pug` — formulário de login
 * ✅ `routes/auth.js` + `views/auth/register.pug` — formulário de registo
 * ✅ Logout (limpar sessão/cookie)
@@ -323,7 +332,6 @@
 **Fluxos obrigatórios:**
 
 * ✅ login válido redireciona para home
-* ✅ login inválido mostra erro amigável
 * ✅ logout invalida sessão local
 
 ### 8.4 Página Principal
@@ -333,7 +341,6 @@
 **Componente mínimo:**
 
 * ❌ cartões de recurso (título/tipo/visibilidade) diretamente na home
-* ✅ bloco de notícias recentes
 
 ### 8.5 Recursos (Interface)
 

@@ -1,6 +1,6 @@
 # Apoio de Implementação e Decisão (guia prático)
 
-> **Objetivo:** manter aqui apenas informação útil para tirar dúvidas de implementação/decisão.
+> **Objetivo:** consulta direta para dúvidas de implementação, arquitetura e decisões.
 >
 > **Atualizado em:** 2026-04-02
 
@@ -30,7 +30,7 @@ Preferir sempre a opção que, por esta ordem:
 
 ---
 
-## Anexo histórico (contexto e fundamentação)
+## Base detalhada (contexto, fundamentação e especificações)
 
 ## 2) Princípios orientadores adotados
 
@@ -887,10 +887,25 @@ Todas as rotas abaixo exigem sessão + perfil `admin`:
 
 ## 9) Convenções de resposta e erros (estado atual)
 
-- Sucesso tende a usar: `{ ok: true, ... }`
-- Erro tende a usar: `{ ok: false, error: '...' }`
-- Ingest OAIS usa também formato com `errors: [{ code, message }]`
+- **Sucesso:** mantém-se o padrão `{ ok: true, ... }`.
+- **Erro (API/Auth):**  uniformizado para:
 
-**Decisão futura recomendada:** uniformizar todos os erros para um único contrato (ex.: `code`, `message`, `details`, `requestId`).
+  ```json
+  {
+    "ok": false,
+    "code": "...",
+    "message": "...",
+    "details": null,
+    "requestId": "...",
+    "error": "..."
+  }
+  ```
 
-**Evidência de padrões atuais:** [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/routes/users.js](../services/auth/routes/users.js), [services/api/routes/resources.js](../services/api/routes/resources.js), [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js)
+  Notas:
+
+  - `error` é mantido por compatibilidade com clientes antigos;
+  - `requestId` é propagado também no header `X-Request-Id`.
+- **Ingest OAIS:** quando há erro de validação SIP, os detalhes vêm em `details` (lista de `{ code, message }`).
+- **Interface Web:** já lê `message` primeiro e usa `error` como fallback.
+
+**Evidência de implementação atual:** [services/api/lib/http.js](../services/api/lib/http.js), [services/auth/lib/http.js](../services/auth/lib/http.js), [services/api/app.js](../services/api/app.js), [services/auth/app.js](../services/auth/app.js), [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js), [services/interface/lib/web.js](../services/interface/lib/web.js)
