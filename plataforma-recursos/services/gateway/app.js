@@ -1,5 +1,5 @@
 const express = require('express')
-const { createProxyMiddleware } = require('http-proxy-middleware')
+const routes = require('./routes')
 
 const PORT = Number(process.env.PORT || 16020)
 const API_URL = process.env.API_URL || 'http://api:16025'
@@ -8,46 +8,17 @@ const INTERFACE_URL = process.env.INTERFACE_URL || 'http://interface:16026'
 
 const app = express()
 
+app.use((req, res, next) => {
+	const d = new Date().toISOString().substring(0, 16)
+	console.log(`[gateway] ${req.method} ${req.url} ${d}`)
+	next()
+})
+
 app.get('/health', (req, res) => {
 	res.json({ status: 'ok' })
 })
 
-app.use(
-	'/api',
-	createProxyMiddleware({
-		target: API_URL,
-		changeOrigin: true,
-		pathRewrite: (path) => `/api${path}`,
-		xfwd: true,
-		proxyTimeout: 60_000,
-		onError: (err, req, res) => {
-			res.status(502).json({ ok: false, error: 'bad_gateway', message: err.message })
-		},
-	})
-)
-
-app.use(
-	'/auth',
-	createProxyMiddleware({
-		target: AUTH_URL,
-		changeOrigin: true,
-		xfwd: true,
-		proxyTimeout: 60_000,
-		onError: (err, req, res) => {
-			res.status(502).json({ ok: false, error: 'bad_gateway', message: err.message })
-		},
-	})
-)
-
-app.use(
-	'/',
-	createProxyMiddleware({
-		target: INTERFACE_URL,
-		changeOrigin: true,
-		xfwd: true,
-		proxyTimeout: 60_000,
-	})
-)
+app.use('/', routes)
 
 app.listen(PORT, () => {
 	console.log(`[gateway] listening on :${PORT}`)

@@ -4,6 +4,7 @@ const router = express.Router()
 const usersRouter = require('./users')
 const sessionsRouter = require('./sessions')
 const { requireAuth } = require('../middleware/auth')
+const { jsonError } = require('../lib/http')
 
 // POST /auth/register
 router.use('/', usersRouter)
@@ -23,13 +24,13 @@ if (!JWT_SECRET) {
 router.get('/me', requireAuth, async (req, res) => {
 	try {
 		const user = await User.findById(req.user.sub).select('-password')
-		if (!user) return res.status(404).json({ ok: false, error: 'utilizador não encontrado' })
+		if (!user) return jsonError(res, 404, { code: 'USER_NOT_FOUND', message: 'utilizador não encontrado' })
 
 		await User.updateOne({ _id: user._id }, { dataUltimoAcesso: new Date() })
 
 		res.json({ ok: true, user })
 	} catch (err) {
-		res.status(401).json({ ok: false, error: 'token inválido ou expirado' })
+		jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token inválido ou expirado' })
 	}
 })
 

@@ -2,6 +2,7 @@ const express = require('express')
 const jwt = require('jsonwebtoken')
 
 const User = require('../models/User')
+const { jsonError } = require('../lib/http')
 
 const router = express.Router()
 
@@ -19,17 +20,17 @@ router.post('/', async (req, res) => {
 	try {
 		const { email, password } = req.body
 		if (!email || !password) {
-			return res.status(400).json({ ok: false, error: 'email e password são obrigatórios' })
+			return jsonError(res, 400, { code: 'INVALID_INPUT', message: 'email e password são obrigatórios' })
 		}
 
 		const user = await User.findOne({ email })
 		if (!user) {
-			return res.status(401).json({ ok: false, error: 'credenciais inválidas' })
+			return jsonError(res, 401, { code: 'INVALID_CREDENTIALS', message: 'credenciais inválidas' })
 		}
 
 		const valid = await user.checkPassword(password)
 		if (!valid) {
-			return res.status(401).json({ ok: false, error: 'credenciais inválidas' })
+			return jsonError(res, 401, { code: 'INVALID_CREDENTIALS', message: 'credenciais inválidas' })
 		}
 
 		// Atualizar dataUltimoAcesso sem disparar hooks
@@ -47,7 +48,7 @@ router.post('/', async (req, res) => {
 		res.json({ ok: true, token, user })
 	} catch (err) {
 		console.error('[auth] login error:', err)
-		res.status(500).json({ ok: false, error: 'erro interno' })
+		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}
 })
 
@@ -60,16 +61,16 @@ router.get('/verify', (req, res) => {
 		const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
 
 		if (!token) {
-			return res.status(401).json({ ok: false, error: 'token ausente' })
+			return jsonError(res, 401, { code: 'TOKEN_MISSING', message: 'token ausente' })
 		}
 
 		const payload = jwt.verify(token, JWT_SECRET)
 		res.json({ ok: true, payload })
 	} catch (err) {
 		if (err.name === 'TokenExpiredError') {
-			return res.status(401).json({ ok: false, error: 'token expirado' })
+			return jsonError(res, 401, { code: 'TOKEN_EXPIRED', message: 'token expirado' })
 		}
-		res.status(401).json({ ok: false, error: 'token inválido' })
+		jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token inválido' })
 	}
 })
 

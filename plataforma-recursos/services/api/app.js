@@ -1,5 +1,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
+const { randomUUID } = require('crypto')
 
 const routes = require('./routes')
 
@@ -8,8 +9,16 @@ const app = express()
 app.use(express.json())
 
 app.use((req, res, next) => {
+	const requestId = req.headers['x-request-id'] || randomUUID()
+	req.requestId = requestId
+	res.locals.requestId = requestId
+	res.setHeader('X-Request-Id', requestId)
+	next()
+})
+
+app.use((req, res, next) => {
 	const d = new Date().toISOString().substring(0, 16)
-	console.log(`${req.method} ${req.url} ${d}`)
+	console.log(`[api] ${req.method} ${req.url} ${d} [${req.requestId}]`)
 	next()
 })
 

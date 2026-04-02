@@ -1,0 +1,27 @@
+extends ../layout
+
+block content
+	section.card
+		h1 Administração · Notícias
+		form.form(action='/admin/news' method='post')
+			label(for='titulo') Título
+			input#titulo(type='text' name='titulo' maxlength='160' required)
+
+			label(for='conteudo') Conteúdo
+			textarea#conteudo(name='conteudo' rows='6' maxlength='10000' required)
+
+			button(type='submit') Criar notícia
+
+	section.card
+		h2 Notícias existentes
+		if !items.length
+			p Sem notícias publicadas.
+		else
+			ul.list
+				each item in items
+					li
+						strong= item.titulo
+						p= item.conteudo
+						form.form-inline(action=`/admin/news/${item._id}/delete` method='post')
+							button(type='submit') Remover
+

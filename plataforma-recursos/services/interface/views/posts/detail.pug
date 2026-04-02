@@ -1,0 +1,31 @@
+extends ../layout
+
+block content
+	section.card
+		h1= post.titulo
+		p.muted Autor: #{post.autorNome || 'desconhecido'}
+		p= post.conteudo
+
+		if user && (user.nivel === 'admin' || user.sub === post.autorId)
+			form(action=`/posts/${post._id}/delete` method='post')
+				button(type='submit') Remover post
+
+	section.card
+		h2 Comentários
+		if !comments.length
+			p Sem comentários.
+		else
+			ul.list
+				each c in comments
+					li
+						strong= c.autorNome || 'utilizador'
+						| : #{c.texto}
+
+		if user
+			form.form(action=`/posts/${post._id}/comments` method='post')
+				label(for='texto') Novo comentário
+				textarea#texto(name='texto' rows='4' required)
+				button(type='submit') Comentar
+		else
+			p.info Inicie sessão para comentar.
+

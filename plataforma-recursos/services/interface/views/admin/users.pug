@@ -1,0 +1,31 @@
+extends ../layout
+
+block content
+	section.card
+		h1 Administração · Utilizadores
+
+		if !users.length
+			p Sem utilizadores para mostrar.
+		else
+			table.table
+				thead
+					tr
+						th Nome
+						th Email
+						th Nível
+						th Ações
+				tbody
+					each u in users
+						tr
+							td= u.nome
+							td= u.email
+							td= u.nivel
+							td.actions
+								form.form-inline(action=`/admin/users/${u._id}/level` method='post')
+									select(name='nivel')
+										each n in ['consumidor', 'produtor', 'admin']
+											option(value=n selected=u.nivel === n)= n
+									button(type='submit') Atualizar
+								form.form-inline(action=`/admin/users/${u._id}/delete` method='post')
+									button(type='submit') Remover
+

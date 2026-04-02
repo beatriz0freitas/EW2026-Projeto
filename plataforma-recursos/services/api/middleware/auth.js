@@ -1,4 +1,5 @@
 const http = require('http')
+const { jsonError } = require('../lib/http')
 
 const AUTH_URL = process.env.AUTH_URL || 'http://auth:16027'
 
@@ -41,10 +42,10 @@ function extractToken(req) {
 // Injeta req.user = payload JWT
 async function requireAuth(req, res, next) {
 	const token = extractToken(req)
-	if (!token) return res.status(401).json({ ok: false, error: 'autenticação necessária' })
+	if (!token) return jsonError(res, 401, { code: 'AUTH_REQUIRED', message: 'autenticação necessária' })
 
 	const payload = await verifyTokenRemote(token)
-	if (!payload) return res.status(401).json({ ok: false, error: 'token inválido ou expirado' })
+	if (!payload) return jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token inválido ou expirado' })
 
 	req.user = payload
 	next()
@@ -58,16 +59,16 @@ const HIERARCHY = { admin: 3, produtor: 2, consumidor: 1 }
 function requireLevel(minLevel) {
 	return async (req, res, next) => {
 		const token = extractToken(req)
-		if (!token) return res.status(401).json({ ok: false, error: 'autenticação necessária' })
+		if (!token) return jsonError(res, 401, { code: 'AUTH_REQUIRED', message: 'autenticação necessária' })
 
 		const payload = await verifyTokenRemote(token)
-		if (!payload) return res.status(401).json({ ok: false, error: 'token inválido ou expirado' })
+		if (!payload) return jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token inválido ou expirado' })
 
 		const userRank = HIERARCHY[payload.nivel] || 0
 		const minRank = HIERARCHY[minLevel] || 0
 
 		if (userRank < minRank) {
-			return res.status(403).json({ ok: false, error: 'permissões insuficientes' })
+			return jsonError(res, 403, { code: 'FORBIDDEN', message: 'permissões insuficientes' })
 		}
 
 		req.user = payload

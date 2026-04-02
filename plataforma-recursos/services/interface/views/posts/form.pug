@@ -1,0 +1,17 @@
+extends ../layout
+
+block content
+	section.card
+		h1 Criar post
+		form.form(action='/posts' method='post')
+			label(for='titulo') Título
+			input#titulo(type='text' name='titulo' maxlength='160' required value=post.titulo)
+
+			label(for='conteudo') Conteúdo
+			textarea#conteudo(name='conteudo' rows='8' maxlength='20000' required)= post.conteudo
+
+			label(for='resourceId') ID do recurso (opcional)
+			input#resourceId(type='text' name='resourceId' value=post.resourceId)
+
+			button(type='submit') Publicar
+
