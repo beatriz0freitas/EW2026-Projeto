@@ -1,4 +1,4 @@
-# vPlataforma de Gestão e Disponibilização de Recursos Educativos (EW2026)
+# Plataforma de Gestão e Disponibilização de Recursos Educativos (EW2026)
 
 ## Lista de Tarefas — Do Início ao Fim
 
@@ -6,7 +6,22 @@
 
 > **Objetivo do projeto (Proposta 1):** disponibilizar recursos educativos com controlo de acesso por perfil (`consumidor`, `produtor`, `admin`), ingestão OAIS (SIP→AIP), download (AIP→DIP), interação social (posts/comentários/ratings) e gestão administrativa.
 
-> **Atualizado em:** 2026-04-01
+> **Atualizado em:** 2026-04-02
+
+## Resumo executivo em 12 linhas
+
+- ✅ Arquitetura (`gateway`, `api`, `auth`, `interface`) funcional.
+- ✅ Auth funcional com JWT, perfis e rotas admin protegidas.
+- ✅ API funcional com OAIS essencial e domínio principal implementado.
+- ✅ Gateway modularizado e ativo por routers.
+- ✅ Interface funcional para auth, recursos, posts e administração.
+- ⚠️ Upload SIP e download DIP ainda não fechados na UI.
+- ⚠️ Filtros avançados de recursos ainda parciais na UI.
+- ⚠️ Uniformização de erro em progresso (base aplicada; ainda não 100%).
+- ❌ Rate limiting no login.
+- ❌ `helmet` e CORS explícito.
+- ❌ Testes automáticos mínimos (unit + integração).
+- ❌ Fecho final de documentação e limpeza técnica residual.
 
 ---
 
@@ -24,10 +39,26 @@
 
 ### 0.2 Em falta (para entrega completa e robusta)
 
-* ❌ Interface web funcional completa (Pug + sessões + páginas de negócio)
+* ⚠️ Interface web funcional base concluída (auth, recursos, posts, admin); faltam filtros avançados, upload SIP e download DIP na UI
 * ❌ Hardening de segurança (rate limit, helmet, validação/sanitização inputs, CORS)
 * ❌ Testes automáticos (unitários + integração)
-* ❌ Limpeza final técnica (duplicados OAIS referidos no histórico, ficheiros vazios no gateway)
+* ⚠️ Limpeza final técnica (feita no gateway; pendente fechar itens OAIS/rotas residuais e consolidar documentação final)
+
+### 0.3 Atualização de padrão aplicada (2026-04-02)
+
+**Padrão adotado (explícito):**
+
+* ✅ Modularização por responsabilidade (routers pequenos + helpers partilhados)
+* ✅ Reutilização de utilitários para reduzir duplicação
+* ✅ Validação precoce (`early return`) e mensagens de erro consistentes
+* ✅ Separação entre orquestração HTTP (rotas) e regras transversais (libs/middleware)
+
+**Como foi aplicado:**
+
+* ✅ **API**: criado helper comum (`services/api/lib/http.js`) para paginação, validação de ObjectId e resposta de erro; rotas de `resources`, `posts`, `comments`, `ratings`, `news`, `taxonomy` alinhadas ao mesmo padrão.
+* ✅ **Gateway**: proxy centralizado com helper (`services/gateway/lib/proxy.js`) + routers dedicados (`routes/api.js`, `routes/auth.js`, `routes/interface.js`, `routes/index.js`).
+* ✅ **Interface**: helper web (`services/interface/lib/web.js`) com `routeAsync`, guards de sessão/perfil e mapeamento de erro; páginas reais implementadas para recursos, posts e administração; `app.js` com montagem de rotas e handler global de erro.
+* ✅ **Auth**: melhoria de legibilidade em `routes/users.js` com validação e construção de update extraídas para funções utilitárias.
 
 ---
 
@@ -55,7 +86,6 @@
 
 ### 1.2 Estrutura de Pastas por Serviço
 
-* ✅ `services/gateway/` — proxy reverso
 * ✅ `services/api/` — lógica de negócio
 * ✅ `services/auth/` — autenticação e utilizadores
 * ✅ `services/interface/` — frontend Pug
@@ -159,7 +189,6 @@
 **Checklist de aceite do access (já feito):**
 
 * ✅ Recurso público disponível sem autenticação
-* ✅ Recurso privado exige autenticação
 * ✅ Recurso privado só para admin ou produtor dono
 
 ### 4.3 Módulos OAIS Vazios (por implementar)
@@ -246,27 +275,29 @@
 
 * ✅ `GET /api/news` — listar notícias (página principal)
 * ✅ `POST /api/news` — criar notícia (admin)
-* ✅ `DELETE /api/news/:id` — remover notícia (admin)
 
 ### 6.7 Estado global da API
 
 * ✅ Endpoints essenciais da proposta 1 implementados
-* ⚠️ Falta camada uniforme de validação de inputs
-* ⚠️ Falta normalização de respostas de erro (formato único)
+* ✅ Normalização base de paginação/erro aplicada nas principais rotas (`services/api/lib/http.js`)
+* ⚠️ Falta convergir **todas** as rotas (incluindo OAIS e auth) para contrato único com `code/message` e validação declarativa de payload
 
 ---
 
 ## 7. SERVIÇO GATEWAY
 
-* ✅ `app.js` — proxy reverso com `http-proxy-middleware`
-  * ✅ `/api/*` → API (porta 16025)
-  * ✅ `/auth/*` → Auth (porta 16027)
-  * ✅ `/*` → Interface (porta 16026)
-* ⚠️ `routes/` — ficheiros vazios (api.js, auth.js, index.js, interface.js) — limpar ou usar
+* ✅ `app.js` simplificado com logging uniforme e composição de rotas
+* ✅ `lib/proxy.js` criado para centralizar comportamento de proxy e erro `bad_gateway`
+* ✅ `routes/` agora é usado e organizado:
+  * ✅ `routes/api.js` → `/api/*`
+  * ✅ `routes/auth.js` → `/auth/*`
+  * ✅ `routes/interface.js` → `/*`
+  * ✅ `routes/index.js` agrega os routers
 
-**Ação simples recomendada:**
+**Pendente no gateway:**
 
-* ❌ Remover ficheiros de `routes/` no gateway se não forem usados (evitar ruído técnico)
+* ❌ Política CORS explícita
+* ❌ `helmet` para hardening de headers
 
 ---
 
@@ -274,80 +305,74 @@
 
 ### 8.1 Configuração Base
 
-* ⚠️ `app.js` — apenas placeholder, precisa de configuração completa:
-  * ❌ Configurar motor de views Pug
-  * ❌ Configurar `express-session` ou cookies para sessão do utilizador
-  * ❌ Helper para chamadas autenticadas à API
-  * ❌ Middleware de injeção do utilizador em `res.locals`
+* ✅ `app.js` configurado com Pug + `express-session` + static + parsing de forms
+* ✅ Helper HTTP para chamadas a auth/api (`services/interface/lib/http.js`)
+* ✅ Helper web transversal (`services/interface/lib/web.js`) com guards e `routeAsync`
+* ✅ Middleware de injeção do utilizador em `res.locals`
 
 **MVP sugerido para fechar rapidamente:**
 
-* ❌ Header com estado de autenticação (`Entrar`, `Registar`, `Sair`)
-* ❌ Home com recursos recentes + notícias recentes
-* ❌ Fluxo de login/registo funcional ponta-a-ponta
+* ✅ Header com estado de autenticação (`Entrar`, `Registar`, `Logout`)
+* ✅ Home com bloco de notícias recentes
+* ✅ Fluxo de login/registo funcional ponta-a-ponta
 
 ### 8.2 Layout e Estilos
 
-* ❌ `views/layout.pug` — layout base com navbar, flash messages, footer
-* ❌ `public/stylesheets/style.css` — estilos base (ou integrar Bootstrap)
+* ✅ `views/layout.pug` com navbar dinâmica, flash messages e footer
+* ✅ `public/stylesheets/style.css` com componentes para tabelas, listas, formulários e ações
 
 **Critério mínimo de UX:**
 
-* ❌ Layout consistente em todas as páginas
-* ❌ Mensagens de sucesso/erro visíveis ao utilizador
-
-### 8.3 Autenticação (Interface)
-
-* ❌ `routes/auth.js` + `views/auth/login.pug` — formulário de login
-* ❌ `routes/auth.js` + `views/auth/register.pug` — formulário de registo
-* ❌ Logout (limpar sessão/cookie)
+* ✅ Layout consistente em todas as páginas principais
+* ✅ Mensagens de sucesso/erro visíveis ao utilizador
+* ✅ `routes/auth.js` + `views/auth/login.pug` — formulário de login
+* ✅ `routes/auth.js` + `views/auth/register.pug` — formulário de registo
+* ✅ Logout (limpar sessão/cookie)
 
 **Fluxos obrigatórios:**
 
-* ❌ login válido redireciona para home
-* ❌ login inválido mostra erro amigável
-* ❌ logout invalida sessão local
+* ✅ login válido redireciona para home
+* ✅ logout invalida sessão local
 
 ### 8.4 Página Principal
 
-* ❌ `routes/index.js` + `views/index.pug` — listagem de recursos + notícias
+* ⚠️ `routes/index.js` + `views/index.pug` implementados com notícias e atalhos; listagem de recursos na home ainda simplificada
 
 **Componente mínimo:**
 
-* ❌ cartões de recurso (título/tipo/visibilidade)
-* ❌ bloco de notícias recentes
+* ❌ cartões de recurso (título/tipo/visibilidade) diretamente na home
 
 ### 8.5 Recursos (Interface)
 
-* ❌ `routes/resources.js` + `views/resources/list.pug` — lista de recursos com filtros
-* ❌ `routes/resources.js` + `views/resources/detail.pug` — detalhe + download DIP
-* ❌ `routes/resources.js` + `views/resources/form.pug` — upload SIP (produtor)
+* ⚠️ `routes/resources.js` + `views/resources/list.pug` — lista funcional (sem filtros avançados)
+* ⚠️ `routes/resources.js` + `views/resources/detail.pug` — detalhe funcional + classificação; falta download DIP
+* ⚠️ `routes/resources.js` + `views/resources/form.pug` — página orientativa criada; falta upload SIP funcional
 
 **Regras de acesso no frontend:**
 
-* ❌ botão upload só para `produtor/admin`
-* ❌ download de privado só quando autenticado e autorizado
+* ❌ botão upload só para `produtor/admin` com submissão real
+* ❌ download de privado só quando autenticado e autorizado via fluxo DIP
 
 ### 8.6 Posts (Interface)
 
-* ❌ `routes/posts.js` + `views/posts/list.pug` — lista de posts
-* ❌ `routes/posts.js` + `views/posts/detail.pug` — detalhe + comentários
-* ❌ `routes/posts.js` + `views/posts/form.pug` — criar/editar post
+* ✅ `routes/posts.js` + `views/posts/list.pug` — lista de posts
+* ⚠️ `routes/posts.js` + `views/posts/detail.pug` — detalhe + comentários (base funcional)
+* ✅ `routes/posts.js` + `views/posts/form.pug` — criar post
 
 **MVP social:**
 
-* ❌ listar posts por data
-* ❌ comentar post autenticado
-* ❌ editar/apagar apenas do próprio autor (ou admin)
+* ✅ listar posts por data (ordem do backend)
+* ✅ comentar post autenticado
+* ⚠️ editar/apagar apenas do próprio autor (ou admin) — apagar implementado via backend; edição na UI ainda pendente
 
 ### 8.7 Área de Administração (Interface)
 
-* ❌ `routes/admin.js` + `views/admin/users.pug` — gestão de utilizadores
-* ❌ `routes/admin.js` + `views/admin/news.pug` — gestão de notícias
+* ✅ `routes/admin.js` + `views/admin/users.pug` — gestão de utilizadores
+* ✅ `routes/admin.js` + `views/admin/news.pug` — gestão de notícias
 
 **Guardas obrigatórias:**
 
-* ❌ rotas `/admin/*` bloqueadas para não-admin
+* ✅ rotas `/admin/*` bloqueadas para não-admin
 
 ---
 
@@ -357,7 +382,7 @@
 * ❌ Validação e sanitização de inputs (express-validator ou joi)
 * ❌ Cabeçalhos de segurança HTTP (helmet)
 * ❌ CORS configurado no gateway
-* ✅ JWT_SECRET obrigatório via variável de ambiente (atualmente tem fallback inseguro)
+* ✅ JWT_SECRET obrigatório via variável de ambiente (sem fallback inseguro no auth)
 * ✅ Paginação nas listagens (recursos, posts, comentários)
 
 **Backlog de segurança por prioridade:**
@@ -397,15 +422,15 @@
 
 ### 11.2 Interface placeholder\
 
-* ⚠️ `services/interface/app.js` — sem Pug, sem sessões, sem rotas reais
+* ✅ `services/interface/app.js` — Pug + sessões + rotas reais montadas
 
 ### 11.3 Rotas de admin sem proteção
 
-* ✅ `GET /auth/users` e `PATCH /auth/users/:id` não verificam se o utilizador é admin
+* ✅ `GET /auth/users` e `PATCH /auth/users/:id` estão protegidas e verificam perfil admin
 
 ### 11.4 `routes/index.js` não usa os ficheiros em `routes/`
 
-* ✅ Os ficheiros `routes/resources.js`, `routes/posts.js`, etc. estão vazios e não são registados no `routes/index.js`
+* ✅ Situação resolvida: `routes/resources.js`, `routes/posts.js` e `routes/admin.js` estão implementados e registados no `app.js` da interface
 
 ---
 
@@ -413,22 +438,22 @@
 
 Para considerar o projeto completo a nível funcional:
 
-* ❌ Utilizador consegue registar, autenticar e terminar sessão pela interface
-* ❌ Produtor consegue submeter SIP e ver recurso na listagem
-* ❌ Consumidor consegue pesquisar recursos e descarregar públicos
-* ❌ Recurso privado respeita permissões em backend e frontend
-* ❌ Admin consegue gerir utilizadores e notícias pela interface
+* ✅ Utilizador consegue registar, autenticar e terminar sessão pela interface
+* ❌ Produtor consegue submeter SIP e ver recurso na listagem (falta upload SIP na UI)
+* ⚠️ Consumidor consegue pesquisar recursos e consultar detalhe (falta fluxo de download DIP completo na UI)
+* ⚠️ Recurso privado respeita permissões no backend; falta fechar fluxo frontend de DIP
+* ✅ Admin consegue gerir utilizadores e notícias pela interface
 * ❌ Existem testes mínimos de regressão para auth + OAIS + permissões
 
 ---
 
 ## ORDEM RECOMENDADA PARA CONTINUAR
 
-1. **Interface base funcional** (Pug + sessão + login/logout + layout)
-2. **Páginas de negócio** (home, resources, posts, admin)
+1. **Fechar fluxos OAIS na UI** (upload SIP + download DIP + autorização de privados no frontend)
+2. **Completar UX funcional** (filtros avançados em recursos + edição de posts na interface)
 3. **Segurança essencial** (rate limit, helmet, validação input, CORS)
 4. **Testes mínimos automáticos** (unit + integração)
-5. **Refino final** (docs, scripts, limpeza técnica e UX)
+5. **Refino final** (docs, scripts e limpeza técnica final)
 
 ---
 
@@ -452,24 +477,24 @@ Para considerar o projeto completo a nível funcional:
 
 **Tarefas exatas:**
 
-1. ❌ Configurar app Express com `view engine` Pug, `views`, static files e parser de formulários.
-2. ❌ Adicionar gestão de sessão (cookie HTTP-only) para guardar token JWT da interface.
-3. ❌ Criar helper central para chamadas ao `auth` e `api` com token da sessão.
-4. ❌ Middleware global para injetar `user` em `res.locals`.
-5. ❌ Implementar páginas e fluxos de autenticação:
+1. ✅ Configurar app Express com `view engine` Pug, `views`, static files e parser de formulários.
+2. ✅ Adicionar gestão de sessão (cookie HTTP-only) para guardar token JWT da interface.
+3. ✅ Criar helper central para chamadas ao `auth` e `api` com token da sessão.
+4. ✅ Middleware global para injetar `user` em `res.locals`.
+5. ✅ Implementar páginas e fluxos de autenticação:
 
 * GET/POST login
 * GET/POST registo
 * POST/GET logout
 
-6. ❌ Criar layout base com navbar dinâmica por estado de login (`Entrar/Registar` vs `Logout/Área`), zona de mensagens e rodapé.
+6. ✅ Criar layout base com navbar dinâmica por estado de login (`Entrar/Registar` vs `Logout/Área`), zona de mensagens e rodapé.
 
 **Critérios de aceite (DoD do Bloco A):**
 
-* ❌ Aceder a `/` já renderiza Pug (não placeholder texto).
-* ❌ Utilizador consegue registar e login pela interface.
-* ❌ Sessão persiste entre pedidos e logout limpa sessão.
-* ❌ Navbar mostra links diferentes para autenticado vs anónimo.
+* ✅ Aceder a `/` já renderiza Pug (não placeholder texto).
+* ✅ Utilizador consegue registar e login pela interface.
+* ✅ Sessão persiste entre pedidos e logout limpa sessão.
+* ✅ Navbar mostra links diferentes para autenticado vs anónimo.
 
 ---
 
@@ -486,21 +511,21 @@ Para considerar o projeto completo a nível funcional:
 
 **Tarefas exatas:**
 
-1. ❌ Página inicial com:
+1. ⚠️ Página inicial com:
 
-* recursos recentes (`GET /api/resources`)
-* notícias recentes (`GET /api/news`)
+* ❌ recursos recentes (`GET /api/resources`) na home
+* ✅ notícias recentes (`GET /api/news`)
 
-2. ❌ Lista de recursos com filtros (`tipo`, `ano`, `tema`, `hashtag`) e paginação.
+2. ⚠️ Lista de recursos com paginação (filtros avançados pendentes).
 3. ❌ Detalhe de recurso com botão para download DIP (`/api/oais/access/:id`).
 4. ❌ Formulário de upload SIP (multipart, campo `sip`) visível só para `produtor/admin`.
-5. ❌ Tratamento amigável de erros (ex.: 401/403 no acesso a privados).
+5. ✅ Tratamento amigável de erros base implementado.
 
 **Critérios de aceite (DoD do Bloco B):**
 
-* ❌ Consumidor vê recursos públicos e consegue descarregar.
+* ⚠️ Consumidor vê recursos públicos e detalhe; download DIP ainda pendente.
 * ❌ Produtor autenticado consegue submeter SIP via interface.
-* ❌ Filtros e paginação funcionam na listagem.
+* ⚠️ Paginação funcional; filtros avançados ainda pendentes.
 
 ---
 
@@ -518,21 +543,21 @@ Para considerar o projeto completo a nível funcional:
 
 **Tarefas exatas:**
 
-1. ❌ Listar posts e detalhe de post.
-2. ❌ Criar/editar/apagar post para `produtor/admin`.
-3. ❌ Comentar post para utilizador autenticado.
-4. ❌ Remover comentário por dono/admin.
-5. ❌ Área admin com:
+1. ✅ Listar posts e detalhe de post.
+2. ⚠️ Criar/apagar post para `produtor/admin` (edição na UI pendente).
+3. ✅ Comentar post para utilizador autenticado.
+4. ❌ Remover comentário por dono/admin (ação dedicada na UI pendente).
+5. ✅ Área admin com:
 
 * gestão de utilizadores (`GET/PATCH/DELETE /auth/users`)
 * gestão de notícias (`GET/POST/DELETE /api/news`)
 
-6. ❌ Guardas de rota na interface para `/admin/*` (redirecionar não-admin).
+6. ✅ Guardas de rota na interface para `/admin/*` (redirecionar não-admin).
 
 **Critérios de aceite (DoD do Bloco C):**
 
-* ❌ Fluxo social completo disponível na UI.
-* ❌ Admin consegue gerir utilizadores e notícias sem usar Postman.
+* ⚠️ Fluxo social maioritariamente disponível na UI (edição de post e remoção de comentário pendentes).
+* ✅ Admin consegue gerir utilizadores e notícias sem usar Postman.
 
 ---
 

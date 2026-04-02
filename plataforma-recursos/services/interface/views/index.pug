@@ -1,0 +1,31 @@
+extends layout
+
+block content
+	section.card
+		h1 Plataforma de Gestão e Disponibilização de Recursos Educativos
+		p Aceda rapidamente às principais áreas da plataforma.
+
+		ul
+			li
+				a(href='/resources') Ver recursos educativos
+			li
+				a(href='/posts') Ver posts e comentários
+			if user && user.nivel === 'admin'
+				li
+					a(href='/admin/users') Gestão de utilizadores
+				li
+					a(href='/admin/news') Gestão de notícias
+
+		if user
+			p.info Está autenticado como #{user.nivel}.
+		else
+			p.info Está em modo anónimo. Use Entrar ou Registar para continuar.
+
+	if news && news.length
+		section.card
+			h2 Últimas notícias
+			each item in news
+				article.news-item
+					h3= item.titulo
+					p= item.conteudo
+

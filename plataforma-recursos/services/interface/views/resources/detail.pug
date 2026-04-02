@@ -1,0 +1,31 @@
+extends ../layout
+
+block content
+	section.card
+		h1= resource.metadata?.resource?.titulo || 'Recurso'
+		p
+			strong Tipo:
+			|  #{resource.metadata?.resource?.tipo || '-'}
+		p
+			strong Ano:
+			|  #{resource.metadata?.resource?.ano || '-'}
+		p
+			strong Tema:
+			|  #{resource.metadata?.resource?.tema || '-'}
+
+		p.info Classificação média: #{rating.media} (#{rating.total} votos)
+
+		if user
+			form.form-inline(action=`/resources/${resource._id}/ratings` method='post')
+				label(for='stars') Classificar (1 a 5)
+				select#stars(name='stars' required)
+					option(value='') Escolha
+					- for (let i = 1; i <= 5; i++)
+						option(value=i)= i
+				button(type='submit') Guardar classificação
+		else
+			p.info Inicie sessão para classificar este recurso.
+
+		p
+			a(href='/resources') Voltar à lista
+

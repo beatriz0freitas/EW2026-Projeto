@@ -1,43 +1,61 @@
-# EW2026 
+# EW2026 — Plataforma de Gestão e Disponibilização de Recursos Educativos
 
-## 1) Pré-requisitos
+Fluxo geral:
 
-Instalar:
-
-- Docker
-- Docker Compose (v2)
+Cliente → Gateway → (Interface / API / Auth) → MongoDB + Storage AIP
 
 ---
 
-## 2) Arranque passo a passo
+## Pré-requisitos
 
-### Passo 1 — entrar na pasta certa
+Necessário ter instalado:
+
+- Docker
+- Docker Compose v2 (`docker compose`)
+- `make` (opcional, mas recomendado para comandos rápidos)
+
+Verificação rápida:
+
+```bash
+docker --version
+docker compose version
+make --version
+```
+
+---
+
+## Execução
+
+### Passo 1 — entrar na pasta da aplicação
 
 ```bash
 cd plataforma-recursos
 ```
 
-### Passo 2 — criar o ficheiro `.env`
-
-Opção recomendada:
+### Passo 2 — criar `.env`
 
 ```bash
 make init
 ```
 
-Isto cria `.env` a partir de `.env.example` (sem sobrescrever se já existir).
+Isto cria `.env` a partir de `.env.example` se ainda não existir.
 
-### Passo 3 — confirmar/ajustar `JWT_SECRET`
+### Passo 3 — definir segredo JWT
 
-No `.env`, garantir que existe:
+No ficheiro `.env`, garantir um valor seguro para:
 
 ```env
-JWT_SECRET=algum-segredo-local-forte
+JWT_SECRET=coloca-aqui-um-segredo-forte
+JWT_EXPIRES=24h
 ```
 
-correr  `openssl rand -hex 32` no terminal para gerar string longa
+Gerar segredo recomendado via terminal:
 
-### Passo 4 — subir os serviços
+```bash
+openssl rand -hex 32
+```
+
+### Passo 4 — levantar os serviços
 
 ```bash
 make up
@@ -45,26 +63,48 @@ make up
 
 ### Passo 5 — abrir a aplicação
 
-No browser:
+Abrir no browser:
 
 `http://localhost:16020`
 
 ---
 
-## 3) Comandos do dia a dia
+## Portas e endpoints principais
 
-```bash
-make logs     # ver logs
-make ps       # ver estado dos containers
-make restart  # reiniciar tudo
-make down     # parar tudo
-```
+Portas internas da solução:
 
----
-
-## 4) Portas usadas
-
-- App (Gateway): `16020`
+- Gateway: `16020` (exposta ao host)
 - API: `16025`
 - Interface: `16026`
 - Auth: `16027`
+
+---
+
+## 8) Funcionalidades já disponíveis
+
+### Auth
+
+- Registo público (`/auth/register`)
+- Login JWT (`/auth/sessions`)
+- Verificação de token (`/auth/sessions/verify`)
+- Perfil autenticado (`/auth/me`)
+- Gestão de utilizadores para admin (`/auth/users`)
+
+### API
+
+- Recursos (listar, detalhe, editar/apagar com posse/perfil)
+- Posts e comentários
+- Ratings (1 por utilizador/recurso)
+- Notícias
+- Taxonomia
+- OAIS ingest (`POST /api/oais/ingest`) e access (`GET /api/oais/access/:id`)
+
+### Interface
+
+- Login / registo / logout
+- Página inicial com notícias
+- Listagem e detalhe de recursos
+- Classificação de recursos
+- Listagem/criação/detalhe de posts
+- Comentários em posts
+- Área de administração (utilizadores e notícias)

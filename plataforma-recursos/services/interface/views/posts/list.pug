@@ -1,0 +1,19 @@
+extends ../layout
+
+block content
+	section.card
+		h1 Posts
+
+		if user && (user.nivel === 'produtor' || user.nivel === 'admin')
+			p
+				a.button-link(href='/posts/new') Criar novo post
+
+		if !items.length
+			p Ainda não existem posts.
+		else
+			ul.list
+				each post in items
+					li
+						a(href=`/posts/${post._id}`)= post.titulo
+						span.muted  · por #{post.autorNome || 'autor desconhecido'}
+

@@ -1,22 +1,36 @@
-# Decisões do Projeto e Fundamentação Teórica (Proposta 1)
+# Apoio de Implementação e Decisão (guia prático)
 
-## 1) Contexto e fontes
+> **Objetivo:** consulta direta para dúvidas de implementação, arquitetura e decisões.
+>
+> **Atualizado em:** 2026-04-02
 
-Este documento regista as decisões técnicas já tomadas no projeto **Plataforma de Gestão e Disponibilização de Recursos Educativos** e a respetiva fundamentação.
+## Decisões vigentes (resumo)
 
-Fontes usadas para justificar decisões:
+- Arquitetura: `gateway` (entrada), `auth` (identidade), `api` (domínio), `interface` (UI).
+- Segurança: autorização sempre no backend; UI apenas apoia UX.
+- Padrão de código: rotas pequenas + helpers partilhados + validação precoce + erros consistentes.
 
-1. **Projeto2026.pdf** (enunciado da UC), incluindo:
-   - modelo OAIS;
-   - requisitos da Proposta 1;
-   - regras de ingestão, administração e disseminação;
-   - perfis de utilizador e controlo de acesso.
-2. **README do projeto** em `plataforma-recursos/README.md`.
-3. **Boas práticas de programação** (separação de responsabilidades, segurança por defeito, validação, princípio do menor privilégio, APIs consistentes).
+## Pendentes prioritários (implementação)
 
-Data de atualização: **2026-04-01**.
+- Upload SIP na interface.
+- Download DIP completo na interface (incluindo privados).
+- Filtros avançados em recursos.
+- Edição de post e remoção de comentário na UI.
+- Hardening: `helmet`, rate limit login, CORS explícito, validação/sanitização.
+- Testes mínimos unitários e integração.
+
+## Critério para decidir entre alternativas
+
+Preferir sempre a opção que, por esta ordem:
+
+1. melhora segurança no backend;
+2. reduz duplicação;
+3. mantém contratos previsíveis;
+4. simplifica manutenção.
 
 ---
+
+## Base detalhada (contexto, fundamentação e especificações)
 
 ## 2) Princípios orientadores adotados
 
@@ -480,297 +494,292 @@ Data de atualização: **2026-04-01**.
 
 ---
 
-## 6) Conclusão
-
-O projeto já tem o **núcleo backend alinhado com o enunciado** e com decisões técnicas justificadas por OAIS, segurança e simplicidade de implementação.
-
-A próxima fase deve concentrar-se em:
-
-1. fechar a interface de ponta a ponta;
-2. aplicar hardening de segurança mínimo;
-3. consolidar com testes automáticos.
-
-Com isso, a Proposta 1 fica não só funcional, mas também bem fundamentada para apresentação/avaliação.
-
----
-
 ## 7) Especificação detalhada das rotas implementadas
 
-Esta secção documenta as rotas realmente implementadas no estado atual.
+Esta secção descreve as rotas **efetivamente disponíveis** no estado atual do código.
 
-## 7.1 Serviço Auth
+## 7.1 Gateway (entrada única)
+
+Base pública: `/*`
+
+**Evidência:** [services/gateway/app.js](../services/gateway/app.js), [services/gateway/routes/index.js](../services/gateway/routes/index.js)
+
+- `GET /health` → health do gateway (`{ status: 'ok' }`).
+- `/*` encaminhado por proxy:
+  - `/api/*` → serviço API;
+  - `/auth/*` → serviço Auth;
+  - restantes caminhos → serviço Interface.
+
+## 7.2 Serviço Auth
 
 Base no gateway: `/auth/*`
 
-**Ficheiros de implementação (Auth):** [services/auth/routes/index.js](../services/auth/routes/index.js), [services/auth/routes/users.js](../services/auth/routes/users.js), [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/middleware/auth.js](../services/auth/middleware/auth.js)
+**Evidência:** [services/auth/routes/index.js](../services/auth/routes/index.js), [services/auth/routes/users.js](../services/auth/routes/users.js), [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/middleware/auth.js](../services/auth/middleware/auth.js)
 
-### 7.1.1 `POST /auth/register`
+### 7.2.1 `POST /auth/register`
 
 - **Descrição:** registo público de utilizador.
 - **Auth:** não.
-- **Body mínimo:**
-  - `nome` (string, obrigatório)
-  - `email` (string, obrigatório, único)
-  - `password` (string, obrigatório, mínimo 6)
-  - `filiacao` (objeto opcional)
-- **Regras:**
-  - nível criado sempre como `consumidor`.
-- **Resposta de sucesso:** `201 { ok: true, user }`.
-- **Erros típicos:**
-  - `400` dados em falta;
-  - `409` email duplicado.
+- **Body mínimo:** `nome`, `email`, `password` (mínimo 6).
+- **Body opcional:** `filiacao`.
+- **Regra:** nível inicial sempre `consumidor`.
+- **Resposta:** `201 { ok: true, user }`.
+- **Erros típicos:** `400`, `409`, `500`.
 
-### 7.1.2 `POST /auth/sessions`
+### 7.2.2 `POST /auth/sessions`
 
 - **Descrição:** login e emissão de JWT.
 - **Auth:** não.
 - **Body mínimo:** `email`, `password`.
-- **Resposta de sucesso:** `200 { ok: true, token, user }`.
-- **Erros típicos:**
-  - `400` body inválido;
-  - `401` credenciais inválidas.
+- **Resposta:** `200 { ok: true, token, user }`.
+- **Erros típicos:** `400`, `401`, `500`.
 
-### 7.1.3 `GET /auth/sessions/verify`
+### 7.2.3 `GET /auth/sessions/verify`
 
-- **Descrição:** valida token e devolve payload (uso interno entre serviços).
+- **Descrição:** valida token e devolve payload.
 - **Auth:** Bearer token obrigatório.
-- **Resposta de sucesso:** `200 { ok: true, payload }`.
-- **Erros típicos:**
-  - `401` token ausente/inválido/expirado.
+- **Resposta:** `200 { ok: true, payload }`.
+- **Erros típicos:** `401` (ausente, inválido ou expirado).
 
-### 7.1.4 `GET /auth/me`
+### 7.2.4 `GET /auth/me`
 
-- **Descrição:** devolve perfil do utilizador autenticado.
+- **Descrição:** devolve perfil completo do utilizador autenticado.
 - **Auth:** obrigatório (`requireAuth`).
-- **Resposta de sucesso:** `200 { ok: true, user }`.
-- **Erros típicos:**
-  - `401` token inválido;
-  - `404` utilizador já não existe.
+- **Resposta:** `200 { ok: true, user }`.
+- **Erros típicos:** `401`, `404`.
 
-### 7.1.5 `GET /auth/users`
+### 7.2.5 `GET /auth/users`
 
 - **Descrição:** listagem de utilizadores.
 - **Auth:** admin (`requireAuth` + `requireAdmin`).
 - **Resposta:** `200 { ok: true, users }`.
 
-### 7.1.6 `PATCH /auth/users/:id`
+### 7.2.6 `PATCH /auth/users/:id`
 
 - **Descrição:** atualização parcial de utilizador.
 - **Auth:** admin.
-- **Campos aceites:** `nome`, `nivel`, `filiacao`.
+- **Campos permitidos:** `nome`, `nivel`, `filiacao`.
 - **Validação:** `nivel` em `{admin, produtor, consumidor}`.
-- **Respostas:**
-  - `200` atualizado;
-  - `400` nível inválido;
-  - `404` utilizador não encontrado.
+- **Respostas típicas:** `200`, `400`, `404`, `500`.
 
-### 7.1.7 `DELETE /auth/users/:id`
+### 7.2.7 `DELETE /auth/users/:id`
 
 - **Descrição:** remoção de utilizador.
 - **Auth:** admin.
-- **Regra extra:** admin não pode remover o próprio utilizador.
-- **Respostas:**
-  - `200` removido;
-  - `400` tentativa de auto-remoção;
-  - `404` não encontrado.
+- **Regra extra:** não permite auto-remoção do admin autenticado.
+- **Respostas típicas:** `200`, `400`, `404`, `500`.
 
----
-
-## 7.2 Serviço API
+## 7.3 Serviço API
 
 Base no gateway: `/api/*`
 
-**Ficheiros de implementação (API):** [services/api/routes/index.js](../services/api/routes/index.js), [services/api/middleware/auth.js](../services/api/middleware/auth.js)
+**Evidência:** [services/api/routes/index.js](../services/api/routes/index.js), [services/api/middleware/auth.js](../services/api/middleware/auth.js)
 
-### 7.2.1 Saúde
+### 7.3.1 Saúde
 
 #### `GET /api/health`
 
-- **Descrição:** healthcheck básico.
+- **Descrição:** healthcheck da API.
 - **Auth:** não.
 - **Resposta:** `{ status: 'ok' }`.
 
----
+### 7.3.2 OAIS
 
-### 7.2.2 OAIS
-
-**Evidência de implementação:** [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js), [services/api/oais/ingest/sip.js](../services/api/oais/ingest/sip.js), [services/api/oais/access/index.js](../services/api/oais/access/index.js), [services/api/oais/access/dip.js](../services/api/oais/access/dip.js)
+**Evidência:** [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js), [services/api/oais/ingest/sip.js](../services/api/oais/ingest/sip.js), [services/api/oais/access/index.js](../services/api/oais/access/index.js), [services/api/oais/access/dip.js](../services/api/oais/access/dip.js)
 
 #### `POST /api/oais/ingest`
 
 - **Descrição:** ingestão SIP para AIP.
-- **Auth:** `produtor` ou `admin` (`requireLevel('produtor')`).
+- **Auth:** `produtor` ou `admin`.
 - **Content-Type:** `multipart/form-data`.
-- **Campo obrigatório:** `sip` (ficheiro ZIP).
-- **Limite atual:** 100MB (`multer memoryStorage`).
+- **Campo obrigatório:** `sip` (ZIP).
+- **Limite:** 100MB.
 - **Resposta de sucesso:** `201 { ok: true, resourceId }`.
-- **Erros típicos:**
-  - `400` ficheiro ausente;
-  - `422` falhas de validação do SIP.
+- **Erros típicos:** `400` (sem ficheiro), `422` (SIP inválido).
 
 #### `GET /api/oais/access/:id`
 
-- **Descrição:** devolve DIP (atualmente DIP=SIP).
-- **Auth:** opcional (`optionalAuth`) mas com controlo por visibilidade.
+- **Descrição:** devolve ZIP DIP (atualmente DIP=SIP).
+- **Auth:** opcional, com controlo por visibilidade.
 - **Regras:**
-  - público: acessível sem login;
+  - público: acesso aberto;
   - privado: apenas admin ou produtor dono.
-- **Resposta de sucesso:** stream ZIP com `Content-Type: application/zip`.
+- **Resposta:** download `application/zip`.
 - **Erros típicos:** `400`, `401`, `403`, `404`.
 
----
+### 7.3.3 Recursos
 
-### 7.2.3 Recursos
-
-**Evidência de implementação:** [services/api/routes/resources.js](../services/api/routes/resources.js)
+**Evidência:** [services/api/routes/resources.js](../services/api/routes/resources.js)
 
 #### `GET /api/resources`
 
-- **Descrição:** lista recursos.
 - **Auth:** opcional.
-- **Query params:**
-  - filtros: `tipo`, `ano`, `tema`, `hashtag`;
-  - paginação: `page` (default 1), `limit` (default 10, máximo 50).
+- **Query:** filtros `tipo`, `ano`, `tema`, `hashtag`; paginação `page`, `limit`.
 - **Resposta:** `{ ok, page, limit, total, totalPages, items }`.
 
 #### `GET /api/resources/:id`
 
-- **Descrição:** detalhe de recurso.
 - **Auth:** opcional.
+- **Validação:** `id` Mongo válido.
 
 #### `PATCH /api/resources/:id`
 
-- **Descrição:** editar metadata do recurso.
 - **Auth:** `produtor`/`admin` + regra de posse.
-- **Body suportado:** `metadata` (objeto).
+- **Body suportado:** `metadata`.
+- **Validação:** `id` Mongo válido.
 
 #### `DELETE /api/resources/:id`
 
-- **Descrição:** remover recurso.
 - **Auth:** `produtor`/`admin` + regra de posse.
+- **Validação:** `id` Mongo válido.
 
----
+### 7.3.4 Posts
 
-### 7.2.4 Posts
-
-**Evidência de implementação:** [services/api/routes/posts.js](../services/api/routes/posts.js)
+**Evidência:** [services/api/routes/posts.js](../services/api/routes/posts.js)
 
 #### `GET /api/posts`
 
-- **Descrição:** lista posts com paginação.
 - **Auth:** não.
-- **Query params:** `page`, `limit` (máx 50).
+- **Query:** `page`, `limit`.
 
 #### `POST /api/posts`
 
-- **Descrição:** criar post.
 - **Auth:** `produtor`/`admin`.
 - **Body mínimo:** `titulo`, `conteudo`.
-- **Body opcional:** `resourceId` (se enviado, tem de existir).
+- **Body opcional:** `resourceId` (se enviado, é validado).
 
 #### `GET /api/posts/:id`
 
-- **Descrição:** detalhe post.
 - **Auth:** não.
+- **Validação:** `id` Mongo válido.
 
 #### `PATCH /api/posts/:id`
 
-- **Descrição:** editar post.
 - **Auth:** `produtor`/`admin` + dono/admin.
 - **Body suportado:** `titulo`, `conteudo`.
+- **Validação:** `id` Mongo válido.
 
 #### `DELETE /api/posts/:id`
 
-- **Descrição:** remover post.
 - **Auth:** `produtor`/`admin` + dono/admin.
+- **Validação:** `id` Mongo válido.
 
----
+### 7.3.5 Comentários
 
-### 7.2.5 Comentários
-
-**Evidência de implementação:** [services/api/routes/comments.js](../services/api/routes/comments.js)
+**Evidência:** [services/api/routes/comments.js](../services/api/routes/comments.js)
 
 #### `GET /api/posts/:id/comments`
 
-- **Descrição:** listar comentários de um post.
 - **Auth:** não.
-- **Query params:** `page`, `limit` (default 20, máx 50).
+- **Query:** `page`, `limit` (default 20).
+- **Validação:** `id` Mongo válido.
 
 #### `POST /api/posts/:id/comments`
 
-- **Descrição:** criar comentário.
 - **Auth:** utilizador autenticado.
 - **Body mínimo:** `texto`.
+- **Validação:** `id` Mongo válido.
 
 #### `DELETE /api/posts/:id/comments/:cid`
 
-- **Descrição:** remover comentário.
 - **Auth:** autenticado + dono/admin.
+- **Validação:** `id` e `cid` Mongo válidos.
 
----
+### 7.3.6 Ratings
 
-### 7.2.6 Ratings
-
-**Evidência de implementação:** [services/api/routes/ratings.js](../services/api/routes/ratings.js)
+**Evidência:** [services/api/routes/ratings.js](../services/api/routes/ratings.js)
 
 #### `POST /api/resources/:id/ratings`
 
-- **Descrição:** criar/atualizar rating de recurso.
 - **Auth:** autenticado.
-- **Body mínimo:** `stars` (inteiro 1..5).
+- **Body:** `stars` inteiro entre 1 e 5.
 - **Regra:** um rating por `(resourceId, userId)`.
 
 #### `GET /api/resources/:id/ratings`
 
-- **Descrição:** estatísticas de rating.
 - **Auth:** não.
 - **Resposta:** `{ ok, media, total }`.
 
----
+### 7.3.7 Notícias
 
-### 7.2.7 Notícias
-
-**Evidência de implementação:** [services/api/routes/news.js](../services/api/routes/news.js)
+**Evidência:** [services/api/routes/news.js](../services/api/routes/news.js)
 
 #### `GET /api/news`
 
-- **Descrição:** listar notícias com paginação.
 - **Auth:** não.
+- **Query:** `page`, `limit`.
 
 #### `POST /api/news`
 
-- **Descrição:** criar notícia.
 - **Auth:** admin.
 - **Body mínimo:** `titulo`, `conteudo`.
 
 #### `DELETE /api/news/:id`
 
-- **Descrição:** apagar notícia.
 - **Auth:** admin.
+- **Validação:** `id` Mongo válido.
 
----
+### 7.3.8 Taxonomia
 
-### 7.2.8 Taxonomia
-
-**Evidência de implementação:** [services/api/routes/taxonomy.js](../services/api/routes/taxonomy.js)
+**Evidência:** [services/api/routes/taxonomy.js](../services/api/routes/taxonomy.js)
 
 #### `GET /api/taxonomy`
 
-- **Descrição:** listar entradas de taxonomia.
 - **Auth:** não.
 
 #### `POST /api/taxonomy`
 
-- **Descrição:** criar entrada de taxonomia.
 - **Auth:** admin.
 - **Body mínimo:** `tipo`.
 - **Body opcional:** `ano`, `tema`, `hashtag`.
-- **Erros típicos:** `409` quando entrada igual já existe (índice único).
+- **Erros típicos:** `409` em duplicado.
 
 #### `DELETE /api/taxonomy/:id`
 
-- **Descrição:** remover entrada de taxonomia.
 - **Auth:** admin.
+- **Validação:** `id` Mongo válido.
+
+## 7.4 Serviço Interface (rotas web)
+
+Base no gateway: `/` (renderização Pug)
+
+**Evidência:** [services/interface/app.js](../services/interface/app.js), [services/interface/routes/index.js](../services/interface/routes/index.js), [services/interface/routes/auth.js](../services/interface/routes/auth.js), [services/interface/routes/resources.js](../services/interface/routes/resources.js), [services/interface/routes/posts.js](../services/interface/routes/posts.js), [services/interface/routes/admin.js](../services/interface/routes/admin.js)
+
+### 7.4.1 Gerais
+
+- `GET /health` → health da interface (`{ status: 'ok' }`).
+- `GET /` → homepage com notícias recentes.
+
+### 7.4.2 Autenticação UI
+
+- `GET /auth/login` / `POST /auth/login`
+- `GET /auth/register` / `POST /auth/register`
+- `GET /auth/logout` e `POST /auth/logout`
+
+### 7.4.3 Recursos UI
+
+- `GET /resources` → listagem.
+- `GET /resources/:id` → detalhe + rating agregado.
+- `POST /resources/:id/ratings` → classificar (sessão obrigatória).
+
+### 7.4.4 Posts UI
+
+- `GET /posts` → listagem.
+- `GET /posts/new` e `POST /posts` → criar (produtor/admin).
+- `GET /posts/:id` → detalhe + comentários.
+- `POST /posts/:id/comments` → comentar (sessão obrigatória).
+- `POST /posts/:id/delete` → apagar post (produtor/admin, validado no backend).
+
+### 7.4.5 Administração UI
+
+Todas as rotas abaixo exigem sessão + perfil `admin`:
+
+- `GET /admin/users`
+- `POST /admin/users/:id/level`
+- `POST /admin/users/:id/delete`
+- `GET /admin/news`
+- `POST /admin/news`
+- `POST /admin/news/:id/delete`
 
 ---
 
@@ -878,10 +887,25 @@ Base no gateway: `/api/*`
 
 ## 9) Convenções de resposta e erros (estado atual)
 
-- Sucesso tende a usar: `{ ok: true, ... }`
-- Erro tende a usar: `{ ok: false, error: '...' }`
-- Ingest OAIS usa também formato com `errors: [{ code, message }]`
+- **Sucesso:** mantém-se o padrão `{ ok: true, ... }`.
+- **Erro (API/Auth):**  uniformizado para:
 
-**Decisão futura recomendada:** uniformizar todos os erros para um único contrato (ex.: `code`, `message`, `details`, `requestId`).
+  ```json
+  {
+    "ok": false,
+    "code": "...",
+    "message": "...",
+    "details": null,
+    "requestId": "...",
+    "error": "..."
+  }
+  ```
 
-**Evidência de padrões atuais:** [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/routes/users.js](../services/auth/routes/users.js), [services/api/routes/resources.js](../services/api/routes/resources.js), [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js)
+  Notas:
+
+  - `error` é mantido por compatibilidade com clientes antigos;
+  - `requestId` é propagado também no header `X-Request-Id`.
+- **Ingest OAIS:** quando há erro de validação SIP, os detalhes vêm em `details` (lista de `{ code, message }`).
+- **Interface Web:** já lê `message` primeiro e usa `error` como fallback.
+
+**Evidência de implementação atual:** [services/api/lib/http.js](../services/api/lib/http.js), [services/auth/lib/http.js](../services/auth/lib/http.js), [services/api/app.js](../services/api/app.js), [services/auth/app.js](../services/auth/app.js), [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js), [services/interface/lib/web.js](../services/interface/lib/web.js)

@@ -3,6 +3,7 @@ const express = require('express')
 const Post = require('../models/Post')
 const Comment = require('../models/Comment')
 const { requireAuth } = require('../middleware/auth')
+const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 
 const router = express.Router()
 
@@ -14,34 +15,36 @@ function canDeleteComment(comment, user) {
 
 // GET /api/posts/:id/comments
 router.get('/posts/:id/comments', async (req, res) => {
+	if (!isMongoId(req.params.id)) return invalidId(res)
+
 	try {
 		const post = await Post.findById(req.params.id)
-		if (!post) return res.status(404).json({ ok: false, error: 'post não encontrado' })
+		if (!post) return jsonError(res, 404, 'post não encontrado')
 
-		const page = Math.max(1, Number(req.query.page) || 1)
-		const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20))
-		const skip = (page - 1) * limit
+		const { page, limit, skip } = getPagination(req.query, { defaultLimit: 20 })
 
 		const [items, total] = await Promise.all([
 			Comment.find({ postId: post._id }).sort({ createdAt: -1 }).skip(skip).limit(limit),
 			Comment.countDocuments({ postId: post._id }),
 		])
 
-		res.json({ ok: true, page, limit, total, totalPages: Math.ceil(total / limit) || 1, items })
+		res.json({ ok: true, page, limit, total, totalPages: totalPages(total, limit), items })
 	} catch (err) {
-		res.status(400).json({ ok: false, error: 'id inválido' })
+		jsonError(res, 500, 'erro interno')
 	}
 })
 
 // POST /api/posts/:id/comments
 router.post('/posts/:id/comments', requireAuth, async (req, res) => {
+	if (!isMongoId(req.params.id)) return invalidId(res)
+
 	try {
 		if (!req.body.texto) {
-			return res.status(400).json({ ok: false, error: 'texto é obrigatório' })
+			return jsonError(res, 400, 'texto é obrigatório')
 		}
 
 		const post = await Post.findById(req.params.id)
-		if (!post) return res.status(404).json({ ok: false, error: 'post não encontrado' })
+		if (!post) return jsonError(res, 404, 'post não encontrado')
 
 		const comment = await Comment.create({
 			postId: post._id,
@@ -52,27 +55,29 @@ router.post('/posts/:id/comments', requireAuth, async (req, res) => {
 
 		res.status(201).json({ ok: true, comment })
 	} catch (err) {
-		res.status(400).json({ ok: false, error: 'pedido inválido' })
+		jsonError(res, 400, 'pedido inválido')
 	}
 })
 
 // DELETE /api/posts/:id/comments/:cid
 router.delete('/posts/:id/comments/:cid', requireAuth, async (req, res) => {
+	if (!isMongoId(req.params.id) || !isMongoId(req.params.cid)) return invalidId(res)
+
 	try {
 		const post = await Post.findById(req.params.id)
-		if (!post) return res.status(404).json({ ok: false, error: 'post não encontrado' })
+		if (!post) return jsonError(res, 404, 'post não encontrado')
 
 		const comment = await Comment.findOne({ _id: req.params.cid, postId: post._id })
-		if (!comment) return res.status(404).json({ ok: false, error: 'comentário não encontrado' })
+		if (!comment) return jsonError(res, 404, 'comentário não encontrado')
 
 		if (!canDeleteComment(comment, req.user)) {
-			return res.status(403).json({ ok: false, error: 'acesso negado' })
+			return jsonError(res, 403, 'acesso negado')
 		}
 
 		await Comment.deleteOne({ _id: comment._id })
 		res.json({ ok: true })
 	} catch (err) {
-		res.status(400).json({ ok: false, error: 'id inválido' })
+		jsonError(res, 500, 'erro interno')
 	}
 })
 

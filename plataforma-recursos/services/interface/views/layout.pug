@@ -1,0 +1,42 @@
+doctype html
+html(lang='pt')
+	head
+		meta(charset='utf-8')
+		meta(name='viewport' content='width=device-width, initial-scale=1')
+		title #{title || 'Plataforma de Recursos'}
+		link(rel='stylesheet' href='/stylesheets/style.css')
+	body
+		header.topbar
+			nav.nav
+				a.brand(href='/') EW2026
+				ul.nav-links
+					li
+						a(href='/resources') Recursos
+					li
+						a(href='/posts') Posts
+					if user && user.nivel === 'admin'
+						li
+							a(href='/admin/users') Admin
+					if user
+						li
+							span.nav-user Olá, #{user.nome}
+						li
+							form(action='/auth/logout' method='post')
+								button.link-button(type='submit') Logout
+					else
+						li
+							a(href='/auth/login') Entrar
+						li
+							a(href='/auth/register') Registar
+
+		main.container
+			if success
+				p.alert.alert-success= success
+			if error
+				p.alert.alert-error= error
+
+			block content
+
+		footer.footer
+			p Plataforma EW2026 · Interface Web
+

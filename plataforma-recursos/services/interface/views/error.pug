@@ -1,0 +1,9 @@
+extends layout
+
+block content
+	section.card
+		h1= title || 'Erro'
+		p= message || 'Ocorreu um erro.'
+		p
+			a(href='/') Voltar à página inicial
+

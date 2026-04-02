@@ -2,15 +2,14 @@ const express = require('express')
 
 const NewsItem = require('../models/NewsItem')
 const { requireLevel } = require('../middleware/auth')
+const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 
 const router = express.Router()
 
 // GET /api/news
 router.get('/', async (req, res) => {
 	try {
-		const page = Math.max(1, Number(req.query.page) || 1)
-		const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10))
-		const skip = (page - 1) * limit
+		const { page, limit, skip } = getPagination(req.query)
 
 		const [items, total] = await Promise.all([
 			NewsItem.find().sort({ publicadoEm: -1 }).skip(skip).limit(limit),
@@ -22,11 +21,11 @@ router.get('/', async (req, res) => {
 			page,
 			limit,
 			total,
-			totalPages: Math.ceil(total / limit) || 1,
+			totalPages: totalPages(total, limit),
 			items,
 		})
 	} catch (err) {
-		res.status(500).json({ ok: false, error: 'erro interno' })
+		jsonError(res, 500, 'erro interno')
 	}
 })
 
@@ -35,7 +34,7 @@ router.post('/', requireLevel('admin'), async (req, res) => {
 	try {
 		const { titulo, conteudo } = req.body
 		if (!titulo || !conteudo) {
-			return res.status(400).json({ ok: false, error: 'titulo e conteudo são obrigatórios' })
+			return jsonError(res, 400, 'titulo e conteudo são obrigatórios')
 		}
 
 		const item = await NewsItem.create({
@@ -46,19 +45,21 @@ router.post('/', requireLevel('admin'), async (req, res) => {
 
 		res.status(201).json({ ok: true, item })
 	} catch (err) {
-		res.status(500).json({ ok: false, error: 'erro interno' })
+		jsonError(res, 500, 'erro interno')
 	}
 })
 
 // DELETE /api/news/:id (admin)
 router.delete('/:id', requireLevel('admin'), async (req, res) => {
+	if (!isMongoId(req.params.id)) return invalidId(res)
+
 	try {
 		const item = await NewsItem.findByIdAndDelete(req.params.id)
-		if (!item) return res.status(404).json({ ok: false, error: 'notícia não encontrada' })
+		if (!item) return jsonError(res, 404, 'notícia não encontrada')
 
 		res.json({ ok: true })
 	} catch (err) {
-		res.status(400).json({ ok: false, error: 'id inválido' })
+		jsonError(res, 500, 'erro interno')
 	}
 })
 
