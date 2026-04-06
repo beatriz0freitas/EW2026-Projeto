@@ -2,7 +2,7 @@
 
 > **Objetivo:** consulta direta para dúvidas de implementação, arquitetura e decisões.
 >
-> **Atualizado em:** 2026-04-02
+> **Atualizado em:** 2026-04-06
 
 ## Decisões vigentes (resumo)
 
@@ -12,12 +12,15 @@
 
 ## Pendentes prioritários (implementação)
 
-- Upload SIP na interface.
-- Download DIP completo na interface (incluindo privados).
 - Filtros avançados em recursos.
 - Edição de post e remoção de comentário na UI.
 - Hardening: `helmet`, rate limit login, CORS explícito, validação/sanitização.
 - Testes mínimos unitários e integração.
+
+**Notas recentes (2026-04-06):**
+
+- Fluxo OAIS fechado na UI: upload SIP (produtor/admin) e download DIP (público e privado com autorização).
+- Gateway encaminha páginas HTML de auth (`/auth/login`, `/auth/register`, `/auth/logout`) para a Interface; endpoints JSON continuam no serviço Auth.
 
 ## Critério para decidir entre alternativas
 
