@@ -1,9 +1,118 @@
 const express = require('express')
+const multer = require('multer')
+const { Blob } = require('buffer')
+const { Readable } = require('stream')
+const { pipeline } = require('stream/promises')
 
 const { apiRequest } = require('../lib/http')
-const { routeAsync, requireSession, apiErrorMessage } = require('../lib/web')
+const { routeAsync, requireSession, requireLevel, apiErrorMessage } = require('../lib/web')
+
+const API_URL = process.env.API_URL || 'http://api:16025'
+const upload = multer({
+	storage: multer.memoryStorage(),
+	limits: { fileSize: 100 * 1024 * 1024 },
+})
 
 const router = express.Router()
+
+router.get(
+	'/new',
+	requireSession,
+	requireLevel('produtor'),
+	routeAsync(async (req, res) => {
+		res.render('resources/form', {
+			title: 'Submeter recurso',
+		})
+	})
+)
+
+router.post(
+	'/new',
+	requireSession,
+	requireLevel('produtor'),
+	upload.single('sip'),
+	routeAsync(async (req, res) => {
+		if (!req.file) {
+			req.flashError('Ficheiro SIP (ZIP) em falta.')
+			return res.redirect('/resources/new')
+		}
+
+		const form = new FormData()
+		form.append(
+			'sip',
+			new Blob([req.file.buffer], { type: req.file.mimetype || 'application/zip' }),
+			req.file.originalname || 'sip.zip'
+		)
+
+		const response = await fetch(`${API_URL}/api/oais/ingest`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${req.session.token}`,
+			},
+			body: form,
+		})
+
+		let payload = null
+		try {
+			payload = await response.json()
+		} catch {
+			payload = null
+		}
+
+		if (!response.ok) {
+			req.flashError(apiErrorMessage(payload, 'Não foi possível submeter o recurso.'))
+			return res.redirect('/resources/new')
+		}
+
+		const resourceId = payload?.resourceId
+		if (!resourceId) {
+			req.flashError('Submissão concluída, mas não foi possível obter o id do recurso.')
+			return res.redirect('/resources')
+		}
+
+		req.flashSuccess('Recurso submetido com sucesso.')
+		res.redirect(`/resources/${resourceId}`)
+	})
+)
+
+router.get(
+	'/:id/dip',
+	routeAsync(async (req, res) => {
+		const headers = {}
+		if (req.session?.token) headers.Authorization = `Bearer ${req.session.token}`
+
+		const apiRes = await fetch(`${API_URL}/api/oais/access/${req.params.id}`, {
+			method: 'GET',
+			headers,
+		})
+
+		if (!apiRes.ok) {
+			let payload = null
+			try {
+				payload = await apiRes.json()
+			} catch {
+				payload = null
+			}
+
+			return res.status(apiRes.status || 500).render('error', {
+				title: 'Download indisponível',
+				message: apiErrorMessage(payload, 'Não foi possível descarregar o recurso.'),
+			})
+		}
+
+		const contentType = apiRes.headers.get('content-type')
+		const contentDisposition = apiRes.headers.get('content-disposition')
+		const contentLength = apiRes.headers.get('content-length')
+
+		if (contentType) res.setHeader('Content-Type', contentType)
+		if (contentDisposition) res.setHeader('Content-Disposition', contentDisposition)
+		if (contentLength) res.setHeader('Content-Length', contentLength)
+
+		res.status(apiRes.status)
+		if (!apiRes.body) return res.end()
+		await pipeline(Readable.fromWeb(apiRes.body), res)
+	})
+)
 
 router.get(
 	'/',

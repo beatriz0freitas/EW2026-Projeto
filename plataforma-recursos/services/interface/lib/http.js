@@ -39,7 +39,7 @@ function authRequest(endpoint, options) {
 }
 
 function apiRequest(endpoint, options) {
-	return requestJson(API_URL, endpoint, options)
+	return requestJson(API_URL, `/api${endpoint}`, options)
 }
 
 module.exports = {
