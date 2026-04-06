@@ -6,7 +6,7 @@
 
 > **Objetivo do projeto (Proposta 1):** disponibilizar recursos educativos com controlo de acesso por perfil (`consumidor`, `produtor`, `admin`), ingestão OAIS (SIP→AIP), download (AIP→DIP), interação social (posts/comentários/ratings) e gestão administrativa.
 
-> **Atualizado em:** 2026-04-02
+> **Atualizado em:** 2026-04-06
 
 ## Resumo executivo em 12 linhas
 
@@ -15,7 +15,7 @@
 - ✅ API funcional com OAIS essencial e domínio principal implementado.
 - ✅ Gateway modularizado e ativo por routers.
 - ✅ Interface funcional para auth, recursos, posts e administração.
-- ⚠️ Upload SIP e download DIP ainda não fechados na UI.
+- ✅ Upload SIP e download DIP fechados na UI (OAIS ponta-a-ponta).
 - ⚠️ Filtros avançados de recursos ainda parciais na UI.
 - ⚠️ Uniformização de erro em progresso (base aplicada; ainda não 100%).
 - ❌ Rate limiting no login.
@@ -39,7 +39,7 @@
 
 ### 0.2 Em falta (para entrega completa e robusta)
 
-* ⚠️ Interface web funcional base concluída (auth, recursos, posts, admin); faltam filtros avançados, upload SIP e download DIP na UI
+* ⚠️ Interface web funcional base concluída (auth, recursos, posts, admin); faltam filtros avançados (OAIS UI fechado)
 * ❌ Hardening de segurança (rate limit, helmet, validação/sanitização inputs, CORS)
 * ❌ Testes automáticos (unitários + integração)
 * ⚠️ Limpeza final técnica (feita no gateway; pendente fechar itens OAIS/rotas residuais e consolidar documentação final)
@@ -228,8 +228,8 @@
 
 ### 6.1 Recursos
 
-* ✅ `GET /api/resources` — listar recursos (com filtros: tipo, ano, tema, hashtag)
-* ✅ `GET /api/resources/:id` — detalhe de um recurso
+* ✅ `GET /api/resources` — listar recursos (com filtros: tipo, ano, tema, hashtag) e enforcement de visibilidade
+* ✅ `GET /api/resources/:id` — detalhe de um recurso com enforcement de visibilidade
 * ✅ `DELETE /api/resources/:id` — remover recurso (admin ou produtor dono)
 * ✅ `PATCH /api/resources/:id` — editar metadados (admin ou produtor dono)
 
@@ -345,13 +345,13 @@
 ### 8.5 Recursos (Interface)
 
 * ⚠️ `routes/resources.js` + `views/resources/list.pug` — lista funcional (sem filtros avançados)
-* ⚠️ `routes/resources.js` + `views/resources/detail.pug` — detalhe funcional + classificação; falta download DIP
-* ⚠️ `routes/resources.js` + `views/resources/form.pug` — página orientativa criada; falta upload SIP funcional
+* ✅ `routes/resources.js` + `views/resources/detail.pug` — detalhe funcional + classificação + download DIP
+* ✅ `routes/resources.js` + `views/resources/form.pug` — upload SIP funcional
 
 **Regras de acesso no frontend:**
 
-* ❌ botão upload só para `produtor/admin` com submissão real
-* ❌ download de privado só quando autenticado e autorizado via fluxo DIP
+* ✅ botão upload só para `produtor/admin` com submissão real
+* ✅ download de privado só quando autenticado e autorizado via fluxo DIP
 
 ### 8.6 Posts (Interface)
 
@@ -439,9 +439,9 @@
 Para considerar o projeto completo a nível funcional:
 
 * ✅ Utilizador consegue registar, autenticar e terminar sessão pela interface
-* ❌ Produtor consegue submeter SIP e ver recurso na listagem (falta upload SIP na UI)
-* ⚠️ Consumidor consegue pesquisar recursos e consultar detalhe (falta fluxo de download DIP completo na UI)
-* ⚠️ Recurso privado respeita permissões no backend; falta fechar fluxo frontend de DIP
+* ✅ Produtor consegue submeter SIP e ver recurso na listagem
+* ✅ Consumidor consegue pesquisar recursos, consultar detalhe e descarregar DIP (quando permitido)
+* ✅ Recurso privado respeita permissões no backend e no fluxo frontend de DIP
 * ✅ Admin consegue gerir utilizadores e notícias pela interface
 * ❌ Existem testes mínimos de regressão para auth + OAIS + permissões
 
@@ -449,11 +449,10 @@ Para considerar o projeto completo a nível funcional:
 
 ## ORDEM RECOMENDADA PARA CONTINUAR
 
-1. **Fechar fluxos OAIS na UI** (upload SIP + download DIP + autorização de privados no frontend)
-2. **Completar UX funcional** (filtros avançados em recursos + edição de posts na interface)
-3. **Segurança essencial** (rate limit, helmet, validação input, CORS)
-4. **Testes mínimos automáticos** (unit + integração)
-5. **Refino final** (docs, scripts e limpeza técnica final)
+1. **Completar UX funcional** (filtros avançados em recursos + edição de posts na interface)
+2. **Segurança essencial** (rate limit, helmet, validação input, CORS)
+3. **Testes mínimos automáticos** (unit + integração)
+4. **Refino final** (docs, scripts e limpeza técnica final)
 
 ---
 
@@ -517,14 +516,14 @@ Para considerar o projeto completo a nível funcional:
 * ✅ notícias recentes (`GET /api/news`)
 
 2. ⚠️ Lista de recursos com paginação (filtros avançados pendentes).
-3. ❌ Detalhe de recurso com botão para download DIP (`/api/oais/access/:id`).
-4. ❌ Formulário de upload SIP (multipart, campo `sip`) visível só para `produtor/admin`.
+3. ✅ Detalhe de recurso com botão para download DIP (`/api/oais/access/:id`).
+4. ✅ Formulário de upload SIP (multipart, campo `sip`) visível só para `produtor/admin`.
 5. ✅ Tratamento amigável de erros base implementado.
 
 **Critérios de aceite (DoD do Bloco B):**
 
-* ⚠️ Consumidor vê recursos públicos e detalhe; download DIP ainda pendente.
-* ❌ Produtor autenticado consegue submeter SIP via interface.
+* ✅ Consumidor vê recursos públicos e detalhe; download DIP disponível conforme permissões.
+* ✅ Produtor autenticado consegue submeter SIP via interface.
 * ⚠️ Paginação funcional; filtros avançados ainda pendentes.
 
 ---

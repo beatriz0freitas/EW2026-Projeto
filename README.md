@@ -104,7 +104,12 @@ Portas internas da solução:
 - Login / registo / logout
 - Página inicial com notícias
 - Listagem e detalhe de recursos
+- Submissão de recursos via SIP (produtor/admin)
+- Download de recursos via DIP (públicos e privados com autorização)
 - Classificação de recursos
 - Listagem/criação/detalhe de posts
 - Comentários em posts
 - Área de administração (utilizadores e notícias)
+
+**Nota:** as páginas web de autenticação são servidas pela Interface em `/auth/login` e `/auth/register`.
+Os endpoints JSON do serviço Auth continuam em `/auth/sessions`, `/auth/sessions/verify`, etc.

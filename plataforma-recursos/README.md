@@ -1,6 +1,6 @@
 # Plataforma de Gestão e Disponibilização de Recursos Educativos (EW2026)
 
-Este diretório contém a **arquitetura e ficheiros sem implementação** para o projeto.
+Este diretório contém a **arquitetura e implementação** do projeto.
 
 ## Requisitos do enunciado (cobertos pela arquitetura)
 - Recursos educativos (vários tipos; extensível)
