@@ -23,6 +23,29 @@ function canManageResource(resource, user) {
 	return String(resource.produtor) === String(user.sub)
 }
 
+function canViewResource(resource, user) {
+	const visibilidade = resource?.metadata?.resource?.visibilidade || 'privado'
+	if (visibilidade !== 'privado') return true
+	if (!user) return false
+	if (user.nivel === 'admin') return true
+	return String(resource.produtor) === String(user.sub)
+}
+
+function visibilityQuery(user) {
+	// Por omissão, recursos sem visibilidade são tratados como privados.
+	if (!user) {
+		return { 'metadata.resource.visibilidade': 'publico' }
+	}
+
+	if (user.nivel === 'admin') {
+		return {}
+	}
+
+	return {
+		$or: [{ 'metadata.resource.visibilidade': 'publico' }, { produtor: String(user.sub) }],
+	}
+}
+
 // GET /api/resources
 // Filtros: tipo, ano, tema, hashtag
 // Paginação: page, limit
@@ -30,7 +53,10 @@ router.get('/', optionalAuth, async (req, res) => {
 	try {
 		const { page, limit, skip } = getPagination(req.query)
 
-		const filters = buildFilters(req.query)
+		const filters = {
+			...buildFilters(req.query),
+			...visibilityQuery(req.user),
+		}
 		const [items, total] = await Promise.all([
 			Resource.find(filters).sort({ createdAt: -1 }).skip(skip).limit(limit),
 			Resource.countDocuments(filters),
@@ -56,6 +82,14 @@ router.get('/:id', optionalAuth, async (req, res) => {
 	try {
 		const resource = await Resource.findById(req.params.id)
 		if (!resource) return jsonError(res, 404, 'recurso não encontrado')
+
+		if (!canViewResource(resource, req.user)) {
+			const visibilidade = resource?.metadata?.resource?.visibilidade || 'privado'
+			if (visibilidade === 'privado' && !req.user) {
+				return jsonError(res, 401, { code: 'AUTH_REQUIRED', message: 'autenticação necessária para recursos privados' })
+			}
+			return jsonError(res, 403, { code: 'FORBIDDEN', message: 'acesso negado' })
+		}
 
 		res.json({ ok: true, resource })
 	} catch (err) {
