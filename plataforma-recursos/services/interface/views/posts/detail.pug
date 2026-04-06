@@ -1,12 +1,15 @@
 extends ../layout
 
 block content
+	- const uid = user && (user._id || user.id || user.sub) ? String(user._id || user.id || user.sub) : null
+	- const canManagePost = !!(user && (user.nivel === 'admin' || (uid && String(post.autorId) === uid)))
 	section.card
 		h1= post.titulo
 		p.muted Autor: #{post.autorNome || 'desconhecido'}
 		p= post.conteudo
 
-		if user && (user.nivel === 'admin' || user.sub === post.autorId)
+		if canManagePost
+			a(href=`/posts/${post._id}/edit`) Editar post
 			form(action=`/posts/${post._id}/delete` method='post')
 				button(type='submit') Remover post
 
@@ -20,6 +23,10 @@ block content
 					li
 						strong= c.autorNome || 'utilizador'
 						| : #{c.texto}
+						- const canDeleteComment = !!(user && (user.nivel === 'admin' || (uid && String(c.autorId) === uid)))
+						if canDeleteComment
+							form(action=`/posts/${post._id}/comments/${c._id}/delete` method='post')
+								button(type='submit') Remover comentário
 
 		if user
 			form.form(action=`/posts/${post._id}/comments` method='post')

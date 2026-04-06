@@ -5,6 +5,19 @@ const { routeAsync, requireSession, requireLevel, apiErrorMessage } = require('.
 
 const router = express.Router()
 
+function getUserId(req) {
+	const u = req.session?.user
+	return u && (u._id || u.id || u.sub) ? String(u._id || u.id || u.sub) : null
+}
+
+function canManagePost(req, post) {
+	const u = req.session?.user
+	if (!u) return false
+	if (u.nivel === 'admin') return true
+	const uid = getUserId(req)
+	return uid && String(post.autorId) === uid
+}
+
 router.get(
 	'/',
 	routeAsync(async (req, res) => {
@@ -29,6 +42,9 @@ router.get(
 router.get('/new', requireSession, requireLevel('produtor'), (req, res) => {
 	res.render('posts/form', {
 		title: 'Novo post',
+		heading: 'Criar post',
+		action: '/posts',
+		submitLabel: 'Publicar',
 		post: { titulo: '', conteudo: '', resourceId: '' },
 	})
 })
@@ -79,6 +95,65 @@ router.get(
 	})
 )
 
+router.get(
+	'/:id/edit',
+	requireSession,
+	requireLevel('produtor'),
+	routeAsync(async (req, res) => {
+		const postRes = await apiRequest(`/posts/${req.params.id}`, { token: req.session.token })
+		if (!postRes.ok) {
+			return res.status(postRes.status || 500).render('error', {
+				title: 'Post não encontrado',
+				message: apiErrorMessage(postRes.data, 'Não foi possível carregar o post.'),
+			})
+		}
+
+		const post = postRes.data.post
+		if (!canManagePost(req, post)) {
+			req.flashError('Não tem permissões para editar este post.')
+			return res.redirect(`/posts/${req.params.id}`)
+		}
+
+		res.render('posts/form', {
+			title: 'Editar post',
+			heading: 'Editar post',
+			action: `/posts/${req.params.id}/edit`,
+			submitLabel: 'Guardar alterações',
+			post: {
+				titulo: post.titulo || '',
+				conteudo: post.conteudo || '',
+				resourceId: post.resourceId || '',
+			},
+		})
+	})
+)
+
+router.post(
+	'/:id/edit',
+	requireSession,
+	requireLevel('produtor'),
+	routeAsync(async (req, res) => {
+		const { titulo, conteudo, resourceId } = req.body
+		const updated = await apiRequest(`/posts/${req.params.id}`, {
+			method: 'PATCH',
+			token: req.session.token,
+			body: {
+				titulo,
+				conteudo,
+				resourceId: resourceId || null,
+			},
+		})
+
+		if (!updated.ok) {
+			req.flashError(apiErrorMessage(updated.data, 'Não foi possível guardar alterações.'))
+			return res.redirect(`/posts/${req.params.id}/edit`)
+		}
+
+		req.flashSuccess('Post atualizado com sucesso.')
+		res.redirect(`/posts/${req.params.id}`)
+	})
+)
+
 router.post(
 	'/:id/comments',
 	requireSession,
@@ -96,6 +171,25 @@ router.post(
 		}
 
 		req.flashSuccess('Comentário adicionado.')
+		res.redirect(`/posts/${req.params.id}`)
+	})
+)
+
+router.post(
+	'/:id/comments/:cid/delete',
+	requireSession,
+	routeAsync(async (req, res) => {
+		const response = await apiRequest(`/posts/${req.params.id}/comments/${req.params.cid}`, {
+			method: 'DELETE',
+			token: req.session.token,
+		})
+
+		if (!response.ok) {
+			req.flashError(apiErrorMessage(response.data, 'Não foi possível remover o comentário.'))
+			return res.redirect(`/posts/${req.params.id}`)
+		}
+
+		req.flashSuccess('Comentário removido.')
 		res.redirect(`/posts/${req.params.id}`)
 	})
 )
