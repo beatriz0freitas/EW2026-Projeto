@@ -1,17 +1,21 @@
 extends ../layout
 
 block content
+	- const headingText = typeof heading !== 'undefined' ? heading : 'Criar post'
+	- const formAction = typeof action !== 'undefined' ? action : '/posts'
+	- const submitText = typeof submitLabel !== 'undefined' ? submitLabel : 'Publicar'
+	- const p = typeof post !== 'undefined' && post ? post : {}
 	section.card
-		h1 Criar post
-		form.form(action='/posts' method='post')
+		h1= headingText
+		form.form(action=formAction method='post')
 			label(for='titulo') Título
-			input#titulo(type='text' name='titulo' maxlength='160' required value=post.titulo)
+			input#titulo(type='text' name='titulo' maxlength='160' required value=(p.titulo || ''))
 
 			label(for='conteudo') Conteúdo
-			textarea#conteudo(name='conteudo' rows='8' maxlength='20000' required)= post.conteudo
+			textarea#conteudo(name='conteudo' rows='8' maxlength='20000' required)= (p.conteudo || '')
 
 			label(for='resourceId') ID do recurso (opcional)
-			input#resourceId(type='text' name='resourceId' value=post.resourceId)
+			input#resourceId(type='text' name='resourceId' value=(p.resourceId || ''))
 
-			button(type='submit') Publicar
+			button(type='submit')= submitText
 

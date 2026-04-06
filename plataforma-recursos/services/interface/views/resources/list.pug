@@ -5,6 +5,23 @@ block content
 		h1 Recursos educativos
 		p.info Total: #{pagination.total}
 
+		- const f = filters || {}
+		form.form(action='/resources' method='get')
+			label(for='tipo') Tipo
+			input#tipo(type='text' name='tipo' value=(f.tipo || ''))
+
+			label(for='ano') Ano
+			input#ano(type='number' name='ano' value=(f.ano || ''))
+
+			label(for='tema') Tema
+			input#tema(type='text' name='tema' value=(f.tema || ''))
+
+			label(for='hashtag') Hashtag
+			input#hashtag(type='text' name='hashtag' value=(f.hashtag || ''))
+
+			button(type='submit') Filtrar
+			a.button-link(href='/resources') Limpar
+
 		if user && (user.nivel === 'produtor' || user.nivel === 'admin')
 			p
 				a(href='/resources/new') Submeter recurso (SIP)

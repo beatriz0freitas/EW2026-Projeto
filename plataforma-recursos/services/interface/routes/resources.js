@@ -117,7 +117,15 @@ router.get(
 router.get(
 	'/',
 	routeAsync(async (req, res) => {
-		const list = await apiRequest('/resources?limit=20', {
+		const params = new URLSearchParams()
+		params.set('limit', '20')
+		if (req.query.page) params.set('page', String(req.query.page))
+		if (req.query.tipo) params.set('tipo', String(req.query.tipo))
+		if (req.query.ano) params.set('ano', String(req.query.ano))
+		if (req.query.tema) params.set('tema', String(req.query.tema))
+		if (req.query.hashtag) params.set('hashtag', String(req.query.hashtag))
+
+		const list = await apiRequest(`/resources?${params.toString()}`, {
 			token: req.session.token,
 		})
 
@@ -131,6 +139,12 @@ router.get(
 		res.render('resources/list', {
 			title: 'Recursos',
 			items: list.data?.items || [],
+			filters: {
+				tipo: req.query.tipo || '',
+				ano: req.query.ano || '',
+				tema: req.query.tema || '',
+				hashtag: req.query.hashtag || '',
+			},
 			pagination: {
 				page: list.data?.page || 1,
 				totalPages: list.data?.totalPages || 1,
