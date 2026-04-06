@@ -1,17 +1,27 @@
 extends ../layout
 
 block content
+	- const r = (resource && resource.metadata && resource.metadata.resource) ? resource.metadata.resource : {}
+	- const vis = r.visibilidade || 'privado'
 	section.card
-		h1= resource.metadata?.resource?.titulo || 'Recurso'
+		h1= r.titulo || 'Recurso'
 		p
 			strong Tipo:
-			|  #{resource.metadata?.resource?.tipo || '-'}
+			|  #{r.tipo || '-'}
 		p
 			strong Ano:
-			|  #{resource.metadata?.resource?.ano || '-'}
+			|  #{r.ano || '-'}
 		p
 			strong Tema:
-			|  #{resource.metadata?.resource?.tema || '-'}
+			|  #{r.tema || '-'}
+		p
+			strong Visibilidade:
+			|  #{vis}
+		if vis === 'publico' || user
+			p
+				a(href=`/resources/${resource._id}/dip`) Descarregar (DIP)
+		else
+			p.info Inicie sessão para descarregar este recurso privado.
 
 		p.info Classificação média: #{rating.media} (#{rating.total} votos)
 
