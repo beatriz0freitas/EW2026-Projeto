@@ -5,6 +5,10 @@ block content
 		h1 Recursos educativos
 		p.info Total: #{pagination.total}
 
+		if user && (user.nivel === 'produtor' || user.nivel === 'admin')
+			p
+				a(href='/resources/new') Submeter recurso (SIP)
+
 		if !items.length
 			p Não existem recursos disponíveis.
 		else
@@ -17,10 +21,11 @@ block content
 						th Ação
 				tbody
 					each item in items
+						- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
 						tr
-							td= item.metadata?.resource?.titulo || 'Sem título'
-							td= item.metadata?.resource?.tipo || '-'
-							td= item.metadata?.resource?.ano || '-'
+							td= r.titulo || 'Sem título'
+							td= r.tipo || '-'
+							td= r.ano || '-'
 							td
 								a(href=`/resources/${item._id}`) Ver detalhe
 

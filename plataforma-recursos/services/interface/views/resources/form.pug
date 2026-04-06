@@ -4,8 +4,13 @@ block content
 	section.card
 		h1 Submeter recurso
 		p
-			| A criação de recursos é feita através do fluxo OAIS (SIP → AIP)
-			|  na API.
+			| A criação de recursos é feita através do fluxo OAIS (SIP → AIP).
+			|  Submeta aqui um ficheiro ZIP (SIP) válido.
+
+		form.form(action='/resources/new' method='post' enctype='multipart/form-data')
+			label(for='sip') Ficheiro SIP (ZIP)
+			input#sip(type='file' name='sip' accept='.zip,application/zip' required)
+			button(type='submit') Submeter
 		p
 			a(href='/resources') Voltar aos recursos
 
