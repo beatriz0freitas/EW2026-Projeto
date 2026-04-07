@@ -1,37 +1,37 @@
 extends ../layout
 
 block content
-	section.card
+	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1 Recursos educativos
-		p.info Total: #{pagination.total}
+		p.w3-text-grey Total: #{pagination.total}
 
 		- const f = filters || {}
-		form.form(action='/resources' method='get')
+		form(action='/resources' method='get')
 			label(for='tipo') Tipo
-			input#tipo(type='text' name='tipo' value=(f.tipo || ''))
+			input#tipo.w3-input(type='text' name='tipo' value=(f.tipo || ''))
 
 			label(for='ano') Ano
-			input#ano(type='number' name='ano' value=(f.ano || ''))
+			input#ano.w3-input(type='number' name='ano' value=(f.ano || ''))
 
 			label(for='tema') Tema
-			input#tema(type='text' name='tema' value=(f.tema || ''))
+			input#tema.w3-input(type='text' name='tema' value=(f.tema || ''))
 
 			label(for='hashtag') Hashtag
-			input#hashtag(type='text' name='hashtag' value=(f.hashtag || ''))
+			input#hashtag.w3-input(type='text' name='hashtag' value=(f.hashtag || ''))
 
-			button(type='submit') Filtrar
-			a.button-link(href='/resources') Limpar
+			button.w3-button.w3-teal(type='submit') Filtrar
+			a.w3-button.w3-border(href='/resources') Limpar
 
 		if user && (user.nivel === 'produtor' || user.nivel === 'admin')
 			p
-				a(href='/resources/new') Submeter recurso (SIP)
+				a.w3-button.w3-border(href='/resources/new') Submeter recurso (SIP)
 
 		if !items.length
-			p Não existem recursos disponíveis.
+				p Não existem recursos disponíveis.
 		else
-			table.table
+			table.w3-table-all.w3-hoverable.w3-striped
 				thead
-					tr
+					tr.w3-teal
 						th Título
 						th Tipo
 						th Ano
@@ -46,5 +46,5 @@ block content
 							td
 								a(href=`/resources/${item._id}`) Ver detalhe
 
-		p.info Página #{pagination.page} de #{pagination.totalPages}
+		p.w3-text-grey Página #{pagination.page} de #{pagination.totalPages}
 

@@ -6,37 +6,30 @@ html(lang='pt')
 		title #{title || 'Plataforma de Recursos'}
 		link(rel='stylesheet' href='/stylesheets/style.css')
 	body
-		header.topbar
-			nav.nav
-				a.brand(href='/') EW2026
-				ul.nav-links
-					li
-						a(href='/resources') Recursos
-					li
-						a(href='/posts') Posts
-					if user && user.nivel === 'admin'
-						li
-							a(href='/admin/users') Admin
-					if user
-						li
-							span.nav-user Olá, #{user.nome}
-						li
-							form(action='/auth/logout' method='post')
-								button.link-button(type='submit') Logout
-					else
-						li
-							a(href='/auth/login') Entrar
-						li
-							a(href='/auth/register') Registar
+		header.w3-bar.w3-teal
+			a.w3-bar-item.w3-button.w3-xlarge(href='/') EW2026
+			a.w3-bar-item.w3-button(href='/resources') Recursos
+			a.w3-bar-item.w3-button(href='/posts') Posts
+			if user && user.nivel === 'admin'
+				a.w3-bar-item.w3-button(href='/admin/users') Admin
+			if user
+				form.w3-bar-item.w3-right(action='/auth/logout' method='post')
+					button.w3-button.w3-white.w3-border(type='submit') Logout
+				span.w3-bar-item.w3-right Olá, #{user.nome}
+			else
+				a.w3-bar-item.w3-button.w3-right(href='/auth/register') Registar
+				a.w3-bar-item.w3-button.w3-right(href='/auth/login') Entrar
 
-		main.container
+		main.w3-content.w3-padding
 			if success
-				p.alert.alert-success= success
+				div.w3-panel.w3-pale-green.w3-leftbar.w3-border-green
+					p= success
 			if error
-				p.alert.alert-error= error
+				div.w3-panel.w3-pale-red.w3-leftbar.w3-border-red
+					p= error
 
 			block content
 
-		footer.footer
+		footer.w3-content.w3-padding.w3-small.w3-text-grey
 			p Plataforma EW2026 · Interface Web
 

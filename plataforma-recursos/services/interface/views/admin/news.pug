@@ -1,27 +1,27 @@
 extends ../layout
 
 block content
-	section.card
+	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1 Administração · Notícias
-		form.form(action='/admin/news' method='post')
+		form(action='/admin/news' method='post')
 			label(for='titulo') Título
-			input#titulo(type='text' name='titulo' maxlength='160' required)
+			input#titulo.w3-input(type='text' name='titulo' maxlength='160' required)
 
 			label(for='conteudo') Conteúdo
-			textarea#conteudo(name='conteudo' rows='6' maxlength='10000' required)
+			textarea#conteudo.w3-input(name='conteudo' rows='6' maxlength='10000' required)
 
-			button(type='submit') Criar notícia
+			button.w3-button.w3-teal(type='submit') Criar notícia
 
-	section.card
+	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h2 Notícias existentes
 		if !items.length
 			p Sem notícias publicadas.
 		else
-			ul.list
+			ul.w3-ul.w3-hoverable
 				each item in items
 					li
 						strong= item.titulo
 						p= item.conteudo
-						form.form-inline(action=`/admin/news/${item._id}/delete` method='post')
-							button(type='submit') Remover
+						form(action=`/admin/news/${item._id}/delete` method='post')
+							button.w3-button.w3-small.w3-border(type='submit') Remover
 

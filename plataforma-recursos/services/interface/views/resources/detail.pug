@@ -3,7 +3,7 @@ extends ../layout
 block content
 	- const r = (resource && resource.metadata && resource.metadata.resource) ? resource.metadata.resource : {}
 	- const vis = r.visibilidade || 'privado'
-	section.card
+	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1= r.titulo || 'Recurso'
 		p
 			strong Tipo:
@@ -19,23 +19,23 @@ block content
 			|  #{vis}
 		if vis === 'publico' || user
 			p
-				a(href=`/resources/${resource._id}/dip`) Descarregar (DIP)
+				a.w3-button.w3-border(href=`/resources/${resource._id}/dip`) Descarregar (DIP)
 		else
-			p.info Inicie sessão para descarregar este recurso privado.
+			p.w3-text-grey Inicie sessão para descarregar este recurso privado.
 
-		p.info Classificação média: #{rating.media} (#{rating.total} votos)
+		p.w3-text-grey Classificação média: #{rating.media} (#{rating.total} votos)
 
 		if user
-			form.form-inline(action=`/resources/${resource._id}/ratings` method='post')
+			form(action=`/resources/${resource._id}/ratings` method='post')
 				label(for='stars') Classificar (1 a 5)
-				select#stars(name='stars' required)
+				select#stars.w3-select(name='stars' required)
 					option(value='') Escolha
 					- for (let i = 1; i <= 5; i++)
 						option(value=i)= i
-				button(type='submit') Guardar classificação
+				button.w3-button.w3-teal(type='submit') Guardar classificação
 		else
-			p.info Inicie sessão para classificar este recurso.
+			p.w3-text-grey Inicie sessão para classificar este recurso.
 
 		p
-			a(href='/resources') Voltar à lista
+			a.w3-button.w3-border(href='/resources') Voltar à lista
 
