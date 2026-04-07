@@ -20,7 +20,7 @@ html(lang='pt')
 				a.w3-bar-item.w3-button.w3-right(href='/auth/register') Registar
 				a.w3-bar-item.w3-button.w3-right(href='/auth/login') Entrar
 
-		main.w3-content.w3-padding
+		main.w3-container.w3-padding
 			if success
 				div.w3-panel.w3-pale-green.w3-leftbar.w3-border-green
 					p= success
@@ -30,6 +30,6 @@ html(lang='pt')
 
 			block content
 
-		footer.w3-content.w3-padding.w3-small.w3-text-grey
+		footer.w3-container.w3-padding.w3-small.w3-text-grey
 			p Plataforma EW2026 · Interface Web
 
