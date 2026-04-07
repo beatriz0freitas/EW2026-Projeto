@@ -1,15 +1,15 @@
 extends ../layout
 
 block content
-	section.card
+	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1 Administração · Utilizadores
 
 		if !users.length
 			p Sem utilizadores para mostrar.
 		else
-			table.table
+			table.w3-table-all.w3-hoverable.w3-striped
 				thead
-					tr
+					tr.w3-teal
 						th Nome
 						th Email
 						th Nível
@@ -21,11 +21,11 @@ block content
 							td= u.email
 							td= u.nivel
 							td.actions
-								form.form-inline(action=`/admin/users/${u._id}/level` method='post')
-									select(name='nivel')
+								form(action=`/admin/users/${u._id}/level` method='post')
+									select.w3-select(name='nivel')
 										each n in ['consumidor', 'produtor', 'admin']
 											option(value=n selected=u.nivel === n)= n
-									button(type='submit') Atualizar
-								form.form-inline(action=`/admin/users/${u._id}/delete` method='post')
-									button(type='submit') Remover
+									button.w3-button.w3-small.w3-border(type='submit') Atualizar
+								form(action=`/admin/users/${u._id}/delete` method='post')
+									button.w3-button.w3-small.w3-border(type='submit') Remover
 

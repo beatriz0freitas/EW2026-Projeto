@@ -1,18 +1,18 @@
 extends ../layout
 
 block content
-	section.card
+	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1 Entrar
-		form.form(action='/auth/login' method='post')
+		form(action='/auth/login' method='post')
 			label(for='email') Email
-			input#email(type='email' name='email' required)
+			input#email.w3-input(type='email' name='email' required)
 
 			label(for='password') Password
-			input#password(type='password' name='password' required)
+			input#password.w3-input(type='password' name='password' required)
 
-			button(type='submit') Iniciar sessão
+			button.w3-button.w3-teal(type='submit') Iniciar sessão
 
-		p.helper
+		p.w3-small
 			| Ainda não tem conta?
 			a(href='/auth/register') Registe-se aqui.
 

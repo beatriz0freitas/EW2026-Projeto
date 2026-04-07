@@ -1,24 +1,24 @@
 extends ../layout
 
 block content
-	section.card
+	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1 Registar
-		form.form(action='/auth/register' method='post')
+		form(action='/auth/register' method='post')
 			label(for='nome') Nome
-			input#nome(type='text' name='nome' required)
+			input#nome.w3-input(type='text' name='nome' required)
 
 			label(for='email') Email
-			input#email(type='email' name='email' required)
+			input#email.w3-input(type='email' name='email' required)
 
 			label(for='password') Password
-			input#password(type='password' name='password' minlength='6' required)
+			input#password.w3-input(type='password' name='password' minlength='6' required)
 
 			label(for='filiacao') Filiação (opcional)
-			input#filiacao(type='text' name='filiacao')
+			input#filiacao.w3-input(type='text' name='filiacao')
 
-			button(type='submit') Criar conta
+			button.w3-button.w3-teal(type='submit') Criar conta
 
-		p.helper
+		p.w3-small
 			| Já tem conta?
 			a(href='/auth/login') Entre aqui.
 

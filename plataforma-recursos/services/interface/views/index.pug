@@ -1,11 +1,11 @@
 extends layout
 
 block content
-	section.card
+	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1 Plataforma de Gestão e Disponibilização de Recursos Educativos
 		p Aceda rapidamente às principais áreas da plataforma.
 
-		ul
+		ul.w3-ul
 			li
 				a(href='/resources') Ver recursos educativos
 			li
@@ -17,12 +17,12 @@ block content
 					a(href='/admin/news') Gestão de notícias
 
 		if user
-			p.info Está autenticado como #{user.nivel}.
+			p.w3-text-grey Está autenticado como #{user.nivel}.
 		else
-			p.info Está em modo anónimo. Use Entrar ou Registar para continuar.
+			p.w3-text-grey Está em modo anónimo. Use Entrar ou Registar para continuar.
 
 	if news && news.length
-		section.card
+		section.w3-card.w3-white.w3-padding.w3-margin-top
 			h2 Últimas notícias
 			each item in news
 				article.news-item
