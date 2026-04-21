@@ -540,9 +540,21 @@ Base no gateway: `/auth/*`
 ### 7.2.3 `GET /auth/sessions/verify`
 
 - **Descrição:** valida token e devolve payload.
-- **Auth:** Bearer token obrigatório.
+- **Auth:** Bearer token obrigatório **ou** cookie httpOnly (`AUTH_COOKIE_NAME`).
 - **Resposta:** `200 { ok: true, payload }`.
 - **Erros típicos:** `401` (ausente, inválido ou expirado).
+
+### 7.2.3.1 `POST /auth/sessions/logout`
+
+- **Descrição:** limpa cookie de autenticação (modo browser).
+- **Auth:** não.
+- **Resposta:** `200 { ok: true }`.
+
+### 7.2.8 CORS no serviço Auth
+
+- **Descrição:** o serviço Auth permite origem configurável para uso com JWT em cookie.
+- **Configuração:** `AUTH_CORS_ORIGIN` (ex.: `http://localhost:16020`).
+- **Headers/métodos:** `Content-Type`, `Authorization`, `X-Request-Id`; métodos `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 
 ### 7.2.4 `GET /auth/me`
 
