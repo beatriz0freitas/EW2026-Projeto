@@ -1,17 +1,11 @@
 const express = require('express')
-const jwt = require('jsonwebtoken')
 
 const User = require('../models/User')
 const { jsonError } = require('../lib/http')
+const { config } = require('../lib/config')
+const { buildAuthCookieOptions, extractAccessToken, signAccessToken, verifyAccessToken } = require('../lib/jwt')
 
 const router = express.Router()
-
-const JWT_SECRET = process.env.JWT_SECRET
-const JWT_EXPIRES = process.env.JWT_EXPIRES || '24h'
-
-if (!JWT_SECRET) {
-	throw new Error('JWT_SECRET em falta. Define JWT_SECRET no ambiente para arrancar o serviço auth.')
-}
 
 // POST /auth/sessions  →  login
 // Body: { email, password }
@@ -36,14 +30,10 @@ router.post('/', async (req, res) => {
 		// Atualizar dataUltimoAcesso sem disparar hooks
 		await User.updateOne({ _id: user._id }, { dataUltimoAcesso: new Date() })
 
-		const payload = {
-			sub: String(user._id),
-			email: user.email,
-			nivel: user.nivel,
-			nome: user.nome,
-		}
+		const token = signAccessToken(user)
 
-		const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES })
+		// Compatível com o modo atual (token no JSON) e com cookies (modo browser).
+		res.cookie(config.cookies.name, token, buildAuthCookieOptions())
 
 		res.json({ ok: true, token, user })
 	} catch (err) {
@@ -57,14 +47,13 @@ router.post('/', async (req, res) => {
 // Header: Authorization: Bearer <token>
 router.get('/verify', (req, res) => {
 	try {
-		const authHeader = req.headers['authorization'] || ''
-		const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+		const token = extractAccessToken(req)
 
 		if (!token) {
 			return jsonError(res, 401, { code: 'TOKEN_MISSING', message: 'token ausente' })
 		}
 
-		const payload = jwt.verify(token, JWT_SECRET)
+		const payload = verifyAccessToken(token)
 		res.json({ ok: true, payload })
 	} catch (err) {
 		if (err.name === 'TokenExpiredError') {
@@ -72,6 +61,15 @@ router.get('/verify', (req, res) => {
 		}
 		jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token inválido' })
 	}
+})
+
+// POST /auth/sessions/logout  → limpa cookie de autenticação (modo browser)
+router.post('/logout', (req, res) => {
+	res.clearCookie(config.cookies.name, {
+		domain: config.cookies.domain,
+		path: config.cookies.path,
+	})
+	res.json({ ok: true })
 })
 
 module.exports = router

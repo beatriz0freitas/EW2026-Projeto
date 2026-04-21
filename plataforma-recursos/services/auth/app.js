@@ -1,14 +1,27 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const { randomUUID } = require('crypto')
+
+const cookieParser = require('cookie-parser')
+const cors = require('cors')
  
 const routes = require('./routes')
- 
-const PORT = Number(process.env.PORT || 16027)
-const MONGO_URL = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/ew2026'
+
+const { config } = require('./lib/config')
  
 const app = express()
-app.use(express.json())
+
+app.use(express.json({ limit: '1mb' }))
+app.use(cookieParser())
+
+app.use(
+	cors({
+		origin: config.cors.origin,
+		credentials: config.cors.credentials,
+		methods: config.cors.methods,
+		allowedHeaders: config.cors.allowedHeaders,
+	})
+)
 
 app.use((req, res, next) => {
 	const requestId = req.headers['x-request-id'] || randomUUID()
@@ -25,7 +38,7 @@ app.use((req, res, next) => {
 })
  
 mongoose
-	.connect(MONGO_URL)
+	.connect(config.mongoUrl)
 	.then(() => console.log('Conectado com sucesso ao MongoDB'))
 	.catch((err) => console.error('Erro ao conectar ao MongoDB:', err))
  
@@ -35,7 +48,7 @@ app.get('/health', (req, res) => {
  
 app.use('/', routes)
  
-app.listen(PORT, () => {
-	console.log(`A ouvir na porta:${PORT}`)
+app.listen(config.port, () => {
+	console.log(`A ouvir na porta:${config.port}`)
 })
  
