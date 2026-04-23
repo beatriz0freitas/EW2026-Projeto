@@ -1,11 +1,14 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const { randomUUID } = require('crypto')
+const swaggerUi = require('swagger-ui-express')
+const YAML = require('yamljs')
 
 const cookieParser = require('cookie-parser')
 const cors = require('cors')
  
 const routes = require('./routes')
+const swaggerDocument = YAML.load('./swagger.yaml')
 
 const { config } = require('./lib/config')
  
@@ -47,6 +50,7 @@ app.get('/health', (req, res) => {
 })
  
 app.use('/', routes)
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
  
 app.listen(config.port, () => {
 	console.log(`A ouvir na porta:${config.port}`)
