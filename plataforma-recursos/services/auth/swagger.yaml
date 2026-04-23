@@ -1,0 +1,471 @@
+openapi: 3.0.3
+info:
+  title: EW2026 Auth Service
+  version: 1.0.0
+  description: API de autenticacao e gestao de utilizadores.
+servers:
+  - url: http://localhost:16020/auth
+    description: Auth via gateway
+  - url: http://localhost:16027
+    description: Auth direto
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: ew.auth
+    queryAuth:
+      type: apiKey
+      in: query
+      name: token
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: false
+        code:
+          type: string
+          example: INVALID_INPUT
+        message:
+          type: string
+          example: erro interno
+        details:
+          nullable: true
+        requestId:
+          type: string
+          nullable: true
+        error:
+          type: string
+          example: erro interno
+    UserPublic:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: admin.teste
+        nome:
+          type: string
+          example: Admin Teste
+        email:
+          type: string
+          format: email
+          example: admin@teste.com
+        role:
+          type: string
+          enum: [admin, produtor, consumidor]
+          example: admin
+        nivel:
+          type: string
+          enum: [admin, produtor, consumidor]
+          example: admin
+        filiacao:
+          type: string
+          example: Universidade do Minho
+        nivel_acesso:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 10
+        data_registo:
+          type: string
+          format: date-time
+        ultimo_acesso:
+          type: string
+          format: date-time
+          nullable: true
+        ativo:
+          type: boolean
+          example: true
+    RegisterRequest:
+      type: object
+      required: [nome, email, password]
+      properties:
+        _id:
+          type: string
+          example: novo.user
+        nome:
+          type: string
+          example: Novo Utilizador
+        email:
+          type: string
+          format: email
+          example: novo@teste.com
+        password:
+          type: string
+          example: Password123
+        role:
+          type: string
+          enum: [admin, produtor, consumidor]
+          example: consumidor
+        nivel:
+          type: string
+          enum: [admin, produtor, consumidor]
+          example: consumidor
+        filiacao:
+          oneOf:
+            - type: string
+              example: Universidade do Minho
+            - type: object
+              additionalProperties: true
+              example:
+                instituicao: Universidade do Minho
+        nivel_acesso:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 1
+        ativo:
+          type: boolean
+          example: true
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@teste.com
+        username:
+          type: string
+          example: admin.teste
+        password:
+          type: string
+          example: Admin123
+    LoginResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/UserPublic'
+    VerifyResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        payload:
+          type: object
+          properties:
+            sub:
+              type: string
+              example: admin.teste
+            username:
+              type: string
+              example: admin.teste
+            email:
+              type: string
+              example: admin@teste.com
+            role:
+              type: string
+              example: admin
+            nivel:
+              type: string
+              example: admin
+            nivel_acesso:
+              type: integer
+              example: 10
+            nome:
+              type: string
+              example: Admin Teste
+            ativo:
+              type: boolean
+              example: true
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check do servico auth
+      responses:
+        '200':
+          description: Servico disponivel
+
+  /register:
+    post:
+      tags: [Auth]
+      summary: Registar utilizador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              consumidor:
+                value:
+                  nome: Utilizador Demo
+                  email: demo@teste.com
+                  password: Demo123
+                  role: consumidor
+                  filiacao: Universidade do Minho
+      responses:
+        '201':
+          description: Utilizador criado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/UserPublic'
+        '400':
+          description: Input invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions:
+    post:
+      tags: [Auth]
+      summary: Login e emissao de JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              porEmail:
+                value:
+                  email: admin@teste.com
+                  password: Admin123
+              porUsername:
+                value:
+                  username: admin.teste
+                  password: Admin123
+      responses:
+        '200':
+          description: Login com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciais invalidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/verify:
+    get:
+      tags: [Auth]
+      summary: Verificar token e devolver payload
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+        - queryAuth: []
+      responses:
+        '200':
+          description: Token valido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+        '401':
+          description: Token invalido/expirado ou conta desativada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/logout:
+    post:
+      tags: [Auth]
+      summary: Limpar cookie de autenticacao
+      responses:
+        '200':
+          description: Sessao terminada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Listar utilizadores (admin)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+        - queryAuth: []
+      responses:
+        '200':
+          description: Lista de utilizadores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserPublic'
+        '403':
+          description: Nao admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Obter utilizador por ID (admin ou proprio)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+        - queryAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Utilizador encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/UserPublic'
+        '404':
+          description: Utilizador nao encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags: [Users]
+      summary: Atualizar utilizador (admin)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+        - queryAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [admin, produtor, consumidor]
+                nivel:
+                  type: string
+                  enum: [admin, produtor, consumidor]
+                filiacao:
+                  oneOf:
+                    - type: string
+                    - type: object
+                nivel_acesso:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                ativo:
+                  type: boolean
+            examples:
+              atualizarParaProdutor:
+                value:
+                  role: produtor
+                  nivel_acesso: 6
+      responses:
+        '200':
+          description: Utilizador atualizado
+        '400':
+          description: Dados invalidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Users]
+      summary: Desativar utilizador (soft delete, admin)
+      description: Nao remove o documento; define ativo=false.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+        - queryAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Utilizador desativado
+        '400':
+          description: Tentativa de desativar o proprio utilizador
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: Obter utilizador autenticado
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+        - queryAuth: []
+      responses:
+        '200':
+          description: Utilizador da sessao
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/UserPublic'
+        '401':
+          description: Nao autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

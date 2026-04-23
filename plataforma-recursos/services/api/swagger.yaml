@@ -1,0 +1,722 @@
+openapi: 3.0.3
+info:
+  title: EW2026 API Service
+  version: 1.0.0
+  description: API principal da plataforma de recursos educativos.
+servers:
+  - url: http://localhost:16020
+    description: API via gateway
+  - url: http://localhost:16025
+    description: API direta
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: false
+        code:
+          type: string
+          example: INVALID_ID
+        message:
+          type: string
+          example: id invalido
+        details:
+          nullable: true
+        requestId:
+          type: string
+          nullable: true
+        error:
+          type: string
+          example: id invalido
+    PaginationResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 42
+        totalPages:
+          type: integer
+          example: 5
+    Resource:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b10
+        produtor:
+          type: string
+          example: produtor.teste
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            resource:
+              titulo: Ficha de Matematica 8o ano
+              tipo: ficha
+              ano: 8
+              tema: algebra
+              hashtags: [matematica, exercicios]
+              visibilidade: publico
+    Post:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b11
+        titulo:
+          type: string
+          example: Novo recurso de algebra
+        conteudo:
+          type: string
+          example: Publiquei um novo recurso para treino.
+        resourceId:
+          type: string
+          nullable: true
+          example: 663d8af2d6b8fd24f7a22b10
+        autorId:
+          type: string
+          example: produtor.teste
+        autorNome:
+          type: string
+          example: Produtor Teste
+    Comment:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b12
+        postId:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b11
+        autorId:
+          type: string
+          example: consumidor.teste
+        autorNome:
+          type: string
+          example: Consumidor Teste
+        texto:
+          type: string
+          example: Excelente recurso!
+    Rating:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b13
+        resourceId:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b10
+        userId:
+          type: string
+          example: consumidor.teste
+        stars:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+    NewsItem:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b14
+        titulo:
+          type: string
+          example: Bem-vindos a plataforma
+        conteudo:
+          type: string
+          example: Sistema atualizado com novas funcionalidades.
+        createdBy:
+          type: string
+          example: admin.teste
+        publicadoEm:
+          type: string
+          format: date-time
+    Taxonomy:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b15
+        tipo:
+          type: string
+          example: ficha
+        ano:
+          type: integer
+          example: 8
+        tema:
+          type: string
+          example: algebra
+        hashtag:
+          type: string
+          example: matematica
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Health check da API
+      responses:
+        '200':
+          description: Servico disponivel
+
+  /api/oais/ingest:
+    post:
+      tags: [OAIS]
+      summary: Ingerir SIP (ZIP) e criar recurso
+      description: Requer autenticacao com nivel produtor ou admin.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [sip]
+              properties:
+                sip:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: SIP ingerido com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  resourceId:
+                    type: string
+                    example: 663d8af2d6b8fd24f7a22b10
+        '401':
+          description: Nao autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: SIP invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/oais/access/{id}:
+    get:
+      tags: [OAIS]
+      summary: Descarregar DIP em ZIP
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ZIP do recurso
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Recurso privado sem autenticacao
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Sem permissao
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recurso ou ficheiro nao encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/resources:
+    get:
+      tags: [Resources]
+      summary: Listar recursos
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 10
+        - name: tipo
+          in: query
+          schema:
+            type: string
+            example: ficha
+        - name: ano
+          in: query
+          schema:
+            type: integer
+            example: 8
+        - name: tema
+          in: query
+          schema:
+            type: string
+            example: algebra
+        - name: hashtag
+          in: query
+          schema:
+            type: string
+            example: matematica
+      responses:
+        '200':
+          description: Lista paginada de recursos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginationResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Resource'
+
+  /api/resources/{id}:
+    get:
+      tags: [Resources]
+      summary: Obter recurso por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recurso encontrado
+        '404':
+          description: Recurso nao encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags: [Resources]
+      summary: Atualizar metadata de recurso (owner/admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metadata:
+                  type: object
+                  additionalProperties: true
+            example:
+              metadata:
+                resource:
+                  titulo: Ficha atualizada
+                  visibilidade: privado
+      responses:
+        '200':
+          description: Recurso atualizado
+        '403':
+          description: Sem permissao
+
+    delete:
+      tags: [Resources]
+      summary: Apagar recurso (owner/admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recurso removido
+
+  /api/posts:
+    get:
+      tags: [Posts]
+      summary: Listar posts
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 10
+      responses:
+        '200':
+          description: Lista paginada de posts
+
+    post:
+      tags: [Posts]
+      summary: Criar post (produtor/admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo, conteudo]
+              properties:
+                titulo:
+                  type: string
+                conteudo:
+                  type: string
+                resourceId:
+                  type: string
+                  nullable: true
+            example:
+              titulo: Novo recurso de algebra
+              conteudo: Publiquei um novo recurso para treino.
+              resourceId: 663d8af2d6b8fd24f7a22b10
+      responses:
+        '201':
+          description: Post criado
+
+  /api/posts/{id}:
+    get:
+      tags: [Posts]
+      summary: Obter post por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Post encontrado
+
+    patch:
+      tags: [Posts]
+      summary: Atualizar post (owner/admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:
+                  type: string
+                conteudo:
+                  type: string
+      responses:
+        '200':
+          description: Post atualizado
+
+    delete:
+      tags: [Posts]
+      summary: Apagar post (owner/admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Post apagado
+
+  /api/posts/{id}/comments:
+    get:
+      tags: [Comments]
+      summary: Listar comentarios de um post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 20
+      responses:
+        '200':
+          description: Lista paginada de comentarios
+
+    post:
+      tags: [Comments]
+      summary: Criar comentario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto:
+                  type: string
+            example:
+              texto: Excelente recurso!
+      responses:
+        '201':
+          description: Comentario criado
+
+  /api/posts/{id}/comments/{cid}:
+    delete:
+      tags: [Comments]
+      summary: Apagar comentario (autor/admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Comentario apagado
+
+  /api/resources/{id}/ratings:
+    post:
+      tags: [Ratings]
+      summary: Criar/atualizar rating do utilizador autenticado
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stars]
+              properties:
+                stars:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+            example:
+              stars: 5
+      responses:
+        '201':
+          description: Rating gravado
+
+    get:
+      tags: [Ratings]
+      summary: Obter media de ratings do recurso
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estatisticas de ratings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  media:
+                    type: number
+                    format: float
+                    example: 4.67
+                  total:
+                    type: integer
+                    example: 12
+
+  /api/news:
+    get:
+      tags: [News]
+      summary: Listar noticias
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 10
+      responses:
+        '200':
+          description: Lista paginada de noticias
+
+    post:
+      tags: [News]
+      summary: Criar noticia (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo, conteudo]
+              properties:
+                titulo:
+                  type: string
+                conteudo:
+                  type: string
+            example:
+              titulo: Nova funcionalidade
+              conteudo: Foi adicionada documentacao Swagger.
+      responses:
+        '201':
+          description: Noticia criada
+
+  /api/news/{id}:
+    delete:
+      tags: [News]
+      summary: Apagar noticia (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Noticia removida
+
+  /api/taxonomy:
+    get:
+      tags: [Taxonomy]
+      summary: Listar taxonomia
+      responses:
+        '200':
+          description: Lista de itens de taxonomia
+
+    post:
+      tags: [Taxonomy]
+      summary: Criar item de taxonomia (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo]
+              properties:
+                tipo:
+                  type: string
+                ano:
+                  type: integer
+                tema:
+                  type: string
+                hashtag:
+                  type: string
+            example:
+              tipo: ficha
+              ano: 8
+              tema: algebra
+              hashtag: matematica
+      responses:
+        '201':
+          description: Item criado
+        '409':
+          description: Item duplicado
+
+  /api/taxonomy/{id}:
+    delete:
+      tags: [Taxonomy]
+      summary: Apagar item de taxonomia (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removido

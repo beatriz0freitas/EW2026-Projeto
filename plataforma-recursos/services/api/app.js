@@ -1,8 +1,11 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const { randomUUID } = require('crypto')
+const swaggerUi = require('swagger-ui-express')
+const YAML = require('yamljs')
 
 const routes = require('./routes')
+const swaggerDocument = YAML.load('./swagger.yaml')
 
 const app = express()
 
@@ -29,6 +32,7 @@ mongoose
 	.catch((err) => console.error('MongoDB: connection error:', err))
 
 app.use('/api', routes)
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 const port = Number(process.env.PORT || 16025)
 app.listen(port, () => {
