@@ -53,7 +53,7 @@ Preferir sempre a opção que, por esta ordem:
 
 - Decisão: aplicar autenticação/autorização no backend para operações críticas.
 - Fundamentação: regras de acesso do enunciado (admin/produtor/consumidor) + princípio do menor privilégio.
-- Evidência: [services/auth/middleware/auth.js](../services/auth/middleware/auth.js), [services/api/middleware/auth.js](../services/api/middleware/auth.js)
+- Evidência: [services/auth/auth/auth.js](../services/auth/auth/auth.js), [services/api/middleware/auth.js](../services/api/middleware/auth.js)
 
 ### P4. Soluções simples primeiro (MVP sólido)
 
@@ -216,7 +216,7 @@ Preferir sempre a opção que, por esta ordem:
 
 - evita configuração insegura em produção/demonstração.
 
-**Evidência no código:** [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/routes/index.js](../services/auth/routes/index.js), [services/auth/middleware/auth.js](../services/auth/middleware/auth.js)
+**Evidência no código:** [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/routes/index.js](../services/auth/routes/index.js), [services/auth/auth/auth.js](../services/auth/auth/auth.js)
 
 ---
 
@@ -235,7 +235,7 @@ Preferir sempre a opção que, por esta ordem:
 
 - garante enforcement de regras de acesso no backend (não só na UI).
 
-**Evidência no código:** [services/auth/routes/users.js](../services/auth/routes/users.js), [services/auth/middleware/auth.js](../services/auth/middleware/auth.js)
+**Evidência no código:** [services/auth/routes/users.js](../services/auth/routes/users.js), [services/auth/auth/auth.js](../services/auth/auth/auth.js)
 
 ---
 
@@ -517,7 +517,7 @@ Base pública: `/*`
 
 Base no gateway: `/auth/*`
 
-**Evidência:** [services/auth/routes/index.js](../services/auth/routes/index.js), [services/auth/routes/users.js](../services/auth/routes/users.js), [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/middleware/auth.js](../services/auth/middleware/auth.js)
+**Evidência:** [services/auth/routes/index.js](../services/auth/routes/index.js), [services/auth/routes/users.js](../services/auth/routes/users.js), [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/auth/auth.js](../services/auth/auth/auth.js)
 
 ### 7.2.1 `POST /auth/register`
 

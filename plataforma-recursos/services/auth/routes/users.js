@@ -4,8 +4,6 @@ const router = express.Router()
 const User = require('../controllers/user')
 const auth = require('../auth/auth')
 const { jsonError } = require('../lib/http')
-const { buildAuthCookieOptions } = require('../lib/jwt')
-const { config } = require('../lib/config')
 
 async function handleRegister(req, res) {
 	try {
@@ -25,47 +23,8 @@ async function handleRegister(req, res) {
 	}
 }
 
-async function handleLogin(req, res) {
-	try {
-		const { username, email, password } = req.body
-		const identifier = username || email
-		const dados = await User.login(identifier, password)
-
-		res.cookie(config.cookies.name, dados.token, buildAuthCookieOptions())
-
-		res.json({ ok: true, token: dados.token, user: dados.user })
-	} catch (err) {
-		const msg = String(err?.message || '').toLowerCase()
-		if (msg.includes('desativada')) {
-			return jsonError(res, 403, { code: 'ACCOUNT_DISABLED', message: 'conta desativada' })
-		}
-		if (msg.includes('nao encontrado') || msg.includes('incorreta') || msg.includes('invalidas')) {
-			return jsonError(res, 401, { code: 'INVALID_CREDENTIALS', message: 'credenciais invalidas' })
-		}
-		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
-	}
-}
-
-function handleLogout(req, res) {
-	res.clearCookie(config.cookies.name, {
-		domain: config.cookies.domain,
-		path: config.cookies.path,
-	})
-	res.json({ ok: true })
-}
-
 // POST /auth/register
 router.post('/register', handleRegister)
-
-// Compatibilidade com o padrao de myAuth:
-// POST /auth/users, /auth/login e /auth/users/login
-router.post('/users', handleRegister)
-router.post('/login', handleLogin)
-router.post('/users/login', handleLogin)
-
-// GET /auth/logout e /auth/users/logout
-router.get('/logout', handleLogout)
-router.get('/users/logout', handleLogout)
 
 // GET /auth/users  (admin: lista todos os utilizadores)
 router.get('/users', auth.verificaAcesso, auth.requireAdmin, async (req, res) => {
