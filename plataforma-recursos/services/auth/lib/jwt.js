@@ -22,10 +22,15 @@ function durationToMs(expiresIn) {
 }
 
 function signAccessToken(user) {
+	const role = user.role || user.nivel || 'consumidor'
+
 	const payload = {
 		sub: String(user._id),
+		username: String(user._id),
 		email: user.email,
-		nivel: user.nivel,
+		role,
+		nivel: role,
+		nivel_acesso: user.nivel_acesso,
 		nome: user.nome,
 	}
 

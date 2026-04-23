@@ -1,9 +1,10 @@
 const express = require('express')
 
-const User = require('../models/User')
+const User = require('../controllers/user')
+const auth = require('../auth/auth')
 const { jsonError } = require('../lib/http')
 const { config } = require('../lib/config')
-const { buildAuthCookieOptions, extractAccessToken, signAccessToken, verifyAccessToken } = require('../lib/jwt')
+const { buildAuthCookieOptions } = require('../lib/jwt')
 
 const router = express.Router()
 
@@ -12,32 +13,29 @@ const router = express.Router()
 // Devolve: { ok, token, user }
 router.post('/', async (req, res) => {
 	try {
-		const { email, password } = req.body
-		if (!email || !password) {
-			return jsonError(res, 400, { code: 'INVALID_INPUT', message: 'email e password são obrigatórios' })
+		const { email, username, password } = req.body
+		const identifier = email || username
+		if (!identifier || !password) {
+			return jsonError(res, 400, {
+				code: 'INVALID_INPUT',
+				message: 'email/username e password sao obrigatorios',
+			})
 		}
 
-		const user = await User.findOne({ email })
-		if (!user) {
-			return jsonError(res, 401, { code: 'INVALID_CREDENTIALS', message: 'credenciais inválidas' })
-		}
-
-		const valid = await user.checkPassword(password)
-		if (!valid) {
-			return jsonError(res, 401, { code: 'INVALID_CREDENTIALS', message: 'credenciais inválidas' })
-		}
-
-		// Atualizar dataUltimoAcesso sem disparar hooks
-		await User.updateOne({ _id: user._id }, { dataUltimoAcesso: new Date() })
-
-		const token = signAccessToken(user)
+		const dados = await User.login(identifier, password)
 
 		// Compatível com o modo atual (token no JSON) e com cookies (modo browser).
-		res.cookie(config.cookies.name, token, buildAuthCookieOptions())
+		res.cookie(config.cookies.name, dados.token, buildAuthCookieOptions())
 
-		res.json({ ok: true, token, user })
+		res.json({ ok: true, token: dados.token, user: dados.user })
 	} catch (err) {
-		console.error('[auth] login error:', err)
+		const msg = String(err?.message || '').toLowerCase()
+		if (msg.includes('desativada')) {
+			return jsonError(res, 403, { code: 'ACCOUNT_DISABLED', message: 'conta desativada' })
+		}
+		if (msg.includes('nao encontrado') || msg.includes('incorreta') || msg.includes('invalidas')) {
+			return jsonError(res, 401, { code: 'INVALID_CREDENTIALS', message: 'credenciais invalidas' })
+		}
 		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}
 })
@@ -45,22 +43,8 @@ router.post('/', async (req, res) => {
 // GET /auth/sessions/verify  →  valida token e devolve payload
 // Usado internamente pelos outros serviços (API, Interface)
 // Header: Authorization: Bearer <token>
-router.get('/verify', (req, res) => {
-	try {
-		const token = extractAccessToken(req)
-
-		if (!token) {
-			return jsonError(res, 401, { code: 'TOKEN_MISSING', message: 'token ausente' })
-		}
-
-		const payload = verifyAccessToken(token)
-		res.json({ ok: true, payload })
-	} catch (err) {
-		if (err.name === 'TokenExpiredError') {
-			return jsonError(res, 401, { code: 'TOKEN_EXPIRED', message: 'token expirado' })
-		}
-		jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token inválido' })
-	}
+router.get('/verify', auth.verificaAcesso, (req, res) => {
+	res.json({ ok: true, payload: req.user })
 })
 
 // POST /auth/sessions/logout  → limpa cookie de autenticação (modo browser)
