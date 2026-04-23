@@ -1,0 +1,164 @@
+const bcrypt = require('bcrypt')
+
+const User = require('../models/User')
+const { signAccessToken } = require('../lib/jwt')
+
+const ROLES = ['admin', 'produtor', 'consumidor']
+
+function normalizeRole(input) {
+	if (!input) return 'consumidor'
+	const value = String(input).trim().toLowerCase()
+	if (value === 'gestor') return 'produtor'
+	if (!ROLES.includes(value)) {
+		throw new Error('role/nivel invalido')
+	}
+	return value
+}
+
+function normalizeFiliacao(input) {
+	if (input === undefined || input === null) return ''
+	if (typeof input === 'string') return input.trim()
+	if (typeof input === 'object') {
+		if (input.instituicao) return String(input.instituicao).trim()
+		if (input.departamento) return String(input.departamento).trim()
+		if (input.curso) return String(input.curso).trim()
+	}
+	return String(input).trim()
+}
+
+function toPublicUser(userDoc) {
+	return userDoc ? userDoc.toJSON() : null
+}
+
+async function generateUserId(rawInputId, email) {
+	let base = rawInputId
+		? String(rawInputId).trim()
+		: String(email || '')
+				.split('@')[0]
+				.trim()
+
+	base = base.toLowerCase().replace(/[^a-z0-9._-]/g, '')
+	if (!base) base = 'user'
+
+	let candidate = base
+	let counter = 2
+	while (await User.exists({ _id: candidate })) {
+		candidate = `${base}-${counter}`
+		counter += 1
+	}
+
+	return candidate
+}
+
+module.exports.list = () => {
+	return User.find({}, { password: 0 }).sort({ nome: 1 }).exec()
+}
+
+module.exports.findById = (id) => {
+	return User.findOne({ _id: id, ativo: true }, { password: 0 }).exec()
+}
+
+module.exports.insert = async (input) => {
+	const nome = String(input?.nome || '').trim()
+	const email = String(input?.email || '').trim().toLowerCase()
+	const password = String(input?.password || '')
+
+	if (!nome || !email || !password) {
+		throw new Error('nome, email e password sao obrigatorios')
+	}
+
+	if (password.length < 6) {
+		throw new Error('password deve ter pelo menos 6 caracteres')
+	}
+
+	const existingEmail = await User.findOne({ email })
+	if (existingEmail) {
+		throw new Error('email ja registado')
+	}
+
+	const _id = await generateUserId(input?._id || input?.username, email)
+	const role = normalizeRole(input?.role || input?.nivel)
+
+	const user = new User({
+		_id,
+		nome,
+		email,
+		password,
+		role,
+		nivel: role,
+		filiacao: normalizeFiliacao(input?.filiacao),
+		nivel_acesso: Number.isFinite(Number(input?.nivel_acesso))
+			? Number(input.nivel_acesso)
+			: undefined,
+		ativo: input?.ativo === undefined ? true : Boolean(input.ativo),
+	})
+
+	await user.save()
+	return toPublicUser(user)
+}
+
+module.exports.update = async (id, input) => {
+	const update = {}
+
+	if (input?.nome !== undefined) update.nome = String(input.nome).trim()
+	if (input?.email !== undefined) update.email = String(input.email).trim().toLowerCase()
+	if (input?.filiacao !== undefined) update.filiacao = normalizeFiliacao(input.filiacao)
+	if (input?.role !== undefined || input?.nivel !== undefined) {
+		update.role = normalizeRole(input.role || input.nivel)
+		update.nivel = update.role
+	}
+	if (input?.nivel_acesso !== undefined) update.nivel_acesso = Number(input.nivel_acesso)
+	if (input?.ativo !== undefined) update.ativo = Boolean(input.ativo)
+
+	if (input?.password) {
+		update.password = await bcrypt.hash(String(input.password), 10)
+	}
+
+	const user = await User.findByIdAndUpdate(id, update, {
+		new: true,
+		runValidators: true,
+		projection: { password: 0 },
+	})
+
+	return toPublicUser(user)
+}
+
+module.exports.remove = async (id) => {
+	const user = await User.findByIdAndUpdate(
+		id,
+		{ ativo: false },
+		{
+			new: true,
+			runValidators: true,
+			projection: { password: 0 },
+		}
+	)
+
+	return toPublicUser(user)
+}
+
+module.exports.login = async (identifier, password) => {
+	const lookup = String(identifier || '').trim()
+	if (!lookup || !password) {
+		throw new Error('credenciais invalidas')
+	}
+
+	const user = await User.findOne({
+		$or: [{ _id: lookup }, { email: lookup.toLowerCase() }],
+	})
+
+	if (!user) throw new Error('utilizador nao encontrado')
+	if (!user.ativo) throw new Error('conta desativada')
+
+	const valid = await user.checkPassword(String(password))
+	if (!valid) throw new Error('password incorreta')
+
+	await User.updateOne({ _id: user._id }, { ultimo_acesso: new Date() })
+
+	const token = signAccessToken(user)
+
+	return {
+		token,
+		user: toPublicUser(user),
+	}
+}
