@@ -9,6 +9,7 @@ router.get(
 	routeAsync(async (req, res) => {
 		const newsResponse = await apiRequest('/news?limit=5', {
 			token: req.session.token,
+			req,
 		})
 
 		res.render('index', {
