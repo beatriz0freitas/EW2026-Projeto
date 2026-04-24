@@ -19,6 +19,7 @@ services:
       - MONGO_URL=mongodb://mongodb:27017/ew2026
       - AIP_DIR=/aip
       - AUTH_URL=http://auth:16027
+      - AUTH_COOKIE_NAME=ew.auth
     depends_on:
       - mongodb
     networks:
@@ -33,7 +34,6 @@ services:
       - PORT=16027
       - MONGO_URL=mongodb://mongodb:27017/ew2026
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES=${JWT_EXPIRES:-24h}
     depends_on:
       - mongodb
     networks:
@@ -48,6 +48,8 @@ services:
       - PORT=16026
       - API_URL=http://api:16025
       - AUTH_URL=http://auth:16027
+      - SESSION_SECRET=${SESSION_SECRET}
+      - SESSION_COOKIE_NAME=ew.sid
     depends_on:
       - api
       - auth

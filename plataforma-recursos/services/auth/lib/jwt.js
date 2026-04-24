@@ -13,11 +13,11 @@ const { config } = require('./config')
 
 // ─── Segredos ────────────────────────────────────────────────────────────────
 // Devem ser variáveis de ambiente distintas em produção.
-const ACCESS_SECRET  = process.env.JWT_ACCESS_SECRET  || process.env.JWT_SECRET || 'dev-access-secret'
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret'
+const ACCESS_SECRET = config.jwt.accessSecret
+const REFRESH_SECRET = config.jwt.refreshSecret
 
-const ACCESS_TTL  = process.env.JWT_ACCESS_TTL  || '15m'
-const REFRESH_TTL = process.env.JWT_REFRESH_TTL || '7d'
+const ACCESS_TTL = config.jwt.accessTtl
+const REFRESH_TTL = config.jwt.refreshTtl
 
 // ─── Access token ─────────────────────────────────────────────────────────────
 function signAccessToken(user) {
@@ -62,28 +62,28 @@ function verifyRefreshToken(token) {
 }
 
 // Nome do cookie onde o refresh token é guardado
-const REFRESH_COOKIE = 'ew2026_refresh'
+const REFRESH_COOKIE = config.cookies.refreshName
 
 // ─── Cookie helpers ───────────────────────────────────────────────────────────
 function buildAuthCookieOptions() {
 	return {
 		httpOnly: true,
-		secure:   process.env.NODE_ENV === 'production',
-		sameSite: 'lax',
+		secure: config.cookies.secure,
+		sameSite: config.cookies.sameSite,
 		domain:   config.cookies?.domain || undefined,
 		path:     config.cookies?.path   || '/',
-		maxAge:   15 * 60 * 1000,  // 15 min — igual ao ACCESS_TTL
+		maxAge: config.cookies.accessMaxAgeMs,
 	}
 }
 
 function buildRefreshCookieOptions() {
 	return {
 		httpOnly: true,
-		secure:   process.env.NODE_ENV === 'production',
-		sameSite: 'lax',
+		secure: config.cookies.secure,
+		sameSite: config.cookies.sameSite,
 		domain:   config.cookies?.domain || undefined,
-		path:     '/sessions/refresh',  // restrito ao endpoint de refresh
-		maxAge:   7 * 24 * 60 * 60 * 1000,  // 7 dias
+		path: config.cookies.refreshPath,
+		maxAge: config.cookies.refreshMaxAgeMs,
 	}
 }
 

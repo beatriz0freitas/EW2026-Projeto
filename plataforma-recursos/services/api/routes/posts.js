@@ -3,6 +3,10 @@ const express = require('express')
 const Post = require('../models/Post')
 const Resource = require('../models/Resource')
 const { requireLevel } = require('../middleware/auth')
+const {
+	validarCamposTextoObrigatoriosNoBody,
+	validarPaginacaoNaQuery,
+} = require('../middleware/validate')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 
 const router = express.Router()
@@ -14,7 +18,7 @@ function canManagePost(post, user) {
 }
 
 // GET /api/posts
-router.get('/', async (req, res) => {
+router.get('/', validarPaginacaoNaQuery(), async (req, res) => {
 	try {
 		const { page, limit, skip } = getPagination(req.query)
 
@@ -30,12 +34,9 @@ router.get('/', async (req, res) => {
 })
 
 // POST /api/posts
-router.post('/', requireLevel('produtor'), async (req, res) => {
+router.post('/', requireLevel('produtor'), validarCamposTextoObrigatoriosNoBody(['titulo', 'conteudo']), async (req, res) => {
 	try {
 		const { titulo, conteudo, resourceId } = req.body
-		if (!titulo || !conteudo) {
-			return jsonError(res, 400, 'titulo e conteudo são obrigatórios')
-		}
 
 		if (resourceId) {
 			if (!isMongoId(resourceId)) {

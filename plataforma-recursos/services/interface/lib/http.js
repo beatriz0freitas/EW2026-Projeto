@@ -19,8 +19,10 @@
  *   const res = await apiRequest('/resources', { token: req.session.token, req })
  */
 
-const AUTH_URL = process.env.AUTH_URL || 'http://auth:16027'
-const API_URL  = process.env.API_URL  || 'http://api:16025'
+const { config } = require('./config')
+
+const AUTH_URL = config.services.authUrl
+const API_URL = config.services.apiUrl
 
 // ─── Função base ─────────────────────────────────────────────────────────────
 

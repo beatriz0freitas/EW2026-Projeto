@@ -2,12 +2,16 @@ const express = require('express')
 
 const NewsItem = require('../models/NewsItem')
 const { requireLevel } = require('../middleware/auth')
+const {
+	validarCamposTextoObrigatoriosNoBody,
+	validarPaginacaoNaQuery,
+} = require('../middleware/validate')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 
 const router = express.Router()
 
 // GET /api/news
-router.get('/', async (req, res) => {
+router.get('/', validarPaginacaoNaQuery(), async (req, res) => {
 	try {
 		const { page, limit, skip } = getPagination(req.query)
 
@@ -30,12 +34,9 @@ router.get('/', async (req, res) => {
 })
 
 // POST /api/news (admin)
-router.post('/', requireLevel('admin'), async (req, res) => {
+router.post('/', requireLevel('admin'), validarCamposTextoObrigatoriosNoBody(['titulo', 'conteudo']), async (req, res) => {
 	try {
 		const { titulo, conteudo } = req.body
-		if (!titulo || !conteudo) {
-			return jsonError(res, 400, 'titulo e conteudo são obrigatórios')
-		}
 
 		const item = await NewsItem.create({
 			titulo,

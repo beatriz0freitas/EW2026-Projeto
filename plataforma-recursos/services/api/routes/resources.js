@@ -4,6 +4,11 @@ const path = require('path')
 
 const Resource = require('../models/Resource')
 const { optionalAuth, requireLevel } = require('../middleware/auth')
+const { config } = require('../lib/config')
+const {
+	validarPaginacaoNaQuery,
+	validarInteiroOpcionalNaQuery,
+} = require('../middleware/validate')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 
 const router = express.Router()
@@ -40,7 +45,7 @@ function visibilityQuery(user) {
 }
 
 // GET /api/resources
-router.get('/', optionalAuth, async (req, res) => {
+router.get('/', optionalAuth, validarPaginacaoNaQuery(), validarInteiroOpcionalNaQuery('ano', { min: 0, max: 3000 }), async (req, res) => {
 	try {
 		const { page, limit, skip } = getPagination(req.query)
 		const filters = { ...buildFilters(req.query), ...visibilityQuery(req.user) }
@@ -107,7 +112,7 @@ router.delete('/:id', requireLevel('produtor'), async (req, res) => {
 		await Resource.deleteOne({ _id: resource._id })
 
 		// 2) Apagar pasta AIP em disco (best-effort: não falha o pedido se o dir não existir)
-		const aipDir = process.env.AIP_DIR || '/aip'
+		const aipDir = config.storage.aipDir
 		const resourceDir = path.join(aipDir, String(resource._id))
 		try {
 			await fsp.rm(resourceDir, { recursive: true, force: true })

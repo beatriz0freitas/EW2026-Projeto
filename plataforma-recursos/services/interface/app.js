@@ -1,16 +1,13 @@
 const path = require('path')
 const express = require('express')
 const session = require('express-session')
+const { config } = require('./lib/config')
 
 const indexRouter = require('./routes/index')
 const authRouter = require('./routes/auth')
 const resourcesRouter = require('./routes/resources')
 const postsRouter = require('./routes/posts')
 const adminRouter = require('./routes/admin')
-
-const PORT = Number(process.env.PORT || 16026)
-const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-me'
-const NODE_ENV = process.env.NODE_ENV || 'development'
 
 const app = express()
 
@@ -23,14 +20,14 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 app.use(
 	session({
-		name: 'ew.sid',
-		secret: SESSION_SECRET,
+		name: config.session.cookieName,
+		secret: config.session.secret,
 		resave: false,
 		saveUninitialized: false,
 		cookie: {
 			httpOnly: true,
 			sameSite: 'lax',
-			secure: NODE_ENV === 'production',
+			secure: config.nodeEnv === 'production',
 			maxAge: 1000 * 60 * 60 * 24,
 		},
 	})
@@ -78,7 +75,7 @@ app.use((err, req, res, next) => {
 	})
 })
 
-app.listen(PORT, () => {
-	console.log(`[interface] listening on :${PORT}`)
+app.listen(config.port, () => {
+	console.log(`[interface] listening on :${config.port}`)
 })
 

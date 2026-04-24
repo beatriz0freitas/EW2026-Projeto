@@ -3,6 +3,7 @@ const multer = require('multer')
 
 const { ingestSipZip } = require('./sip')
 const { requireLevel } = require('../../middleware/auth')
+const { config } = require('../../lib/config')
 const { jsonError } = require('../../lib/http')
 
 const router = express.Router()
@@ -24,7 +25,7 @@ router.post(
 			})
 		}
 
-		const aipDir = process.env.AIP_DIR || '/aip'
+		const aipDir = config.storage.aipDir
 
 		// Injetar o produtor no resultado para ser guardado pelo sip.js
 		const result = await ingestSipZip({

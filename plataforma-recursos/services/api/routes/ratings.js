@@ -3,19 +3,17 @@ const express = require('express')
 const Rating = require('../models/Rating')
 const Resource = require('../models/Resource')
 const { requireAuth } = require('../middleware/auth')
+const { validarInteiroNoBody } = require('../middleware/validate')
 const { jsonError, invalidId, isMongoId } = require('../lib/http')
 
 const router = express.Router()
 
 // POST /api/resources/:id/ratings
-router.post('/resources/:id/ratings', requireAuth, async (req, res) => {
+router.post('/resources/:id/ratings', requireAuth, validarInteiroNoBody('stars', { min: 1, max: 5 }), async (req, res) => {
 	if (!isMongoId(req.params.id)) return invalidId(res)
 
 	try {
-		const stars = Number(req.body.stars)
-		if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
-			return jsonError(res, 400, 'stars deve ser inteiro entre 1 e 5')
-		}
+		const stars = req.body.stars
 
 		const resource = await Resource.findById(req.params.id)
 		if (!resource) {
