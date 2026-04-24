@@ -24,7 +24,6 @@ router.use('/', commentsRouter)
 router.use('/', ratingsRouter)
 router.use('/news', newsRouter)
 router.use('/taxonomy', taxonomyRouter)
-router.use('/export', exportRouter)   
-router.use('/import', exportRouter)   
+router.use('/', exportRouter)
 
 module.exports = router
