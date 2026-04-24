@@ -10,6 +10,7 @@ const adminRouter = require('./routes/admin')
 
 const PORT = Number(process.env.PORT || 16026)
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-me'
+const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'ew.sid'
 const NODE_ENV = process.env.NODE_ENV || 'development'
 
 const app = express()
@@ -23,7 +24,7 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 app.use(
 	session({
-		name: 'ew.sid',
+		name: SESSION_COOKIE_NAME,
 		secret: SESSION_SECRET,
 		resave: false,
 		saveUninitialized: false,
