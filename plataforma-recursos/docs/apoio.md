@@ -2,25 +2,31 @@
 
 > **Objetivo:** consulta direta para dúvidas de implementação, arquitetura e decisões.
 >
-> **Atualizado em:** 2026-04-06
+> **Atualizado em:** 2026-04-24
 
 ## Decisões vigentes (resumo)
 
 - Arquitetura: `gateway` (entrada), `auth` (identidade), `api` (domínio), `interface` (UI).
 - Segurança: autorização sempre no backend; UI apenas apoia UX.
 - Padrão de código: rotas pequenas + helpers partilhados + validação precoce + erros consistentes.
+- Configuração: `docker-compose.yml` com não sensíveis hardcoded e sensíveis via `.env`; leitura no código centralizada por serviço em `lib/config.js`.
+- Resiliência: `api` e `auth` arrancam apenas após ligação ao MongoDB; falha de ligação termina o processo.
+- Estado de autenticação: access token + refresh token, com renovação automática na interface em pedidos à API.
 
 ## Pendentes prioritários (implementação)
 
-- Filtros avançados em recursos.
-- Edição de post e remoção de comentário na UI.
-- Hardening: `helmet`, rate limit login, CORS explícito, validação/sanitização.
-- Testes mínimos unitários e integração.
+- Hardening adicional: `helmet`, rate limit login e auditoria de CORS por ambiente.
+- Testes mínimos unitários e integração (API/Auth/Interface).
+- Cobertura adicional de validação/sanitização de inputs em rotas menos críticas.
 
-**Notas recentes (2026-04-06):**
+**Notas recentes (2026-04-24):**
 
 - Fluxo OAIS fechado na UI: upload SIP (produtor/admin) e download DIP (público e privado com autorização).
 - Gateway encaminha páginas HTML de auth (`/auth/login`, `/auth/register`, `/auth/logout`) para a Interface; endpoints JSON continuam no serviço Auth.
+- API aceita token por header, cookie e query string (compatibilidade).
+- Sessão web da interface implementada e configurável por `SESSION_COOKIE_NAME`.
+
+> Nota: as secções detalhadas abaixo mantêm histórico técnico de decisões e podem conter pontos que já foram ultrapassados pelo estado atual. Em caso de conflito, prevalecem este resumo e o README principal.
 
 ## Critério para decidir entre alternativas
 
