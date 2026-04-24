@@ -6,6 +6,7 @@ const YAML = require('yamljs')
 const cookieParser = require('cookie-parser')
 
 const routes = require('./routes')
+const { config } = require('./lib/config')
 const { jsonError } = require('./lib/http')
 const swaggerDocument = YAML.load('./swagger.yaml')
 
@@ -28,7 +29,6 @@ app.use((req, res, next) => {
 	next()
 })
 
-const mongoUrl = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/ew2026'
 app.use('/api', routes)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
@@ -44,15 +44,13 @@ app.use((err, req, res, next) => {
 	})
 })
 
-const port = Number(process.env.PORT || 16025)
-
 async function start() {
 	try {
-		await mongoose.connect(mongoUrl)
+		await mongoose.connect(config.mongoUrl)
 		console.log('MongoDB: connected')
 
-		app.listen(port, () => {
-			console.log(`API listening on port ${port}`)
+		app.listen(config.port, () => {
+			console.log(`API listening on port ${config.port}`)
 		})
 	} catch (err) {
 		console.error('MongoDB: connection error:', err)

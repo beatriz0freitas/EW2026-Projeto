@@ -1,8 +1,9 @@
 const http = require('http')
 const { jsonError } = require('../lib/http')
+const { config } = require('../lib/config')
 
-const AUTH_URL = process.env.AUTH_URL || 'http://auth:16027'
-const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'ew.auth'
+const AUTH_URL = config.auth.url
+const AUTH_COOKIE_NAME = config.auth.cookieName
 
 // Chama GET /sessions/verify no serviço auth e devolve o payload,
 // ou null se o token for inválido/ausente.

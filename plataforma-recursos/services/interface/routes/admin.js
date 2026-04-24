@@ -12,10 +12,11 @@ const express = require('express')
 const { Readable } = require('stream')
 const { pipeline } = require('stream/promises')
 
+const { config } = require('../lib/config')
 const { authRequest, apiRequest } = require('../lib/http')
 const { routeAsync, requireSession, requireLevel, apiErrorMessage } = require('../lib/web')
 
-const API_URL = process.env.API_URL || 'http://api:16025'
+const API_URL = config.services.apiUrl
 
 const router = express.Router()
 router.use(requireSession, requireLevel('admin'))

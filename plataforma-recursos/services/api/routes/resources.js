@@ -4,6 +4,7 @@ const path = require('path')
 
 const Resource = require('../models/Resource')
 const { optionalAuth, requireLevel } = require('../middleware/auth')
+const { config } = require('../lib/config')
 const {
 	validarPaginacaoNaQuery,
 	validarInteiroOpcionalNaQuery,
@@ -111,7 +112,7 @@ router.delete('/:id', requireLevel('produtor'), async (req, res) => {
 		await Resource.deleteOne({ _id: resource._id })
 
 		// 2) Apagar pasta AIP em disco (best-effort: não falha o pedido se o dir não existir)
-		const aipDir = process.env.AIP_DIR || '/aip'
+		const aipDir = config.storage.aipDir
 		const resourceDir = path.join(aipDir, String(resource._id))
 		try {
 			await fsp.rm(resourceDir, { recursive: true, force: true })
