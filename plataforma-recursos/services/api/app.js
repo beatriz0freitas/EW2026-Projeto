@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const { randomUUID } = require('crypto')
 const swaggerUi = require('swagger-ui-express')
 const YAML = require('yamljs')
+const cookieParser = require('cookie-parser')
 
 const routes = require('./routes')
 const { jsonError } = require('./lib/http')
@@ -11,6 +12,7 @@ const swaggerDocument = YAML.load('./swagger.yaml')
 const app = express()
 
 app.use(express.json())
+app.use(cookieParser())
 
 app.use((req, res, next) => {
 	const requestId = req.headers['x-request-id'] || randomUUID()
