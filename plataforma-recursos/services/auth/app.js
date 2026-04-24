@@ -11,6 +11,7 @@ const routes = require('./routes')
 const swaggerDocument = YAML.load('./swagger.yaml')
 
 const { config } = require('./lib/config')
+const { jsonError } = require('./lib/http')
  
 const app = express()
 
@@ -59,4 +60,16 @@ app.get('/health', (req, res) => {
  
 app.use('/', routes)
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
+
+app.use((req, res) => {
+	jsonError(res, 404, { code: 'NOT_FOUND', message: 'rota não encontrada' })
+})
+
+app.use((err, req, res, next) => {
+	console.error(`[auth] unexpected error [${req.requestId || '-'}]:`, err)
+	jsonError(res, err?.status || 500, {
+		code: err?.code || 'INTERNAL_ERROR',
+		message: err?.message || 'erro interno',
+	})
+})
  

@@ -4,6 +4,7 @@ const router = express.Router()
 const User = require('../controllers/user')
 const auth = require('../auth/auth')
 const { jsonError } = require('../lib/http')
+const { validarCamposTextoObrigatoriosNoBody } = require('../middleware/validate')
 
 async function handleRegister(req, res) {
 	try {
@@ -24,7 +25,7 @@ async function handleRegister(req, res) {
 }
 
 // POST /auth/register
-router.post('/register', handleRegister)
+router.post('/register', validarCamposTextoObrigatoriosNoBody(['nome', 'email', 'password']), handleRegister)
 
 // GET /auth/users  (admin: lista todos os utilizadores)
 router.get('/users', auth.verificaAcesso, auth.requireAdmin, async (req, res) => {
