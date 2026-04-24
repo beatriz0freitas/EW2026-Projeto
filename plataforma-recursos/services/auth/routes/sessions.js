@@ -14,6 +14,7 @@ const User = require('../models/User')
 const auth = require('../auth/auth')
 const { jsonError } = require('../lib/http')
 const { config } = require('../lib/config')
+const { validarCampoObrigatorioNoBody, validarPedidoLoginNoBody } = require('../middleware/validate')
 const {
 	signAccessToken,
 	signRefreshToken,
@@ -28,16 +29,10 @@ const router = express.Router()
 // ─────────────────────────────────────────────
 // POST /sessions  →  login
 // ─────────────────────────────────────────────
-router.post('/', async (req, res) => {
+router.post('/', validarPedidoLoginNoBody(), async (req, res) => {
 	try {
 		const { email, username, password } = req.body
 		const identifier = email || username
-		if (!identifier || !password) {
-			return jsonError(res, 400, {
-				code: 'INVALID_INPUT',
-				message: 'email/username e password sao obrigatorios',
-			})
-		}
 
 		const dados = await UserCtrl.login(identifier, password)
 
@@ -102,11 +97,15 @@ router.post('/refresh', async (req, res) => {
 // POST /sessions/refresh-server  →  emite novo access token com refresh token no body
 // Usado pelo serviço interface para renovação automática em server-side.
 // ─────────────────────────────────────────────
-router.post('/refresh-server', async (req, res) => {
+router.post(
+	'/refresh-server',
+	validarCampoObrigatorioNoBody('refreshToken', {
+		status: 401,
+		code: 'REFRESH_TOKEN_MISSING',
+		message: 'refresh token ausente',
+	}),
+	async (req, res) => {
 	const refreshToken = req.body?.refreshToken
-	if (!refreshToken) {
-		return jsonError(res, 401, { code: 'REFRESH_TOKEN_MISSING', message: 'refresh token ausente' })
-	}
 
 	let payload
 	try {
