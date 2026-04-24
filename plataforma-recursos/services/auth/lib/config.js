@@ -45,7 +45,6 @@ const config = {
 
 	jwt: {
 		secret: requiredEnv('JWT_SECRET'),
-		expiresIn: nonEmptyString(process.env.JWT_EXPIRES, '24h', 'JWT_EXPIRES'),
 		accessSecret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'dev-access-secret',
 		refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
 		accessTtl: nonEmptyString(process.env.JWT_ACCESS_TTL, '15m', 'JWT_ACCESS_TTL'),
