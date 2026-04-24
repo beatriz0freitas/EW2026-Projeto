@@ -26,16 +26,24 @@ app.use((req, res, next) => {
 })
 
 const mongoUrl = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/ew2026'
-mongoose
-	.connect(mongoUrl)
-	.then(() => console.log('MongoDB: connected'))
-	.catch((err) => console.error('MongoDB: connection error:', err))
-
 app.use('/api', routes)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 const port = Number(process.env.PORT || 16025)
-app.listen(port, () => {
-	console.log(`API listening on port ${port}`)
-})
+
+async function start() {
+	try {
+		await mongoose.connect(mongoUrl)
+		console.log('MongoDB: connected')
+
+		app.listen(port, () => {
+			console.log(`API listening on port ${port}`)
+		})
+	} catch (err) {
+		console.error('MongoDB: connection error:', err)
+		process.exit(1)
+	}
+}
+
+start()
 

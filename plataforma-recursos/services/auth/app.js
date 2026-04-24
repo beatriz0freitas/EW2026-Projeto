@@ -42,8 +42,16 @@ app.use((req, res, next) => {
  
 mongoose
 	.connect(config.mongoUrl)
-	.then(() => console.log('Conectado com sucesso ao MongoDB'))
-	.catch((err) => console.error('Erro ao conectar ao MongoDB:', err))
+	.then(() => {
+		console.log('Conectado com sucesso ao MongoDB')
+		app.listen(config.port, () => {
+			console.log(`A ouvir na porta:${config.port}`)
+		})
+	})
+	.catch((err) => {
+		console.error('Erro ao conectar ao MongoDB:', err)
+		process.exit(1)
+	})
  
 app.get('/health', (req, res) => {
 	res.json({ status: 'ok' })
@@ -51,8 +59,4 @@ app.get('/health', (req, res) => {
  
 app.use('/', routes)
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
- 
-app.listen(config.port, () => {
-	console.log(`A ouvir na porta:${config.port}`)
-})
  
