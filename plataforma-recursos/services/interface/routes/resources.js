@@ -15,10 +15,11 @@ const { Blob } = require('buffer')
 const { Readable } = require('stream')
 const { pipeline } = require('stream/promises')
 
+const { config } = require('../lib/config')
 const { apiRequest } = require('../lib/http')
 const { routeAsync, requireSession, requireLevel, apiErrorMessage } = require('../lib/web')
 
-const API_URL = process.env.API_URL || 'http://api:16025'
+const API_URL = config.services.apiUrl
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: { fileSize: 100 * 1024 * 1024 },

@@ -14,9 +14,9 @@
 
 const express = require('express')
 const { authRequest } = require('../lib/http')
+const { config } = require('../lib/config')
 
 const router = express.Router()
-const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'ew.sid'
 
 router.get('/login', (req, res) => {
 	if (req.session.token) return res.redirect('/')
@@ -82,7 +82,7 @@ router.post('/register', async (req, res) => {
 
 function clearSession(req, res) {
 	req.session.destroy(() => {
-		res.clearCookie(SESSION_COOKIE_NAME)
+		res.clearCookie(config.session.cookieName)
 		res.redirect('/auth/login')
 	})
 }
