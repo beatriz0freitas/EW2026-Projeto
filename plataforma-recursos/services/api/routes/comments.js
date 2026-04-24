@@ -3,6 +3,10 @@ const express = require('express')
 const Post = require('../models/Post')
 const Comment = require('../models/Comment')
 const { requireAuth } = require('../middleware/auth')
+const {
+	validarCamposTextoObrigatoriosNoBody,
+	validarPaginacaoNaQuery,
+} = require('../middleware/validate')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 
 const router = express.Router()
@@ -14,7 +18,7 @@ function canDeleteComment(comment, user) {
 }
 
 // GET /api/posts/:id/comments
-router.get('/posts/:id/comments', async (req, res) => {
+router.get('/posts/:id/comments', validarPaginacaoNaQuery(), async (req, res) => {
 	if (!isMongoId(req.params.id)) return invalidId(res)
 
 	try {
@@ -35,14 +39,10 @@ router.get('/posts/:id/comments', async (req, res) => {
 })
 
 // POST /api/posts/:id/comments
-router.post('/posts/:id/comments', requireAuth, async (req, res) => {
+router.post('/posts/:id/comments', requireAuth, validarCamposTextoObrigatoriosNoBody(['texto']), async (req, res) => {
 	if (!isMongoId(req.params.id)) return invalidId(res)
 
 	try {
-		if (!req.body.texto) {
-			return jsonError(res, 400, 'texto é obrigatório')
-		}
-
 		const post = await Post.findById(req.params.id)
 		if (!post) return jsonError(res, 404, 'post não encontrado')
 

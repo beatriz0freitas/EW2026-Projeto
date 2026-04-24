@@ -4,6 +4,10 @@ const path = require('path')
 
 const Resource = require('../models/Resource')
 const { optionalAuth, requireLevel } = require('../middleware/auth')
+const {
+	validarPaginacaoNaQuery,
+	validarInteiroOpcionalNaQuery,
+} = require('../middleware/validate')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 
 const router = express.Router()
@@ -40,7 +44,7 @@ function visibilityQuery(user) {
 }
 
 // GET /api/resources
-router.get('/', optionalAuth, async (req, res) => {
+router.get('/', optionalAuth, validarPaginacaoNaQuery(), validarInteiroOpcionalNaQuery('ano', { min: 0, max: 3000 }), async (req, res) => {
 	try {
 		const { page, limit, skip } = getPagination(req.query)
 		const filters = { ...buildFilters(req.query), ...visibilityQuery(req.user) }
