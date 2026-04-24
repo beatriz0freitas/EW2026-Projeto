@@ -9,7 +9,7 @@ const router = express.Router()
 
 function canManagePost(post, user) {
 	if (!user) return false
-	if (user.nivel === 'admin') return true
+	if (user.role === 'admin') return true
 	return String(post.autorId) === String(user.sub)
 }
 

@@ -12,19 +12,19 @@ block content
 					tr.w3-teal
 						th Nome
 						th Email
-						th Nível
+						th Role
 						th Ações
 				tbody
 					each u in users
 						tr
 							td= u.nome
 							td= u.email
-							td= u.nivel
+							td= u.role
 							td.actions
-								form(action=`/admin/users/${u._id}/level` method='post')
-									select.w3-select(name='nivel')
+								form(action=`/admin/users/${u._id}/role` method='post')
+									select.w3-select(name='role')
 										each n in ['consumidor', 'produtor', 'admin']
-											option(value=n selected=u.nivel === n)= n
+											option(value=n selected=u.role === n)= n
 									button.w3-button.w3-small.w3-border(type='submit') Atualizar
 								form(action=`/admin/users/${u._id}/delete` method='post')
 									button.w3-button.w3-small.w3-border(type='submit') Remover

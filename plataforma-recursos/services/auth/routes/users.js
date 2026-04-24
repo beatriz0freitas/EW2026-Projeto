@@ -39,7 +39,7 @@ router.get('/users', auth.verificaAcesso, auth.requireAdmin, async (req, res) =>
 // GET /auth/users/:id  (admin ou proprio utilizador)
 router.get('/users/:id', auth.verificaAcesso, async (req, res) => {
 	try {
-		const canAccess = req.user.nivel === 'admin' || String(req.user.sub) === String(req.params.id)
+		const canAccess = req.user.role === 'admin' || String(req.user.sub) === String(req.params.id)
 		if (!canAccess) {
 			return jsonError(res, 403, { code: 'FORBIDDEN', message: 'permissoes insuficientes' })
 		}
@@ -53,7 +53,7 @@ router.get('/users/:id', auth.verificaAcesso, async (req, res) => {
 	}
 })
 
-// PATCH /auth/users/:id  (admin: atualizar nivel ou dados)
+// PATCH /auth/users/:id  (admin: atualizar role ou dados)
 router.patch('/users/:id', auth.verificaAcesso, auth.requireAdmin, async (req, res) => {
 	try {
 		const user = await User.update(req.params.id, req.body)
@@ -61,7 +61,7 @@ router.patch('/users/:id', auth.verificaAcesso, auth.requireAdmin, async (req, r
 		res.json({ ok: true, user })
 	} catch (err) {
 		if (String(err?.message || '').toLowerCase().includes('invalido')) {
-			return jsonError(res, 400, { code: 'INVALID_LEVEL', message: err.message })
+			return jsonError(res, 400, { code: 'INVALID_ROLE', message: err.message })
 		}
 		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}

@@ -1,0 +1,42 @@
+extends ../layout
+
+block content
+  h1 Importar dados
+
+  if importResults
+    if importOk
+      p.alert.alert--success Importacao concluida com sucesso.
+    else
+      p.alert.alert--warning Importacao concluida com erros parciais.
+
+    table
+      thead
+        tr
+          th Colecao
+          th Inseridos / atualizados
+          th Erros
+      tbody
+        each key in ['resources', 'taxonomy', 'news', 'ratings', 'comments']
+          - var r = importResults[key] || { upserted: 0, errors: [] }
+          tr
+            td= key
+            td= r.upserted
+            td= r.errors.length
+              if r.errors.length
+                ul
+                  each e in r.errors
+                    li= e.id + ': ' + e.message
+
+  form(method='POST' action='/admin/import')
+    .form-group
+      label(for='dump') JSON do dump
+      textarea#dump.form-control(
+        name='dump'
+        rows='20'
+        placeholder='Cola aqui o conteudo do ficheiro exportado...'
+        required
+      )
+    button.btn(type='submit') Importar
+
+  p
+    a(href='/admin/data') Voltar aos dados

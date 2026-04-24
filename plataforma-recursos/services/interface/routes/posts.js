@@ -13,7 +13,7 @@ function getUserId(req) {
 function canManagePost(req, post) {
 	const u = req.session?.user
 	if (!u) return false
-	if (u.nivel === 'admin') return true
+	if (u.role === 'admin') return true
 	const uid = getUserId(req)
 	return uid && String(post.autorId) === uid
 }

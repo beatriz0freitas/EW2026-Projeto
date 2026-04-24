@@ -1,0 +1,14 @@
+extends ../layout
+
+block content
+  h1 Dados da plataforma
+
+  section.card
+    h2 Exportar
+    p Descarrega um ficheiro JSON com todos os recursos, taxonomia, noticias, ratings e comentarios.
+    a.btn(href='/admin/export') Descarregar dump JSON
+
+  section.card
+    h2 Importar
+    p Repoe dados a partir de um ficheiro de dump gerado pelo processo de exportacao.
+    a.btn.btn--secondary(href='/admin/import') Ir para o formulario de importacao
