@@ -2,6 +2,7 @@ const http = require('http')
 const { jsonError } = require('../lib/http')
 
 const AUTH_URL = process.env.AUTH_URL || 'http://auth:16027'
+const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'ew.auth'
 
 // Chama GET /sessions/verify no serviço auth e devolve o payload,
 // ou null se o token for inválido/ausente.
@@ -32,10 +33,23 @@ function verifyTokenRemote(token) {
 	})
 }
 
-// Extrai o token do header Authorization: Bearer <token>
+// Extrai o token por ordem de precedência:
+// 1) Header Authorization: Bearer <token>
+// 2) Cookie de autenticação
+// 3) Query string (?token=...)
 function extractToken(req) {
 	const header = req.headers['authorization'] || ''
-	return header.startsWith('Bearer ') ? header.slice(7) : null
+	if (header.startsWith('Bearer ')) return header.slice(7)
+
+	if (req.cookies && req.cookies[AUTH_COOKIE_NAME]) {
+		return req.cookies[AUTH_COOKIE_NAME]
+	}
+
+	if (req.query && req.query.token) {
+		return String(req.query.token)
+	}
+
+	return null
 }
 
 // Middleware: exige utilizador autenticado (qualquer role).
