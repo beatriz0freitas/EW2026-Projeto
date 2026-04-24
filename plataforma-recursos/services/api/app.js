@@ -3,13 +3,17 @@ const mongoose = require('mongoose')
 const { randomUUID } = require('crypto')
 const swaggerUi = require('swagger-ui-express')
 const YAML = require('yamljs')
+const cookieParser = require('cookie-parser')
 
 const routes = require('./routes')
+const { config } = require('./lib/config')
+const { jsonError } = require('./lib/http')
 const swaggerDocument = YAML.load('./swagger.yaml')
 
 const app = express()
 
 app.use(express.json())
+app.use(cookieParser())
 
 app.use((req, res, next) => {
 	const requestId = req.headers['x-request-id'] || randomUUID()
@@ -25,17 +29,34 @@ app.use((req, res, next) => {
 	next()
 })
 
-const mongoUrl = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/ew2026'
-mongoose
-	.connect(mongoUrl)
-	.then(() => console.log('MongoDB: connected'))
-	.catch((err) => console.error('MongoDB: connection error:', err))
-
 app.use('/api', routes)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
-const port = Number(process.env.PORT || 16025)
-app.listen(port, () => {
-	console.log(`API listening on port ${port}`)
+app.use((req, res) => {
+	jsonError(res, 404, { code: 'NOT_FOUND', message: 'rota não encontrada' })
 })
+
+app.use((err, req, res, next) => {
+	console.error(`[api] unexpected error [${req.requestId || '-'}]:`, err)
+	jsonError(res, err?.status || 500, {
+		code: err?.code || 'INTERNAL_ERROR',
+		message: err?.message || 'erro interno',
+	})
+})
+
+async function start() {
+	try {
+		await mongoose.connect(config.mongoUrl)
+		console.log('MongoDB: connected')
+
+		app.listen(config.port, () => {
+			console.log(`API listening on port ${config.port}`)
+		})
+	} catch (err) {
+		console.error('MongoDB: connection error:', err)
+		process.exit(1)
+	}
+}
+
+start()
 

@@ -23,6 +23,7 @@ router.get(
 	routeAsync(async (req, res) => {
 		const list = await apiRequest('/posts?limit=20', {
 			token: req.session.token,
+			req,
 		})
 
 		if (!list.ok) {
@@ -60,6 +61,7 @@ router.post(
 			method: 'POST',
 			token: req.session.token,
 			body: { titulo, conteudo, resourceId: resourceId || undefined },
+			req,
 		})
 
 		if (!created.ok) {
@@ -76,8 +78,8 @@ router.get(
 	'/:id',
 	routeAsync(async (req, res) => {
 		const [postRes, commentsRes] = await Promise.all([
-			apiRequest(`/posts/${req.params.id}`, { token: req.session.token }),
-			apiRequest(`/posts/${req.params.id}/comments?limit=50`, { token: req.session.token }),
+			apiRequest(`/posts/${req.params.id}`, { token: req.session.token, req }),
+			apiRequest(`/posts/${req.params.id}/comments?limit=50`, { token: req.session.token, req }),
 		])
 
 		if (!postRes.ok) {
@@ -100,7 +102,7 @@ router.get(
 	requireSession,
 	requireLevel('produtor'),
 	routeAsync(async (req, res) => {
-		const postRes = await apiRequest(`/posts/${req.params.id}`, { token: req.session.token })
+		const postRes = await apiRequest(`/posts/${req.params.id}`, { token: req.session.token, req })
 		if (!postRes.ok) {
 			return res.status(postRes.status || 500).render('error', {
 				title: 'Post não encontrado',
@@ -142,6 +144,7 @@ router.post(
 				conteudo,
 				resourceId: resourceId || null,
 			},
+			req,
 		})
 
 		if (!updated.ok) {
@@ -163,6 +166,7 @@ router.post(
 			method: 'POST',
 			token: req.session.token,
 			body: { texto },
+			req,
 		})
 
 		if (!response.ok) {
@@ -182,6 +186,7 @@ router.post(
 		const response = await apiRequest(`/posts/${req.params.id}/comments/${req.params.cid}`, {
 			method: 'DELETE',
 			token: req.session.token,
+			req,
 		})
 
 		if (!response.ok) {
@@ -202,6 +207,7 @@ router.post(
 		const response = await apiRequest(`/posts/${req.params.id}`, {
 			method: 'DELETE',
 			token: req.session.token,
+			req,
 		})
 
 		if (!response.ok) {

@@ -14,6 +14,7 @@
 
 const express = require('express')
 const { authRequest } = require('../lib/http')
+const { config } = require('../lib/config')
 
 const router = express.Router()
 
@@ -81,7 +82,7 @@ router.post('/register', async (req, res) => {
 
 function clearSession(req, res) {
 	req.session.destroy(() => {
-		res.clearCookie('ew.sid')
+		res.clearCookie(config.session.cookieName)
 		res.redirect('/auth/login')
 	})
 }

@@ -27,7 +27,7 @@ const router = express.Router()
 
 
 // GET /api/export
-router.get('/', requireLevel('admin'), async (req, res) => {
+router.get('/export', requireLevel('admin'), async (req, res) => {
 	try {
 		const [resources, taxonomy, news, ratings, comments] = await Promise.all([
 			Resource.find().lean(),
@@ -60,7 +60,7 @@ router.get('/', requireLevel('admin'), async (req, res) => {
 // POST /api/import
 // Recebe o dump JSON produzido pelo GET /api/export
 
-router.post('/', requireLevel('admin'), async (req, res) => {
+router.post('/import', requireLevel('admin'), async (req, res) => {
 	const dump = req.body
 
 	// Validação mínima do formato do dump
