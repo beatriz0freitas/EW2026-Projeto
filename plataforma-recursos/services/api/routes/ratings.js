@@ -65,5 +65,26 @@ router.get('/resources/:id/ratings', async (req, res) => {
 	}
 })
 
+// GET /api/resources/:id/ratings/mine
+router.get('/resources/:id/ratings/mine', requireAuth, async (req, res) => {
+	if (!isMongoId(req.params.id)) return invalidId(res)
+
+	try {
+		const resource = await Resource.findById(req.params.id)
+		if (!resource) {
+			return jsonError(res, 404, 'recurso não encontrado')
+		}
+
+		const rating = await Rating.findOne({
+			resourceId: resource._id,
+			userId: req.user.sub,
+		})
+
+		res.json({ ok: true, rating: rating || null })
+	} catch (err) {
+		jsonError(res, 500, 'erro interno')
+	}
+})
+
 module.exports = router
 

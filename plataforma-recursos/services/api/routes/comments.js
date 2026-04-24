@@ -9,7 +9,7 @@ const router = express.Router()
 
 function canDeleteComment(comment, user) {
 	if (!user) return false
-	if (user.nivel === 'admin') return true
+	if (user.role === 'admin') return true
 	return String(comment.autorId) === String(user.sub)
 }
 

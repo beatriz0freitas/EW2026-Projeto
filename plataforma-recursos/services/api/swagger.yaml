@@ -179,7 +179,7 @@ paths:
     post:
       tags: [OAIS]
       summary: Ingerir SIP (ZIP) e criar recurso
-      description: Requer autenticacao com nivel produtor ou admin.
+      description: Requer autenticacao com role produtor ou admin.
       security:
         - bearerAuth: []
       requestBody:

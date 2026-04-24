@@ -31,7 +31,7 @@ block content
 				select#stars.w3-select(name='stars' required)
 					option(value='') Escolha
 					- for (let i = 1; i <= 5; i++)
-						option(value=i)= i
+						option(value=i selected=(myRating === i))= i
 				button.w3-button.w3-teal(type='submit') Guardar classificação
 		else
 			p.w3-text-grey Inicie sessão para classificar este recurso.

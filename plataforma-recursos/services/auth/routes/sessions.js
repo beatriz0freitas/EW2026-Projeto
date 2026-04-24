@@ -1,16 +1,33 @@
+/**
+ * routes/sessions.js
+ *
+ * POST /sessions          — login  (emite access token + refresh token em cookie HttpOnly)
+ * GET  /sessions/verify   — valida access token (usado internamente pelos outros serviços)
+ * POST /sessions/refresh  — troca o refresh token por um novo access token (sem novo login)
+ * POST /sessions/logout   — invalida os dois cookies
+ */
+
 const express = require('express')
 
-const User = require('../controllers/user')
+const UserCtrl = require('../controllers/user')
+const User = require('../models/User')
 const auth = require('../auth/auth')
 const { jsonError } = require('../lib/http')
 const { config } = require('../lib/config')
-const { buildAuthCookieOptions } = require('../lib/jwt')
+const {
+	signAccessToken,
+	signRefreshToken,
+	verifyRefreshToken,
+	buildAuthCookieOptions,
+	buildRefreshCookieOptions,
+	REFRESH_COOKIE,
+} = require('../lib/jwt')
 
 const router = express.Router()
 
-// POST /auth/sessions  →  login
-// Body: { email, password }
-// Devolve: { ok, token, user }
+// ─────────────────────────────────────────────
+// POST /sessions  →  login
+// ─────────────────────────────────────────────
 router.post('/', async (req, res) => {
 	try {
 		const { email, username, password } = req.body
@@ -22,12 +39,15 @@ router.post('/', async (req, res) => {
 			})
 		}
 
-		const dados = await User.login(identifier, password)
+		const dados = await UserCtrl.login(identifier, password)
 
-		// Compatível com o modo atual (token no JSON) e com cookies (modo browser).
+		// Emitir refresh token em cookie HttpOnly separado
+		const refreshToken = signRefreshToken(dados.user)
+		res.cookie(REFRESH_COOKIE, refreshToken, buildRefreshCookieOptions())
+
+		// Access token no cookie normal (modo browser) e no JSON (modo API)
 		res.cookie(config.cookies.name, dados.token, buildAuthCookieOptions())
-
-		res.json({ ok: true, token: dados.token, user: dados.user })
+		res.json({ ok: true, token: dados.token, refreshToken, user: dados.user })
 	} catch (err) {
 		const msg = String(err?.message || '').toLowerCase()
 		if (msg.includes('desativada')) {
@@ -40,18 +60,81 @@ router.post('/', async (req, res) => {
 	}
 })
 
-// GET /auth/sessions/verify  →  valida token e devolve payload
-// Usado internamente pelos outros serviços (API, Interface)
-// Header: Authorization: Bearer <token>
+// ─────────────────────────────────────────────
+// GET /sessions/verify  →  valida access token
+// Usado internamente pelos outros serviços.
+// ─────────────────────────────────────────────
 router.get('/verify', auth.verificaAcesso, (req, res) => {
 	res.json({ ok: true, payload: req.user })
 })
 
-// POST /auth/sessions/logout  → limpa cookie de autenticação (modo browser)
+// ─────────────────────────────────────────────
+// POST /sessions/refresh  →  emite novo access token a partir do refresh token
+// O refresh token é lido do cookie HttpOnly; nunca é enviado no body.
+// ─────────────────────────────────────────────
+router.post('/refresh', async (req, res) => {
+	const refreshToken = req.cookies?.[REFRESH_COOKIE]
+	if (!refreshToken) {
+		return jsonError(res, 401, { code: 'REFRESH_TOKEN_MISSING', message: 'refresh token ausente' })
+	}
+
+	let payload
+	try {
+		payload = verifyRefreshToken(refreshToken)
+	} catch {
+		return jsonError(res, 401, { code: 'REFRESH_TOKEN_INVALID', message: 'refresh token inválido ou expirado' })
+	}
+
+	// Garantir que o utilizador ainda existe e está ativo
+	const user = await User.findById(payload.sub)
+	if (!user || !user.ativo) {
+		return jsonError(res, 401, { code: 'ACCOUNT_DISABLED', message: 'conta inexistente ou desativada' })
+	}
+
+	// Emitir novo access token
+	const newAccessToken = signAccessToken(user)
+	res.cookie(config.cookies.name, newAccessToken, buildAuthCookieOptions())
+
+	res.json({ ok: true, token: newAccessToken })
+})
+
+// ─────────────────────────────────────────────
+// POST /sessions/refresh-server  →  emite novo access token com refresh token no body
+// Usado pelo serviço interface para renovação automática em server-side.
+// ─────────────────────────────────────────────
+router.post('/refresh-server', async (req, res) => {
+	const refreshToken = req.body?.refreshToken
+	if (!refreshToken) {
+		return jsonError(res, 401, { code: 'REFRESH_TOKEN_MISSING', message: 'refresh token ausente' })
+	}
+
+	let payload
+	try {
+		payload = verifyRefreshToken(refreshToken)
+	} catch {
+		return jsonError(res, 401, { code: 'REFRESH_TOKEN_INVALID', message: 'refresh token inválido ou expirado' })
+	}
+
+	const user = await User.findById(payload.sub)
+	if (!user || !user.ativo) {
+		return jsonError(res, 401, { code: 'ACCOUNT_DISABLED', message: 'conta inexistente ou desativada' })
+	}
+
+	const newAccessToken = signAccessToken(user)
+	res.json({ ok: true, token: newAccessToken })
+})
+
+// ─────────────────────────────────────────────
+// POST /sessions/logout  →  limpa os dois cookies
+// ─────────────────────────────────────────────
 router.post('/logout', (req, res) => {
 	res.clearCookie(config.cookies.name, {
-		domain: config.cookies.domain,
-		path: config.cookies.path,
+		domain: config.cookies?.domain,
+		path:   config.cookies?.path || '/',
+	})
+	res.clearCookie(REFRESH_COOKIE, {
+		domain: config.cookies?.domain,
+		path:   '/sessions/refresh',
 	})
 	res.json({ ok: true })
 })

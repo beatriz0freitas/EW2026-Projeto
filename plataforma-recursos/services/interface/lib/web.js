@@ -18,7 +18,7 @@ const LEVEL_RANK = {
 
 function requireLevel(minLevel) {
 	return (req, res, next) => {
-		const currentLevel = req.session?.user?.nivel
+		const currentLevel = req.session?.user?.role
 		const currentRank = LEVEL_RANK[currentLevel] || 0
 		const minRank = LEVEL_RANK[minLevel] || 0
 

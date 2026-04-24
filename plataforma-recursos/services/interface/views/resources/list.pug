@@ -22,7 +22,7 @@ block content
 			button.w3-button.w3-teal(type='submit') Filtrar
 			a.w3-button.w3-border(href='/resources') Limpar
 
-		if user && (user.nivel === 'produtor' || user.nivel === 'admin')
+		if user && (user.role === 'produtor' || user.role === 'admin')
 			p
 				a.w3-button.w3-border(href='/resources/new') Submeter recurso (SIP)
 

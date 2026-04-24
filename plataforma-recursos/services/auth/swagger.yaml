@@ -60,10 +60,6 @@ components:
           type: string
           enum: [admin, produtor, consumidor]
           example: admin
-        nivel:
-          type: string
-          enum: [admin, produtor, consumidor]
-          example: admin
         filiacao:
           type: string
           example: Universidade do Minho
@@ -100,10 +96,6 @@ components:
           type: string
           example: Password123
         role:
-          type: string
-          enum: [admin, produtor, consumidor]
-          example: consumidor
-        nivel:
           type: string
           enum: [admin, produtor, consumidor]
           example: consumidor
@@ -145,6 +137,9 @@ components:
         token:
           type: string
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         user:
           $ref: '#/components/schemas/UserPublic'
     VerifyResponse:
@@ -166,9 +161,6 @@ components:
               type: string
               example: admin@teste.com
             role:
-              type: string
-              example: admin
-            nivel:
               type: string
               example: admin
             nivel_acesso:
@@ -388,9 +380,6 @@ paths:
                   type: string
                   format: email
                 role:
-                  type: string
-                  enum: [admin, produtor, consumidor]
-                nivel:
                   type: string
                   enum: [admin, produtor, consumidor]
                 filiacao:

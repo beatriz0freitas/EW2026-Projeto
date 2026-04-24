@@ -24,13 +24,12 @@ async function verificaAcesso(req, res, next) {
 			})
 		}
 
-		const role = user.role || user.nivel || 'consumidor'
+		const role = user.role || 'consumidor'
 
 		req.user = {
 			...payload,
 			sub: String(user._id),
 			username: String(user._id),
-			nivel: role,
 			role,
 			nivel_acesso: user.nivel_acesso,
 			ativo: user.ativo,
@@ -43,7 +42,7 @@ async function verificaAcesso(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-	if (!req.user || req.user.nivel !== 'admin') {
+	if (!req.user || req.user.role !== 'admin') {
 		return jsonError(res, 403, { code: 'FORBIDDEN', message: 'acesso reservado a admin' })
 	}
 	next()

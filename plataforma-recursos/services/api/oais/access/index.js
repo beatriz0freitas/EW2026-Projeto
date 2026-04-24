@@ -39,7 +39,7 @@ router.get('/access/:id', optionalAuth, async (req, res) => {
 				message: 'autenticação necessária para recursos privados',
 			})
 		}
-		const isAdmin = req.user.nivel === 'admin'
+		const isAdmin = req.user.role === 'admin'
 		const isOwner = String(resource.produtor) === String(req.user.sub)
 		if (!isAdmin && !isOwner) {
 			return jsonError(res, 403, { code: 'FORBIDDEN', message: 'acesso negado' })

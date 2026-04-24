@@ -10,14 +10,14 @@ block content
 				a(href='/resources') Ver recursos educativos
 			li
 				a(href='/posts') Ver posts e comentários
-			if user && user.nivel === 'admin'
+			if user && user.role === 'admin'
 				li
-					a(href='/admin/users') Gestão de utilizadores
+					a(href='/admin/data') Gestão de dados
 				li
 					a(href='/admin/news') Gestão de notícias
 
 		if user
-			p.w3-text-grey Está autenticado como #{user.nivel}.
+			p.w3-text-grey Está autenticado como #{user.role}.
 		else
 			p.w3-text-grey Está em modo anónimo. Use Entrar ou Registar para continuar.
 

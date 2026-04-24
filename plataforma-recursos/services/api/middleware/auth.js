@@ -38,7 +38,7 @@ function extractToken(req) {
 	return header.startsWith('Bearer ') ? header.slice(7) : null
 }
 
-// Middleware: exige utilizador autenticado (qualquer nível).
+// Middleware: exige utilizador autenticado (qualquer role).
 // Injeta req.user = payload JWT
 async function requireAuth(req, res, next) {
 	const token = extractToken(req)
@@ -51,7 +51,7 @@ async function requireAuth(req, res, next) {
 	next()
 }
 
-// Middleware factory: exige nível mínimo.
+// Middleware factory: exige role mínima.
 // Hierarquia: admin > produtor > consumidor
 // Uso: requireLevel('produtor')  →  aceita produtor e admin
 const HIERARCHY = { admin: 3, produtor: 2, consumidor: 1 }
@@ -64,7 +64,7 @@ function requireLevel(minLevel) {
 		const payload = await verifyTokenRemote(token)
 		if (!payload) return jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token inválido ou expirado' })
 
-		const userRank = HIERARCHY[payload.nivel] || 0
+		const userRank = HIERARCHY[payload.role] || 0
 		const minRank = HIERARCHY[minLevel] || 0
 
 		if (userRank < minRank) {

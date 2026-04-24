@@ -2,7 +2,7 @@ extends ../layout
 
 block content
 	- const uid = user && (user._id || user.id || user.sub) ? String(user._id || user.id || user.sub) : null
-	- const canManagePost = !!(user && (user.nivel === 'admin' || (uid && String(post.autorId) === uid)))
+	- const canManagePost = !!(user && (user.role === 'admin' || (uid && String(post.autorId) === uid)))
 	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1= post.titulo
 		p.w3-text-grey.w3-small Autor: #{post.autorNome || 'desconhecido'}
@@ -24,7 +24,7 @@ block content
 					li
 						strong= c.autorNome || 'utilizador'
 						| : #{c.texto}
-						- const canDeleteComment = !!(user && (user.nivel === 'admin' || (uid && String(c.autorId) === uid)))
+						- const canDeleteComment = !!(user && (user.role === 'admin' || (uid && String(c.autorId) === uid)))
 						if canDeleteComment
 							form(action=`/posts/${post._id}/comments/${c._id}/delete` method='post')
 								button.w3-button.w3-small.w3-border(type='submit') Remover comentário
