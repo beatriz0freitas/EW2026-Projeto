@@ -5,6 +5,7 @@ const swaggerUi = require('swagger-ui-express')
 const YAML = require('yamljs')
 
 const routes = require('./routes')
+const { jsonError } = require('./lib/http')
 const swaggerDocument = YAML.load('./swagger.yaml')
 
 const app = express()
@@ -28,6 +29,18 @@ app.use((req, res, next) => {
 const mongoUrl = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/ew2026'
 app.use('/api', routes)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
+
+app.use((req, res) => {
+	jsonError(res, 404, { code: 'NOT_FOUND', message: 'rota não encontrada' })
+})
+
+app.use((err, req, res, next) => {
+	console.error(`[api] unexpected error [${req.requestId || '-'}]:`, err)
+	jsonError(res, err?.status || 500, {
+		code: err?.code || 'INTERNAL_ERROR',
+		message: err?.message || 'erro interno',
+	})
+})
 
 const port = Number(process.env.PORT || 16025)
 
