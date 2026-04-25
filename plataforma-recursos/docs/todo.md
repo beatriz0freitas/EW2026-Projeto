@@ -46,7 +46,7 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 
 ### Noticias na pagina principal
 - ✅ Noticias manuais (admin) e listagem das ultimas 5 na home.
-- ❌ Noticias automaticas do sistema (nova submissao, top3, total utilizadores, etc.) nao implementadas.
+- ✅ Noticias automaticas do sistema implementadas (nova submissao, top3 e total de utilizadores).
 
 ### Dataset para demonstracao
 - ⚠️ Existem entradas reais no storage (atualmente 6 AIPs), mas nao chega a "dezenas".
@@ -62,6 +62,13 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 - ✅ Export/import de dados globais (GET /api/export e POST /api/import, admin).
 - ✅ Paginacao e respostas de erro utilitarias centralizadas em lib/http.js.
 - ✅ Endpoint ratings/mine implementado e montado.
+- ✅ NewsItem evoluido para sistema: tipo, eventType, dedupeKey, payload.
+- ✅ Indice unico em dedupeKey para evitar duplicados em noticias de sistema.
+- ✅ Servico comum de publicacao de noticias com dedupe (lib/newsPublisher.js).
+- ✅ Endpoint interno POST /api/news/system com token interno de servico.
+- ✅ Evento automatico system.new_submission no fim do ingest com dedupe por resourceId.
+- ✅ Job diario para system.top3 e system.total_users.
+- ✅ Contagem de downloads por recurso (downloadCount) no OAIS access para alimentar top3.
 - ⚠️ PATCH de resources substitui metadata inteira; falta whitelist de campos permitidos.
 - ⚠️ GET /api/posts ainda nao filtra por resourceId.
 - ⚠️ Nao ha limite explicito em express.json() no API.
@@ -74,6 +81,8 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 - ✅ Validacao de body dedicada para login/campos obrigatorios.
 - ✅ app.js so faz listen apos conectar ao MongoDB.
 - ✅ CORS ja configurado no auth.
+- ✅ Endpoint interno seguro para stats: GET /internal/stats/users-count.
+- ✅ Publicacao automatica de noticia system.new_user apos registo (auth -> api, best-effort).
 - ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
 - ⚠️ JWT_REFRESH_SECRET tem fallback por defeito; ideal exigir segredo forte por ambiente.
 - ❌ Rate limiting no login nao implementado.
@@ -126,6 +135,7 @@ Itens que estavam marcados de forma incorreta e foram corrigidos:
 - Adicionar rate limit em POST /auth/sessions.
 - Adicionar helmet em auth/api/gateway.
 - Definir politica CORS explicita no gateway.
+- Rever rotas internas para nao ficarem expostas no gateway (defesa em profundidade).
 
 3. Metadados e contratos:
 - Reforcar validacao do metadata.json (subtitulo opcional, dataCriacao/dataRegisto, enums visibilidade).
@@ -147,6 +157,7 @@ Itens que estavam marcados de forma incorreta e foram corrigidos:
 - Nucleo da Proposta 1: ✅ funcional.
 - OAIS ingest/access: ✅ funcional.
 - Auth com 3 perfis e controlo de acesso: ✅ funcional, com 1 falha critica no registo publico (role).
+- Noticias automaticas (nova submissao, top3, total utilizadores): ✅ funcional.
 - Interface end-to-end (auth, recursos, posts, admin): ✅ funcional.
 - Seguranca de producao e testes automaticos: ❌ ainda em falta.
 - Dataset de demonstracao com dezenas de recursos: ⚠️ ainda insuficiente.
