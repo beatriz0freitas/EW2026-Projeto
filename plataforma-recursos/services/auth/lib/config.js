@@ -69,6 +69,14 @@ const config = {
 		methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 		allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
 	},
+
+	services: {
+		apiUrl: parseUrl(process.env.API_URL || 'http://api:16025', 'API_URL'),
+	},
+
+	internal: {
+		serviceToken: requiredEnv('INTERNAL_SERVICE_TOKEN'),
+	},
 }
 
 module.exports = {
