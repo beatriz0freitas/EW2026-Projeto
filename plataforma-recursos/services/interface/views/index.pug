@@ -25,7 +25,32 @@ block content
 		section.w3-card.w3-white.w3-padding.w3-margin-top
 			h2 Últimas notícias
 			each item in news
-				article.news-item
-					h3= item.titulo
-					p= item.conteudo
+				- const eventLabel = item.eventType === 'system.new_submission' ? 'Nova submissão' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
+				- const top3Items = item.eventType === 'system.top3' && item.payload && Array.isArray(item.payload.items) ? item.payload.items : []
+				- const isTop3WithItems = item.eventType === 'system.top3' && top3Items.length
 
+				article.news-item
+					div
+						if item.tipo === 'system'
+							span.w3-tag.w3-blue-grey Sistema
+						else
+							span.w3-tag.w3-teal Manual
+						if eventLabel
+							span.w3-tag.w3-light-grey(style='margin-left:8px')= eventLabel
+
+					h3(style='margin-top:8px')= item.titulo
+
+					if !isTop3WithItems
+						p= item.conteudo
+
+					if top3Items.length
+						ol.w3-ul
+							each resource, idx in top3Items
+								li
+									strong #{idx + 1}. #{resource.titulo || 'Recurso'}
+									span.w3-text-grey  · downloads #{resource.downloads || 0}
+									if typeof resource.ratingMedia === 'number'
+										span.w3-text-grey  · rating #{resource.ratingMedia}
+
+					if item.publicadoEm
+						p.w3-text-grey.w3-small Publicado em #{new Date(item.publicadoEm).toLocaleString('pt-PT')}
