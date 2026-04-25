@@ -2,16 +2,20 @@
 
 > **Objetivo:** consulta direta para dúvidas de implementação, arquitetura e decisões.
 >
-> **Atualizado em:** 2026-04-24
+> **Atualizado em:** 2026-04-25
 
 ## Decisões vigentes (resumo)
 
 - Arquitetura: `gateway` (entrada), `auth` (identidade), `api` (domínio), `interface` (UI).
 - Segurança: autorização sempre no backend; UI apenas apoia UX.
 - Padrão de código: rotas pequenas + helpers partilhados + validação precoce + erros consistentes.
-- Configuração: `docker-compose.yml` com não sensíveis hardcoded e sensíveis via `.env`; leitura no código centralizada por serviço em `lib/config.js`.
+- Configuração: `docker-compose.yml` com variáveis não sensíveis hardcoded por serviço; segredos por interpolação (`${JWT_SECRET}`, `${SESSION_SECRET}`, `${INTERNAL_SERVICE_TOKEN}`).
+- Ficheiros de segredos: `.env` e `.env.example` mantêm apenas segredos necessários no estado atual.
+- Leitura de configuração centralizada por serviço em `lib/config.js` (API/Auth/Interface/Gateway).
 - Resiliência: `api` e `auth` arrancam apenas após ligação ao MongoDB; falha de ligação termina o processo.
 - Estado de autenticação: access token + refresh token, com renovação automática na interface em pedidos à API.
+- Integração interna entre serviços protegida por token interno (`INTERNAL_SERVICE_TOKEN`) para operações de sistema.
+- Documentação técnica incorporada por Swagger em `api` e `auth`, com visualização direta e também via gateway.
 
 ## Pendentes prioritários (implementação)
 
@@ -19,25 +23,36 @@
 - Testes mínimos unitários e integração (API/Auth/Interface).
 - Cobertura adicional de validação/sanitização de inputs em rotas menos críticas.
 
-**Notas recentes (2026-04-24):**
+**Notas recentes (2026-04-25):**
 
 - Fluxo OAIS fechado na UI: upload SIP (produtor/admin) e download DIP (público e privado com autorização).
 - Gateway encaminha páginas HTML de auth (`/auth/login`, `/auth/register`, `/auth/logout`) para a Interface; endpoints JSON continuam no serviço Auth.
 - API aceita token por header, cookie e query string (compatibilidade).
 - Sessão web da interface implementada e configurável por `SESSION_COOKIE_NAME`.
+- API e Auth já publicam/consomem notícias de sistema (submissões, utilizadores e jobs diários) usando token interno.
+- Swagger disponível nos serviços e acessível pelo gateway para testes funcionais rápidos.
 
-> Nota: as secções detalhadas abaixo mantêm histórico técnico de decisões e podem conter pontos que já foram ultrapassados pelo estado atual. Em caso de conflito, prevalecem este resumo e o README principal.
+## Swagger (estado atual)
 
-## Critério para decidir entre alternativas
+### API
 
-Preferir sempre a opção que, por esta ordem:
+- Especificação: `services/api/swagger.yaml`
+- UI no serviço API: `/api/docs`
+- UI via gateway: `/api/docs`
 
-1. melhora segurança no backend;
-2. reduz duplicação;
-3. mantém contratos previsíveis;
-4. simplifica manutenção.
+### Auth
 
----
+- Especificação: `services/auth/swagger.yaml`
+- UI no serviço Auth: `/docs`
+- UI via gateway: `/auth/docs`
+
+### Utilização prática
+
+- Para demo local com gateway, usar:
+  - `http://localhost:16020/api/docs`
+  - `http://localhost:16020/auth/docs`
+
+Observação: os endpoints em Swagger que exigem autenticação devem receber token válido (`Bearer`) para testes em rotas protegidas.
 
 ## Base detalhada (contexto, fundamentação e especificações)
 
@@ -71,7 +86,7 @@ Preferir sempre a opção que, por esta ordem:
 
 - Decisão: manter estado no `todo.md` e documentação de decisões.
 - Fundamentação: facilita auditoria técnica, apresentação e defesa do projeto.
-- Evidência: [todo.md](../../todo.md), [docs/DECISOES_E_FUNDAMENTACAO.md](DECISOES_E_FUNDAMENTACAO.md)
+- Evidência: [docs/todo.md](todo.md), [docs/apoio.md](apoio.md)
 
 ---
 

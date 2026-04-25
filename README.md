@@ -92,42 +92,23 @@ Abrir no browser:
 
 ---
 
+## Como consultar o Swagger
+
+Com os serviços levantados, a documentação Swagger fica acessível via Gateway:
+
+- API: `http://localhost:16020/api/docs`
+- Auth: `http://localhost:16020/auth/docs`
+
+Notas:
+
+- Em endpoints protegidos, usar token Bearer válido na UI do Swagger.
+- Aceder sempre pelos URLs do Gateway para manter o mesmo fluxo da arquitetura.
+
+---
+
 ## Portas dos serviços
 
 - Gateway: `16020` (porta pública)
 - API: `16025`
 - Interface: `16026`
 - Auth: `16027`
-
----
-
-## Estado funcional atual
-
-### Auth
-
-- Registo público e login JWT
-- Refresh token
-- Verificação de token
-- Perfil autenticado
-- Gestão de utilizadores (admin)
-
-### API
-
-- Recursos, posts, comentários, ratings, taxonomia e notícias
-- OAIS ingest e access
-- Export/import de dados
-- Notícias automáticas do sistema com dedupe
-- Job diário para top3 e total de utilizadores
-
-### Interface
-
-- Login / registo / logout
-- Home com notícias recentes
-- Recursos (lista, detalhe, upload SIP, download DIP, rating)
-- Posts e comentários
-- Administração (utilizadores, notícias, import/export)
-
-Nota:
-
-- Páginas web de auth são servidas pela Interface (`/auth/login`, `/auth/register`).
-- Endpoints JSON de auth continuam no serviço Auth (`/auth/sessions`, `/auth/sessions/verify`, etc.).
