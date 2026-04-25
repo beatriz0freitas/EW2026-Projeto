@@ -1,0 +1,76 @@
+const Rating = require('../models/Rating')
+const Resource = require('../models/Resource')
+const { jsonError, invalidId, isMongoId } = require('../lib/http')
+
+module.exports.upsertByResource = async (req, res) => {
+	if (!isMongoId(req.params.id)) return invalidId(res)
+
+	try {
+		const stars = req.body.stars
+
+		const resource = await Resource.findById(req.params.id)
+		if (!resource) {
+			return jsonError(res, 404, 'recurso não encontrado')
+		}
+
+		const rating = await Rating.findOneAndUpdate(
+			{ resourceId: resource._id, userId: req.user.sub },
+			{ stars, updatedAt: new Date() },
+			{ upsert: true, new: true, setDefaultsOnInsert: true }
+		)
+
+		res.status(201).json({ ok: true, rating })
+	} catch {
+		jsonError(res, 400, 'pedido inválido')
+	}
+}
+
+module.exports.getStatsByResource = async (req, res) => {
+	if (!isMongoId(req.params.id)) return invalidId(res)
+
+	try {
+		const resource = await Resource.findById(req.params.id)
+		if (!resource) {
+			return jsonError(res, 404, 'recurso não encontrado')
+		}
+
+		const stats = await Rating.aggregate([
+			{ $match: { resourceId: resource._id } },
+			{
+				$group: {
+					_id: '$resourceId',
+					media: { $avg: '$stars' },
+					total: { $sum: 1 },
+				},
+			},
+		])
+
+		if (!stats.length) {
+			return res.json({ ok: true, media: 0, total: 0 })
+		}
+
+		res.json({ ok: true, media: Number(stats[0].media.toFixed(2)), total: stats[0].total })
+	} catch {
+		jsonError(res, 500, 'erro interno')
+	}
+}
+
+module.exports.getMineByResource = async (req, res) => {
+	if (!isMongoId(req.params.id)) return invalidId(res)
+
+	try {
+		const resource = await Resource.findById(req.params.id)
+		if (!resource) {
+			return jsonError(res, 404, 'recurso não encontrado')
+		}
+
+		const rating = await Rating.findOne({
+			resourceId: resource._id,
+			userId: req.user.sub,
+		})
+
+		res.json({ ok: true, rating: rating || null })
+	} catch {
+		jsonError(res, 500, 'erro interno')
+	}
+}
