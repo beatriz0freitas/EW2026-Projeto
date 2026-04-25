@@ -3,6 +3,7 @@ const router = express.Router()
 
 const usersRouter = require('./users')
 const sessionsRouter = require('./sessions')
+const internalRouter = require('./internal')
 const auth = require('../auth/auth')
 const { jsonError } = require('../lib/http')
 
@@ -12,6 +13,7 @@ router.use('/', usersRouter)
 // POST /auth/sessions  (login)
 // GET  /auth/sessions/verify
 router.use('/sessions', sessionsRouter)
+router.use('/internal', internalRouter)
 
 // GET /auth/me  →  atalho: valida token e devolve user completo do DB
 const User = require('../models/User')
