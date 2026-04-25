@@ -51,8 +51,8 @@ module.exports.findById = (id) =>
 	User.findOne({ _id: id, ativo: true }, { password: 0 }).exec()
 
 module.exports.insert = async (input) => {
-	const nome     = String(input?.nome     || '').trim()
-	const email    = String(input?.email    || '').trim().toLowerCase()
+	const nome = String(input?.nome || '').trim()
+	const email = String(input?.email || '').trim().toLowerCase()
 	const password = String(input?.password || '')
 
 	if (!nome || !email || !password) throw new Error('nome, email e password sao obrigatorios')
@@ -60,7 +60,7 @@ module.exports.insert = async (input) => {
 
 	if (await User.findOne({ email })) throw new Error('email ja registado')
 
-	const _id  = await generateUserId(input?._id || input?.username, email)
+	const _id = await generateUserId(input?._id || input?.username, email)
 	const role = normalizeRole(input?.role)
 
 	const user = new User({
@@ -81,13 +81,13 @@ module.exports.insert = async (input) => {
 module.exports.update = async (id, input) => {
 	const update = {}
 
-	if (input?.nome        !== undefined) update.nome        = String(input.nome).trim()
-	if (input?.email       !== undefined) update.email       = String(input.email).trim().toLowerCase()
-	if (input?.filiacao    !== undefined) update.filiacao    = normalizeFiliacao(input.filiacao)
-	if (input?.role        !== undefined) update.role        = normalizeRole(input.role)
+	if (input?.nome !== undefined) update.nome = String(input.nome).trim()
+	if (input?.email !== undefined) update.email = String(input.email).trim().toLowerCase()
+	if (input?.filiacao !== undefined) update.filiacao = normalizeFiliacao(input.filiacao)
+	if (input?.role !== undefined) update.role = normalizeRole(input.role)
 	if (input?.nivel_acesso !== undefined) update.nivel_acesso = Number(input.nivel_acesso)
-	if (input?.ativo       !== undefined) update.ativo       = Boolean(input.ativo)
-	if (input?.password)                  update.password    = await bcrypt.hash(String(input.password), 10)
+	if (input?.ativo !== undefined) update.ativo = Boolean(input.ativo)
+	if (input?.password) update.password = await bcrypt.hash(String(input.password), 10)
 
 	const user = await User.findByIdAndUpdate(id, update, {
 		new: true,
