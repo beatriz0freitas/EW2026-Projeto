@@ -2,6 +2,8 @@ const express = require('express')
 
 const NewsItem = require('../models/NewsItem')
 const { requireLevel } = require('../middleware/auth')
+const { requireInternalService } = require('../middleware/internal')
+const { publishNews } = require('../lib/newsPublisher')
 const {
 	validarCamposTextoObrigatoriosNoBody,
 	validarPaginacaoNaQuery,
@@ -38,15 +40,44 @@ router.post('/', requireLevel('admin'), validarCamposTextoObrigatoriosNoBody(['t
 	try {
 		const { titulo, conteudo } = req.body
 
-		const item = await NewsItem.create({
+		const result = await publishNews({
 			titulo,
 			conteudo,
+			tipo: 'manual',
 			createdBy: req.user.sub,
 		})
 
-		res.status(201).json({ ok: true, item })
+		res.status(201).json({ ok: true, item: result.item })
 	} catch (err) {
 		jsonError(res, 500, 'erro interno')
+	}
+})
+
+// POST /api/news/system (internal service only)
+router.post('/system', requireInternalService, validarCamposTextoObrigatoriosNoBody(['titulo', 'conteudo', 'eventType']), async (req, res) => {
+	try {
+		const result = await publishNews({
+			titulo: req.body.titulo,
+			conteudo: req.body.conteudo,
+			tipo: 'system',
+			eventType: req.body.eventType,
+			dedupeKey: req.body.dedupeKey,
+			payload: req.body.payload,
+			createdBy: req.body.createdBy || 'system',
+			publicadoEm: req.body.publicadoEm,
+		})
+
+		res.status(result.created ? 201 : 200).json({
+			ok: true,
+			created: result.created,
+			duplicated: result.duplicated,
+			item: result.item,
+		})
+	} catch (err) {
+		jsonError(res, 500, {
+			code: 'SYSTEM_NEWS_ERROR',
+			message: 'erro ao criar noticia do sistema',
+		})
 	}
 })
 

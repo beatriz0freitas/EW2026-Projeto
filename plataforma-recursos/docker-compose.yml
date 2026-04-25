@@ -20,6 +20,9 @@ services:
       - AIP_DIR=/aip
       - AUTH_URL=http://auth:16027
       - AUTH_COOKIE_NAME=ew.auth
+      - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+      - NEWS_JOB_DAILY_HOUR=0
+      - NEWS_JOB_DAILY_MINUTE=5
     depends_on:
       - mongodb
     networks:
@@ -34,6 +37,8 @@ services:
       - PORT=16027
       - MONGO_URL=mongodb://mongodb:27017/ew2026
       - JWT_SECRET=${JWT_SECRET}
+      - API_URL=http://api:16025
+      - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
     depends_on:
       - mongodb
     networks:

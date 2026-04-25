@@ -5,10 +5,15 @@ const User = require('../controllers/user')
 const auth = require('../auth/auth')
 const { jsonError } = require('../lib/http')
 const { validarCamposTextoObrigatoriosNoBody } = require('../middleware/validate')
+const { publishNewUserRegisteredNews } = require('../lib/systemNewsClient')
 
 async function handleRegister(req, res) {
 	try {
 		const user = await User.insert(req.body)
+
+		publishNewUserRegisteredNews(user).catch((err) => {
+			console.error('[auth] warning: could not publish new user news:', err)
+		})
 
 		res.status(201).json({ ok: true, user })
 	} catch (err) {
