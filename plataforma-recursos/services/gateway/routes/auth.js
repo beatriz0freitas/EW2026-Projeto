@@ -1,14 +1,12 @@
 const express = require('express')
 
 const { serviceProxy } = require('../lib/proxy')
-
-const AUTH_URL = process.env.AUTH_URL || 'http://auth:16027'
-const INTERFACE_URL = process.env.INTERFACE_URL || 'http://interface:16026'
+const { config } = require('../lib/config')
 
 const router = express.Router()
 
-const authProxy = serviceProxy(AUTH_URL)
-const interfaceAuthPagesProxy = serviceProxy(INTERFACE_URL, {
+const authProxy = serviceProxy(config.services.authUrl)
+const interfaceAuthPagesProxy = serviceProxy(config.services.interfaceUrl, {
 	pathRewrite: (path, req) => req.originalUrl,
 })
 
