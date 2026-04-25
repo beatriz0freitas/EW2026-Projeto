@@ -59,6 +59,13 @@ router.get('/access/:id', optionalAuth, async (req, res) => {
 	const filename = `resource-${req.params.id}.zip`
 	res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
 	res.setHeader('Content-Type', 'application/zip')
+
+	try {
+		await Resource.updateOne({ _id: resource._id }, { $inc: { downloadCount: 1 } })
+	} catch (err) {
+		console.error('[api][access] warning: could not increment downloadCount:', err)
+	}
+
 	res.sendFile(path.resolve(zipPath))
 })
 

@@ -19,9 +19,19 @@ block content
 		else
 			ul.w3-ul.w3-hoverable
 				each item in items
+					- const eventLabel = item.eventType === 'system.new_submission' ? 'Nova submissão' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
 					li
+						div
+							if item.tipo === 'system'
+								span.w3-tag.w3-blue-grey Sistema
+							else
+								span.w3-tag.w3-teal Manual
+							if eventLabel
+								span.w3-tag.w3-light-grey(style='margin-left:8px')= eventLabel
 						strong= item.titulo
 						p= item.conteudo
+						if item.publicadoEm
+							p.w3-text-grey.w3-small Publicado em #{new Date(item.publicadoEm).toLocaleString('pt-PT')}
 						form(action=`/admin/news/${item._id}/delete` method='post')
 							button.w3-button.w3-small.w3-border(type='submit') Remover
 

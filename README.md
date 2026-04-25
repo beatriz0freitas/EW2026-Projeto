@@ -1,67 +1,90 @@
 # EW2026 — Plataforma de Gestão e Disponibilização de Recursos Educativos
 
-Fluxo geral:
+Fluxo geral da arquitetura:
 
-Cliente → Gateway → (Interface / API / Auth) → MongoDB + Storage AIP
+Cliente -> Gateway -> (Interface / API / Auth) -> MongoDB + storage AIP em disco
 
 ---
 
 ## Pré-requisitos
 
-Necessário ter instalado:
+É necessário ter instalado:
 
 - Docker
 - Docker Compose v2 (`docker compose`)
-- `make` (opcional, mas recomendado para comandos rápidos)
 
 Verificação rápida:
 
 ```bash
 docker --version
 docker compose version
-make --version
 ```
 
 ---
 
-## Execução
+## Configuração do ambiente (.env)
 
-### Passo 1 — entrar na pasta da aplicação
+Entrar na pasta do projeto executável:
 
 ```bash
 cd plataforma-recursos
 ```
 
-### Passo 2 — criar `.env`
+Criar o `.env` a partir do exemplo:
 
 ```bash
-make init
+cp .env.example .env
 ```
 
-Isto cria `.env` a partir de `.env.example` se ainda não existir.
-
-### Passo 3 — definir segredo JWT
-
-No ficheiro `.env`, garantir um valor seguro para:
-
-```env
-JWT_SECRET=coloca-aqui-um-segredo-forte
-JWT_EXPIRES=24h
-```
-
-Gerar segredo recomendado via terminal:
+Gerar 3 segredos fortes e diferentes (recomendado):
 
 ```bash
 openssl rand -hex 32
+openssl rand -hex 32
+openssl rand -hex 32
 ```
 
-### Passo 4 — levantar os serviços
+Preencher o `.env` com os valores gerados:
+
+```env
+JWT_SECRET=<valor-1>
+SESSION_SECRET=<valor-2>
+INTERNAL_SERVICE_TOKEN=<valor-3>
+```
+
+Para que serve cada valor:
+
+- `JWT_SECRET`: assinatura de tokens no serviço Auth.
+- `SESSION_SECRET`: assinatura de sessão no serviço Interface.
+- `INTERNAL_SERVICE_TOKEN`: autenticação entre serviços (API <-> Auth) para endpoints internos e notícias automáticas.
+
+---
+
+## Como correr o trabalho
+
+Levantar os serviços:
 
 ```bash
-make up
+docker compose up -d --build
 ```
 
-### Passo 5 — abrir a aplicação
+Ver estado:
+
+```bash
+docker compose ps
+```
+
+Ver logs:
+
+```bash
+docker compose logs -f api auth interface gateway
+```
+
+Parar os serviços:
+
+```bash
+docker compose down
+```
 
 Abrir no browser:
 
@@ -69,47 +92,42 @@ Abrir no browser:
 
 ---
 
-## Portas e endpoints principais
+## Portas dos serviços
 
-Portas internas da solução:
-
-- Gateway: `16020` (exposta ao host)
+- Gateway: `16020` (porta pública)
 - API: `16025`
 - Interface: `16026`
 - Auth: `16027`
 
 ---
 
-## 8) Funcionalidades já disponíveis
+## Estado funcional atual
 
 ### Auth
 
-- Registo público (`/auth/register`)
-- Login JWT (`/auth/sessions`)
-- Verificação de token (`/auth/sessions/verify`)
-- Perfil autenticado (`/auth/me`)
-- Gestão de utilizadores para admin (`/auth/users`)
+- Registo público e login JWT
+- Refresh token
+- Verificação de token
+- Perfil autenticado
+- Gestão de utilizadores (admin)
 
 ### API
 
-- Recursos (listar, detalhe, editar/apagar com posse/perfil)
-- Posts e comentários
-- Ratings (1 por utilizador/recurso)
-- Notícias
-- Taxonomia
-- OAIS ingest (`POST /api/oais/ingest`) e access (`GET /api/oais/access/:id`)
+- Recursos, posts, comentários, ratings, taxonomia e notícias
+- OAIS ingest e access
+- Export/import de dados
+- Notícias automáticas do sistema com dedupe
+- Job diário para top3 e total de utilizadores
 
 ### Interface
 
 - Login / registo / logout
-- Página inicial com notícias
-- Listagem e detalhe de recursos
-- Submissão de recursos via SIP (produtor/admin)
-- Download de recursos via DIP (públicos e privados com autorização)
-- Classificação de recursos
-- Listagem/criação/detalhe de posts
-- Comentários em posts
-- Área de administração (utilizadores e notícias)
+- Home com notícias recentes
+- Recursos (lista, detalhe, upload SIP, download DIP, rating)
+- Posts e comentários
+- Administração (utilizadores, notícias, import/export)
 
-**Nota:** as páginas web de autenticação são servidas pela Interface em `/auth/login` e `/auth/register`.
-Os endpoints JSON do serviço Auth continuam em `/auth/sessions`, `/auth/sessions/verify`, etc.
+Nota:
+
+- Páginas web de auth são servidas pela Interface (`/auth/login`, `/auth/register`).
+- Endpoints JSON de auth continuam no serviço Auth (`/auth/sessions`, `/auth/sessions/verify`, etc.).
