@@ -3,18 +3,25 @@
 ## TODO auditado e atualizado
 
 Legenda:
+
 - ✅ Implementado
 - ⚠️ Parcial / com ressalvas
 - ❌ Em falta
 
 Atualizado em: 2026-04-25
-Base da avaliacao: verificacao direta do codigo em services/api, services/auth, services/gateway, services/interface e dados em data/aip.
+
+Politica de configuracao (estado atual):
+
+- nao sensiveis hardcoded no `docker-compose.yml`
+- segredos via interpolacao de ambiente (`JWT_SECRET`, `SESSION_SECRET`, `INTERNAL_SERVICE_TOKEN`)
+- `.env` e `.env.example` com foco em segredos
 
 ---
 
 ## 1) Cobertura do enunciado (Proposta 1)
 
 ### Objetivos funcionais
+
 - ✅ Disponibilizar recursos educativos de varios tipos.
 - ✅ Permitir adicionar novos recursos (ingest SIP via API e UI).
 - ✅ Classificacao por tipo, ano, tema e hashtag (filtros e taxonomia).
@@ -23,12 +30,14 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 - ✅ Sistema de ranking por estrelas (1..5), com media e total.
 
 ### SIP / DIP (OAIS)
+
 - ✅ SIP em ZIP com validacao BagIt simplificada (bagit.txt, manifest-sha256.txt, data/, metadata.json).
 - ✅ Validacao de checksums SHA-256 e deteccao de zip-slip.
 - ✅ DIP disponivel por GET /api/oais/access/:id (na pratica, DIP = SIP, conforme enunciado inicial).
 - ✅ Controlo publico/privado no access (publico aberto; privado apenas admin ou produtor dono).
 
 ### Utilizadores e perfis
+
 - ✅ Autenticacao por username/email + password com JWT.
 - ✅ Perfis admin, produtor e consumidor implementados no backend.
 - ✅ Refresh token implementado (cookies no auth e renovacao server-side para a interface).
@@ -36,19 +45,23 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 - ⚠️ Autenticacoes alternativas (chave API, Google, Facebook) nao implementadas.
 
 ### Dados de utilizador
+
 - ✅ nome, email, filiacao, role, data_registo, ultimo_acesso, ativo, password (hash bcrypt).
 - ⚠️ Campo nivel_acesso existe, mas o controlo principal de permissao e por role.
 
 ### Metainformacao de recursos
+
 - ✅ tipo, titulo, visibilidade, produtor e data de registo no sistema existem no fluxo/modelo.
 - ⚠️ subtitulo e dataCriacao nao sao obrigatorios no ingest (ha recursos sem estes campos).
 - ⚠️ validacao de metadata ainda minima (obrigatorio apenas tipo, titulo, visibilidade).
 
 ### Noticias na pagina principal
+
 - ✅ Noticias manuais (admin) e listagem das ultimas 5 na home.
 - ✅ Noticias automaticas do sistema implementadas (nova submissao, top3 e total de utilizadores).
 
 ### Dataset para demonstracao
+
 - ⚠️ Existem entradas reais no storage (atualmente 6 AIPs), mas nao chega a "dezenas".
 
 ---
@@ -56,7 +69,9 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 ## 2) Estado por servico
 
 ## API (services/api)
+
 - ✅ Estrutura modular com models, routes, middleware e lib.
+- ✅ Swagger incorporado e disponível em `/api/docs` (direto e via gateway).
 - ✅ OAIS ingest e access operacionais.
 - ✅ CRUD principal: resources, posts, comments, ratings, news, taxonomy.
 - ✅ Export/import de dados globais (GET /api/export e POST /api/import, admin).
@@ -69,13 +84,16 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 - ✅ Evento automatico system.new_submission no fim do ingest com dedupe por resourceId.
 - ✅ Job diario para system.top3 e system.total_users.
 - ✅ Contagem de downloads por recurso (downloadCount) no OAIS access para alimentar top3.
+- ✅ Config valida e exige `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ PATCH de resources substitui metadata inteira; falta whitelist de campos permitidos.
 - ⚠️ GET /api/posts ainda nao filtra por resourceId.
 - ⚠️ Nao ha limite explicito em express.json() no API.
 - ⚠️ Falta hardening adicional (helmet/cors explicito no gateway/rate limit central).
 
 ## Auth (services/auth)
+
 - ✅ JWT, refresh token, verify, me e gestao de utilizadores admin.
+- ✅ Swagger incorporado e disponível em `/docs` (direto) e `/auth/docs` (via gateway).
 - ✅ Soft-delete de utilizador (ativo=false) em DELETE /users/:id.
 - ✅ Hash de password com bcrypt e ocultacao de password em toJSON().
 - ✅ Validacao de body dedicada para login/campos obrigatorios.
@@ -83,22 +101,29 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 - ✅ CORS ja configurado no auth.
 - ✅ Endpoint interno seguro para stats: GET /internal/stats/users-count.
 - ✅ Publicacao automatica de noticia system.new_user apos registo (auth -> api, best-effort).
+- ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
 - ⚠️ JWT_REFRESH_SECRET tem fallback por defeito; ideal exigir segredo forte por ambiente.
 - ❌ Rate limiting no login nao implementado.
 - ❌ Helmet nao implementado.
 
 ## Gateway (services/gateway)
+
 - ✅ Reverse proxy funcional: /api -> API, /auth -> Auth, / -> Interface.
 - ✅ Regras especificas para /auth/login, /auth/register e /auth/logout irem para Interface.
 - ✅ Handler central de 502 bad gateway em lib/proxy.js.
 - ✅ proxyTimeout configurado (60s).
+- ✅ Config centralizada em `services/gateway/lib/config.js` com validacao de PORT/URLs.
+- ✅ Exposição de documentação Swagger dos serviços:
+	- `/api/docs` -> API Swagger UI
+	- `/auth/docs` -> Auth Swagger UI
 - ❌ CORS explicito no gateway nao implementado.
 - ❌ Helmet no gateway nao implementado.
 - ❌ Rate limiting global nao implementado.
 - ⚠️ Sem circuit breaker (apenas timeout e erro 502).
 
 ## Interface (services/interface)
+
 - ✅ App Express com Pug, sessao, flash messages e rotas montadas.
 - ✅ Login/registo/logout funcionais.
 - ✅ Home com noticias recentes.
@@ -114,6 +139,7 @@ Base da avaliacao: verificacao direta do codigo em services/api, services/auth, 
 ## 3) Correcao explicita do checklist anterior
 
 Itens que estavam marcados de forma incorreta e foram corrigidos:
+
 - ✅ ratings/mine nao esta em ficheiro solto; esta implementado e montado em routes/ratings.js.
 - ✅ Edicao de post na UI esta implementada (/posts/:id/edit).
 - ✅ Remocao de comentario na UI esta implementada.
@@ -128,25 +154,30 @@ Itens que estavam marcados de forma incorreta e foram corrigidos:
 ## 4) Backlog prioritario para fecho
 
 1. Corrigir seguranca de registo no auth:
+
 - Forcar role=consumidor em POST /register.
 - Ignorar role/nivel_acesso vindos do cliente publico.
 
 2. Hardening transversal:
+
 - Adicionar rate limit em POST /auth/sessions.
 - Adicionar helmet em auth/api/gateway.
 - Definir politica CORS explicita no gateway.
 - Rever rotas internas para nao ficarem expostas no gateway (defesa em profundidade).
 
 3. Metadados e contratos:
+
 - Reforcar validacao do metadata.json (subtitulo opcional, dataCriacao/dataRegisto, enums visibilidade).
 - Limitar PATCH /api/resources/:id a campos permitidos.
 
 4. Experiencia funcional final:
+
 - Mostrar recursos na home.
 - Mostrar posts associados no detalhe de recurso (resourceId).
 - (Opcional) Filtro GET /api/posts?resourceId=...
 
 5. Qualidade de entrega:
+
 - Criar testes minimos (unitarios ingest + integracao auth/permissoes/OAIS).
 - Aumentar dataset para dezenas de entradas reais para demonstracao final.
 
