@@ -97,6 +97,7 @@ Abrir no browser:
 Com os serviços levantados, a documentação Swagger fica acessível via Gateway:
 
 - Hub (seleção de serviço): `http://localhost:16020/docs`
+- Gateway: `http://localhost:16020/gateway/docs`
 - API: `http://localhost:16020/api/docs`
 - Auth: `http://localhost:16020/auth/docs`
 - Interface: `http://localhost:16020/interface/docs`

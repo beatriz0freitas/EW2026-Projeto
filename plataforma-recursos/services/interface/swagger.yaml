@@ -31,6 +31,14 @@ components:
           type: string
           example: Ocorreu um erro inesperado. Tente novamente.
 paths:
+  /openapi.json:
+    get:
+      tags: [Docs]
+      summary: Obter especificacao OpenAPI em JSON
+      responses:
+        '200':
+          description: Especificacao OpenAPI da Interface
+
   /health:
     get:
       tags: [Health]

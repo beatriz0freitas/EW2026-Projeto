@@ -167,6 +167,14 @@ components:
           type: string
           example: matematica
 paths:
+  /api/openapi.json:
+    get:
+      tags: [Docs]
+      summary: Obter especificacao OpenAPI em JSON
+      responses:
+        '200':
+          description: Especificacao OpenAPI da API
+
   /api/health:
     get:
       tags: [Health]
@@ -606,6 +614,40 @@ paths:
                     type: integer
                     example: 12
 
+  /api/resources/{id}/ratings/mine:
+    get:
+      tags: [Ratings]
+      summary: Obter rating do utilizador autenticado para o recurso
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rating do utilizador no recurso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  rating:
+                    allOf:
+                      - $ref: '#/components/schemas/Rating'
+                    nullable: true
+        '401':
+          description: Nao autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/news:
     get:
       tags: [News]
@@ -648,6 +690,47 @@ paths:
       responses:
         '201':
           description: Noticia criada
+
+  /api/news/system:
+    post:
+      tags: [News]
+      summary: Criar noticia de sistema (uso interno entre servicos)
+      description: Requer header interno X-Internal-Service-Token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo, conteudo, eventType]
+              properties:
+                titulo:
+                  type: string
+                conteudo:
+                  type: string
+                eventType:
+                  type: string
+                dedupeKey:
+                  type: string
+                payload:
+                  type: object
+                  additionalProperties: true
+            example:
+              titulo: Novo utilizador registado
+              conteudo: O utilizador demo@teste.com juntou-se a plataforma.
+              eventType: system.new_user
+              dedupeKey: system.new_user:demo@teste.com
+              payload:
+                userId: demo.user
+      responses:
+        '201':
+          description: Noticia de sistema criada
+        '401':
+          description: Token interno ausente ou invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/news/{id}:
     delete:
@@ -720,3 +803,37 @@ paths:
       responses:
         '200':
           description: Item removido
+
+  /api/export:
+    get:
+      tags: [Export]
+      summary: Exportar dados globais da plataforma (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dump JSON de dados da plataforma
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /api/import:
+    post:
+      tags: [Export]
+      summary: Importar dump JSON da plataforma (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Importacao concluida
+        '207':
+          description: Importacao parcialmente concluida
