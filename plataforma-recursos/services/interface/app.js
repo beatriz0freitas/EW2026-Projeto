@@ -1,6 +1,8 @@
 const path = require('path')
 const express = require('express')
 const session = require('express-session')
+const swaggerUi = require('swagger-ui-express')
+const YAML = require('yamljs')
 const { config } = require('./lib/config')
 
 const indexRouter = require('./routes/index')
@@ -8,6 +10,7 @@ const authRouter = require('./routes/auth')
 const resourcesRouter = require('./routes/resources')
 const postsRouter = require('./routes/posts')
 const adminRouter = require('./routes/admin')
+const swaggerDocument = YAML.load('./swagger.yaml')
 
 const app = express()
 
@@ -52,6 +55,11 @@ app.use((req, res, next) => {
 
 app.get('/health', (req, res) => {
 	res.json({ status: 'ok' })
+})
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
+app.get('/openapi.json', (req, res) => {
+	res.json(swaggerDocument)
 })
 
 app.use('/', indexRouter)

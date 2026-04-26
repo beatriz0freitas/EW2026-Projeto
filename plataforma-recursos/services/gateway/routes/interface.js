@@ -5,6 +5,13 @@ const { config } = require('../lib/config')
 
 const router = express.Router()
 
+router.use(
+	'/interface',
+	serviceProxy(config.services.interfaceUrl, {
+		pathRewrite: { '^/interface': '' },
+	})
+)
+
 router.use('/', serviceProxy(config.services.interfaceUrl))
 
 module.exports = router
