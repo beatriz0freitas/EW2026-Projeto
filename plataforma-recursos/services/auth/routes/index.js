@@ -5,7 +5,7 @@ const usersRouter = require('./users')
 const sessionsRouter = require('./sessions')
 const internalRouter = require('./internal')
 const indexController = require('../controllers/indexController')
-const auth = require('../auth/auth')
+const { verificaAcesso } = require('../middleware/auth')
 
 // POST /auth/register
 router.use('/', usersRouter)
@@ -16,6 +16,6 @@ router.use('/sessions', sessionsRouter)
 router.use('/internal', internalRouter)
 
 // GET /auth/me  →  atalho: valida token e devolve user completo do DB
-router.get('/me', auth.verificaAcesso, indexController.me)
+router.get('/me', verificaAcesso, indexController.me)
 
 module.exports = router

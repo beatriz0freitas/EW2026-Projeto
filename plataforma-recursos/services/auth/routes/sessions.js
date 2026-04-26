@@ -10,7 +10,7 @@
 const express = require('express')
 
 const sessionsController = require('../controllers/sessionsController')
-const auth = require('../auth/auth')
+const { verificaAcesso } = require('../middleware/auth')
 const { validarCampoObrigatorioNoBody, validarPedidoLoginNoBody } = require('../middleware/validate')
 
 const router = express.Router()
@@ -24,7 +24,7 @@ router.post('/', validarPedidoLoginNoBody(), sessionsController.login)
 // GET /sessions/verify  →  valida access token
 // Usado internamente pelos outros serviços.
 // ─────────────────────────────────────────────
-router.get('/verify', auth.verificaAcesso, sessionsController.verify)
+router.get('/verify', verificaAcesso, sessionsController.verify)
 
 // ─────────────────────────────────────────────
 // POST /sessions/refresh  →  emite novo access token a partir do refresh token
