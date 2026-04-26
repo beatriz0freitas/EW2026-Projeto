@@ -72,7 +72,7 @@ Politica de configuracao (estado atual):
 - ✅ Estrutura modular com models, routes, middleware e lib.
 - ✅ Swagger incorporado e disponível via Gateway em `http://localhost:16020/api/docs`.
 - ✅ OAIS ingest e access operacionais.
-- ✅ CRUD principal: resources, posts, comments, ratings, news, taxonomy.
+- ✅ CRUD principal: resources, posts, comments, ratings e news.
 - ✅ Export/import de dados globais (GET /api/export e POST /api/import, admin).
 - ✅ Paginacao e respostas de erro utilitarias centralizadas em lib/http.js.
 - ✅ Endpoint ratings/mine implementado e montado.
