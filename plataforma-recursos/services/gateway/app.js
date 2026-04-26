@@ -1,4 +1,5 @@
 const express = require('express')
+const swaggerUi = require('swagger-ui-express')
 const routes = require('./routes')
 const { config } = require('./lib/config')
 
@@ -13,6 +14,21 @@ app.use((req, res, next) => {
 app.get('/health', (req, res) => {
 	res.json({ status: 'ok' })
 })
+
+app.use(
+	'/docs',
+	swaggerUi.serve,
+	swaggerUi.setup(null, {
+		explorer: true,
+		swaggerOptions: {
+			urls: [
+				{ name: 'API', url: '/api/openapi.json' },
+				{ name: 'Auth', url: '/auth/openapi.json' },
+				{ name: 'Interface', url: '/interface/openapi.json' },
+			],
+		},
+	})
+)
 
 app.use('/', routes)
 

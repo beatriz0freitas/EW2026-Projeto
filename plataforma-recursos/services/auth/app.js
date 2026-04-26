@@ -61,6 +61,9 @@ app.get('/health', (req, res) => {
  
 app.use('/', routes)
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
+app.get('/openapi.json', (req, res) => {
+	res.json(swaggerDocument)
+})
 
 app.use((req, res) => {
 	jsonError(res, 404, { code: 'NOT_FOUND', message: 'rota não encontrada' })

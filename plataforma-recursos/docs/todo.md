@@ -71,7 +71,7 @@ Politica de configuracao (estado atual):
 ## API (services/api)
 
 - ✅ Estrutura modular com models, routes, middleware e lib.
-- ✅ Swagger incorporado e disponível em `/api/docs` (direto e via gateway).
+- ✅ Swagger incorporado e disponível via Gateway em `http://localhost:16020/api/docs`.
 - ✅ OAIS ingest e access operacionais.
 - ✅ CRUD principal: resources, posts, comments, ratings, news, taxonomy.
 - ✅ Export/import de dados globais (GET /api/export e POST /api/import, admin).
@@ -93,7 +93,7 @@ Politica de configuracao (estado atual):
 ## Auth (services/auth)
 
 - ✅ JWT, refresh token, verify, me e gestao de utilizadores admin.
-- ✅ Swagger incorporado e disponível em `/docs` (direto) e `/auth/docs` (via gateway).
+- ✅ Swagger incorporado e disponível via Gateway em `http://localhost:16020/auth/docs`.
 - ✅ Soft-delete de utilizador (ativo=false) em DELETE /users/:id.
 - ✅ Hash de password com bcrypt e ocultacao de password em toJSON().
 - ✅ Validacao de body dedicada para login/campos obrigatorios.
@@ -115,8 +115,9 @@ Politica de configuracao (estado atual):
 - ✅ proxyTimeout configurado (60s).
 - ✅ Config centralizada em `services/gateway/lib/config.js` com validacao de PORT/URLs.
 - ✅ Exposição de documentação Swagger dos serviços:
-	- `/api/docs` -> API Swagger UI
-	- `/auth/docs` -> Auth Swagger UI
+	- `http://localhost:16020/api/docs` -> API Swagger UI
+	- `http://localhost:16020/auth/docs` -> Auth Swagger UI
+	- `http://localhost:16020/interface/docs` -> Interface Swagger UI
 - ❌ CORS explicito no gateway nao implementado.
 - ❌ Helmet no gateway nao implementado.
 - ❌ Rate limiting global nao implementado.
