@@ -3,6 +3,10 @@ extends ../layout
 block content
 	section.w3-card.w3-white.w3-padding.w3-margin-top
 		h1 Administração · Utilizadores
+		p
+			a.w3-button.w3-border(href='/admin/users') Utilizadores
+			a.w3-button.w3-border(href='/admin/news') Notícias
+			a.w3-button.w3-border(href='/admin/data') Dados
 
 		if !users.length
 			p Sem utilizadores para mostrar.
@@ -28,4 +32,3 @@ block content
 									button.w3-button.w3-small.w3-border(type='submit') Atualizar
 								form(action=`/admin/users/${u._id}/delete` method='post')
 									button.w3-button.w3-small.w3-border(type='submit') Remover
-
