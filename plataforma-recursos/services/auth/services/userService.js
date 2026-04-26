@@ -106,6 +106,15 @@ module.exports.remove = async (id) => {
 	return toPublicUser(user)
 }
 
+module.exports.getStats = async () => {
+	const [totalUsers, totalActiveUsers] = await Promise.all([
+		User.countDocuments({}),
+		User.countDocuments({ ativo: true }),
+	])
+
+	return { totalUsers, totalActiveUsers }
+}
+
 module.exports.login = async (identifier, password) => {
 	const lookup = String(identifier || '').trim()
 	if (!lookup || !password) throw new Error('credenciais invalidas')
