@@ -8,7 +8,7 @@ const cookieParser = require('cookie-parser')
 const routes = require('./routes')
 const { config } = require('./lib/config')
 const { jsonError } = require('./lib/http')
-const { startSystemNewsJob } = require('./lib/systemNewsJob')
+const { initSystemNewsTriggers } = require('./lib/systemNewsJob')
 const swaggerDocument = YAML.load('./swagger.yaml')
 
 const app = express()
@@ -55,7 +55,7 @@ async function start() {
 
 		app.listen(config.port, () => {
 			console.log(`API listening on port ${config.port}`)
-			startSystemNewsJob()
+			initSystemNewsTriggers()
 		})
 	} catch (err) {
 		console.error('MongoDB: connection error:', err)
@@ -64,4 +64,3 @@ async function start() {
 }
 
 start()
-

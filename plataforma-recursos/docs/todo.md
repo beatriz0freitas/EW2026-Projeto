@@ -99,7 +99,7 @@ Politica de configuracao (estado atual):
 - ✅ app.js so faz listen apos conectar ao MongoDB.
 - ✅ CORS ja configurado no auth.
 - ✅ Endpoint interno seguro para stats: GET /internal/stats/users-count.
-- ✅ Publicacao automatica de noticia system.new_user apos registo (auth -> api, best-effort).
+- ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
 - ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
 - ⚠️ JWT_REFRESH_SECRET tem fallback por defeito; ideal exigir segredo forte por ambiente.

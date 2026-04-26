@@ -716,12 +716,13 @@ paths:
                   type: object
                   additionalProperties: true
             example:
-              titulo: Novo utilizador registado
-              conteudo: O utilizador demo@teste.com juntou-se a plataforma.
-              eventType: system.new_user
-              dedupeKey: system.new_user:demo@teste.com
+              titulo: Atualizacao de utilizadores da plataforma
+              conteudo: O sistema tem agora 3 utilizadores ativos (3 no total).
+              eventType: system.total_users
+              dedupeKey: system.total_users:2026-04-26T11:28:56.000Z
               payload:
-                userId: demo.user
+                totalUsers: 3
+                totalActiveUsers: 3
       responses:
         '201':
           description: Noticia de sistema criada
