@@ -1,5 +1,4 @@
 const Resource = require('../models/Resource')
-const Taxonomy = require('../models/Taxonomy')
 const NewsItem = require('../models/NewsItem')
 const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
@@ -7,9 +6,8 @@ const { jsonError } = require('../lib/http')
 
 module.exports.exportAll = async (req, res) => {
 	try {
-		const [resources, taxonomy, news, ratings, comments] = await Promise.all([
+		const [resources, news, ratings, comments] = await Promise.all([
 			Resource.find().lean(),
-			Taxonomy.find().lean(),
 			NewsItem.find().lean(),
 			Rating.find().lean(),
 			Comment.find().lean(),
@@ -19,7 +17,6 @@ module.exports.exportAll = async (req, res) => {
 			version: '1',
 			exportedAt: new Date().toISOString(),
 			resources,
-			taxonomy,
 			news,
 			ratings,
 			comments,
@@ -46,7 +43,6 @@ module.exports.importAll = async (req, res) => {
 
 	const results = {
 		resources: { upserted: 0, errors: [] },
-		taxonomy: { upserted: 0, errors: [] },
 		news: { upserted: 0, errors: [] },
 		ratings: { upserted: 0, errors: [] },
 		comments: { upserted: 0, errors: [] },
@@ -65,7 +61,6 @@ module.exports.importAll = async (req, res) => {
 	}
 
 	await upsertAll(Resource, dump.resources, 'resources')
-	await upsertAll(Taxonomy, dump.taxonomy, 'taxonomy')
 	await upsertAll(NewsItem, dump.news, 'news')
 	await upsertAll(Rating, dump.ratings, 'ratings')
 	await upsertAll(Comment, dump.comments, 'comments')

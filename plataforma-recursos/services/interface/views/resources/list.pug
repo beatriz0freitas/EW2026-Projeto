@@ -6,18 +6,31 @@ block content
 		p.w3-text-grey Total: #{pagination.total}
 
 		- const f = filters || {}
+		- const options = filterOptions || { tipos: [], anos: [], temas: [], hashtags: [] }
 		form(action='/resources' method='get')
 			label(for='tipo') Tipo
-			input#tipo.w3-input(type='text' name='tipo' value=(f.tipo || ''))
+			select#tipo.w3-select(name='tipo')
+				option(value='') Todos
+				each tipo in options.tipos
+					option(value=tipo selected=(f.tipo === tipo))= tipo
 
 			label(for='ano') Ano
-			input#ano.w3-input(type='number' name='ano' value=(f.ano || ''))
+			select#ano.w3-select(name='ano')
+				option(value='') Todos
+				each ano in options.anos
+					option(value=ano selected=(String(f.ano || '') === String(ano)))= ano
 
 			label(for='tema') Tema
-			input#tema.w3-input(type='text' name='tema' value=(f.tema || ''))
+			select#tema.w3-select(name='tema')
+				option(value='') Todos
+				each tema in options.temas
+					option(value=tema selected=(f.tema === tema))= tema
 
 			label(for='hashtag') Hashtag
-			input#hashtag.w3-input(type='text' name='hashtag' value=(f.hashtag || ''))
+			select#hashtag.w3-select(name='hashtag')
+				option(value='') Todas
+				each hashtag in options.hashtags
+					option(value=hashtag selected=(f.hashtag === hashtag))= hashtag
 
 			button.w3-button.w3-teal(type='submit') Filtrar
 			a.w3-button.w3-border(href='/resources') Limpar
@@ -47,4 +60,3 @@ block content
 								a(href=`/resources/${item._id}`) Ver detalhe
 
 		p.w3-text-grey Página #{pagination.page} de #{pagination.totalPages}
-

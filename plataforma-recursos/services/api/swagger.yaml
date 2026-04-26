@@ -749,62 +749,6 @@ paths:
         '200':
           description: Noticia removida
 
-  /api/taxonomy:
-    get:
-      tags: [Taxonomy]
-      summary: Listar taxonomia
-      responses:
-        '200':
-          description: Lista de itens de taxonomia
-
-    post:
-      tags: [Taxonomy]
-      summary: Criar item de taxonomia (admin)
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [tipo]
-              properties:
-                tipo:
-                  type: string
-                ano:
-                  type: integer
-                tema:
-                  type: string
-                hashtag:
-                  type: string
-            example:
-              tipo: ficha
-              ano: 8
-              tema: algebra
-              hashtag: matematica
-      responses:
-        '201':
-          description: Item criado
-        '409':
-          description: Item duplicado
-
-  /api/taxonomy/{id}:
-    delete:
-      tags: [Taxonomy]
-      summary: Apagar item de taxonomia (admin)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Item removido
-
   /api/export:
     get:
       tags: [Export]
