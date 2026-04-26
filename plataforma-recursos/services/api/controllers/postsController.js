@@ -11,10 +11,18 @@ function canManagePost(post, user) {
 module.exports.list = async (req, res) => {
 	try {
 		const { page, limit, skip } = getPagination(req.query)
+		const filters = {}
+
+		if (req.query.resourceId !== undefined) {
+			if (!isMongoId(req.query.resourceId)) {
+				return invalidId(res)
+			}
+			filters.resourceId = req.query.resourceId
+		}
 
 		const [items, total] = await Promise.all([
-			Post.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
-			Post.countDocuments(),
+			Post.find(filters).sort({ createdAt: -1 }).skip(skip).limit(limit),
+			Post.countDocuments(filters),
 		])
 
 		res.json({ ok: true, page, limit, total, totalPages: totalPages(total, limit), items })
@@ -78,6 +86,22 @@ module.exports.patchById = async (req, res) => {
 
 		if (req.body.titulo !== undefined) post.titulo = req.body.titulo
 		if (req.body.conteudo !== undefined) post.conteudo = req.body.conteudo
+		if (req.body.resourceId !== undefined) {
+			if (req.body.resourceId === null || req.body.resourceId === '') {
+				post.resourceId = null
+			} else {
+				if (!isMongoId(req.body.resourceId)) {
+					return invalidId(res)
+				}
+
+				const resource = await Resource.findById(req.body.resourceId)
+				if (!resource) {
+					return jsonError(res, 404, 'resourceId inválido')
+				}
+
+				post.resourceId = req.body.resourceId
+			}
+		}
 		post.updatedAt = new Date()
 
 		await post.save()

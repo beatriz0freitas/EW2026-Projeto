@@ -54,3 +54,15 @@ block content
 
 					if item.publicadoEm
 						p.w3-text-grey.w3-small Publicado em #{new Date(item.publicadoEm).toLocaleString('pt-PT')}
+
+	if resources && resources.length
+		section.w3-card.w3-white.w3-padding.w3-margin-top
+			h2 Recursos recentes
+			ul.w3-ul.w3-hoverable
+				each item in resources
+					- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
+					li
+						a(href=`/resources/${item._id}`)= r.titulo || 'Sem título'
+						span.w3-text-grey.w3-small  · #{r.tipo || '-'}
+						if r.ano
+							span.w3-text-grey.w3-small  · #{r.ano}
