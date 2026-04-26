@@ -85,6 +85,7 @@ components:
     RegisterRequest:
       type: object
       required: [nome, email, password]
+      description: Registo publico. O utilizador criado fica sempre com role `consumidor`; quaisquer campos `role` ou `nivel_acesso` enviados pelo cliente sao ignorados.
       properties:
         _id:
           type: string
@@ -99,10 +100,6 @@ components:
         password:
           type: string
           example: Password123
-        role:
-          type: string
-          enum: [admin, produtor, consumidor]
-          example: consumidor
         filiacao:
           oneOf:
             - type: string
@@ -111,11 +108,6 @@ components:
               additionalProperties: true
               example:
                 instituicao: Universidade do Minho
-        nivel_acesso:
-          type: integer
-          minimum: 1
-          maximum: 10
-          example: 1
         ativo:
           type: boolean
           example: true
@@ -197,6 +189,7 @@ paths:
     post:
       tags: [Auth]
       summary: Registar utilizador
+      description: Endpoint publico de registo. O backend força sempre `role=consumidor` e ignora `role`/`nivel_acesso` enviados pelo cliente.
       requestBody:
         required: true
         content:
@@ -209,7 +202,6 @@ paths:
                   nome: Utilizador Demo
                   email: demo@teste.com
                   password: Demo123
-                  role: consumidor
                   filiacao: Universidade do Minho
       responses:
         '201':
