@@ -114,7 +114,7 @@ Arquitetura de codigo (estado atual):
 - ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
 - ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito; ideal exigir segredo forte por ambiente.
-- ❌ Rate limiting no login nao implementado.
+- ✅ Rate limiting no login implementado em POST `/auth/sessions` (in-memory por janela temporal).
 - ❌ Helmet nao implementado.
 
 ## Gateway (services/gateway)
@@ -166,7 +166,6 @@ Itens revistos e corrigidos no estado atual:
 
 1. Hardening transversal:
 
-- Adicionar rate limit em POST `/auth/sessions`.
 - Adicionar helmet em auth/api/gateway.
 - Definir politica CORS explicita no gateway.
 - Rever rotas internas para nao ficarem expostas no gateway (defesa em profundidade).
