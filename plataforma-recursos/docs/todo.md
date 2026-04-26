@@ -81,7 +81,7 @@ Politica de configuracao (estado atual):
 - ✅ Servico comum de publicacao de noticias com dedupe (lib/newsPublisher.js).
 - ✅ Endpoint interno POST /api/news/system com token interno de servico.
 - ✅ Evento automatico system.new_submission no fim do ingest com dedupe por resourceId.
-- ✅ Job diario para system.top3 e system.total_users.
+- ✅ Noticias automaticas `system.top3` e `system.total_users` publicadas por mudanca de estado (nao por agendamento diario).
 - ✅ Contagem de downloads por recurso (downloadCount) no OAIS access para alimentar top3.
 - ✅ Config valida e exige `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ PATCH de resources substitui metadata inteira; falta whitelist de campos permitidos.
@@ -91,14 +91,13 @@ Politica de configuracao (estado atual):
 
 ## Auth (services/auth)
 
-- ✅ JWT, refresh token, verify, me e gestao de utilizadores admin.
+- ✅ JWT, refresh token, verify e gestao de utilizadores admin.
 - ✅ Swagger incorporado e disponível via Gateway em `http://localhost:16020/auth/docs`.
 - ✅ Soft-delete de utilizador (ativo=false) em DELETE /users/:id.
 - ✅ Hash de password com bcrypt e ocultacao de password em toJSON().
 - ✅ Validacao de body dedicada para login/campos obrigatorios.
 - ✅ app.js so faz listen apos conectar ao MongoDB.
 - ✅ CORS ja configurado no auth.
-- ✅ Endpoint interno seguro para stats: GET /internal/stats/users-count.
 - ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
 - ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).

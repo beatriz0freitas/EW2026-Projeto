@@ -22,10 +22,6 @@ components:
       type: apiKey
       in: query
       name: token
-    internalServiceToken:
-      type: apiKey
-      in: header
-      name: x-internal-service-token
   schemas:
     ErrorResponse:
       type: object
@@ -481,62 +477,6 @@ paths:
           description: Utilizador desativado
         '400':
           description: Tentativa de desativar o proprio utilizador
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /me:
-    get:
-      tags: [Auth]
-      summary: Obter utilizador autenticado
-      security:
-        - bearerAuth: []
-        - cookieAuth: []
-        - queryAuth: []
-      responses:
-        '200':
-          description: Utilizador da sessao
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  user:
-                    $ref: '#/components/schemas/UserPublic'
-        '401':
-          description: Nao autenticado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /internal/stats/users-count:
-    get:
-      tags: [Internal]
-      summary: Estatistica interna de total de utilizadores
-      description: Endpoint interno entre servicos (nao exposto a clientes finais).
-      security:
-        - internalServiceToken: []
-      responses:
-        '200':
-          description: Total de utilizadores
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  totalUsers:
-                    type: integer
-                    example: 42
-        '401':
-          description: Token interno ausente/invalido
           content:
             application/json:
               schema:
