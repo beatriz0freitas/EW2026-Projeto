@@ -8,7 +8,7 @@ Legenda:
 - ⚠️ Parcial / com ressalvas
 - ❌ Em falta
 
-Atualizado em: 2026-04-25
+Atualizado em: 2026-04-26
 
 Politica de configuracao (estado atual):
 
@@ -25,7 +25,7 @@ Politica de configuracao (estado atual):
 - ✅ Disponibilizar recursos educativos de varios tipos.
 - ✅ Permitir adicionar novos recursos (ingest SIP via API e UI).
 - ✅ Classificacao por tipo, ano, tema e hashtag (filtros e taxonomia).
-- ✅ Permitir posts sobre recursos.
+- ✅ Permitir posts sobre recursos, com associação por `resourceId`.
 - ✅ Permitir comentarios em posts.
 - ✅ Sistema de ranking por estrelas (1..5), com media e total.
 
@@ -47,7 +47,6 @@ Politica de configuracao (estado atual):
 ### Dados de utilizador
 
 - ✅ nome, email, filiacao, role, data_registo, ultimo_acesso, ativo, password (hash bcrypt).
-- ⚠️ Campo nivel_acesso existe, mas o controlo principal de permissao e por role.
 
 ### Metainformacao de recursos
 
@@ -86,7 +85,7 @@ Politica de configuracao (estado atual):
 - ✅ Contagem de downloads por recurso (downloadCount) no OAIS access para alimentar top3.
 - ✅ Config valida e exige `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ PATCH de resources substitui metadata inteira; falta whitelist de campos permitidos.
-- ⚠️ GET /api/posts ainda nao filtra por resourceId.
+- ✅ GET /api/posts aceita filtro opcional `resourceId`.
 - ⚠️ Nao ha limite explicito em express.json() no API.
 - ⚠️ Falta hardening adicional (helmet/cors explicito no gateway/rate limit central).
 
@@ -132,8 +131,8 @@ Politica de configuracao (estado atual):
 - ✅ Posts: listar, criar, detalhe, editar, apagar, comentar e remover comentario.
 - ✅ Admin: utilizadores, noticias, export e import de dump.
 - ✅ Interceptor 401 com renovacao automatica via refresh-server.
-- ⚠️ Home ainda nao mostra lista de recursos (apenas atalhos + noticias).
-- ⚠️ Pagina de detalhe de recurso ainda nao apresenta posts associados por resourceId.
+- ✅ Home mostra lista resumida de recursos recentes.
+- ✅ Pagina de detalhe de recurso apresenta posts associados por `resourceId`.
 
 ---
 
@@ -173,9 +172,9 @@ Itens que estavam marcados de forma incorreta e foram corrigidos:
 
 4. Experiencia funcional final:
 
-- Mostrar recursos na home.
-- Mostrar posts associados no detalhe de recurso (resourceId).
-- (Opcional) Filtro GET /api/posts?resourceId=...
+- ✅ Mostrar recursos na home.
+- ✅ Mostrar posts associados no detalhe de recurso (`resourceId`).
+- ✅ Filtro GET `/api/posts?resourceId=...`.
 
 5. Qualidade de entrega:
 
@@ -191,5 +190,6 @@ Itens que estavam marcados de forma incorreta e foram corrigidos:
 - Auth com 3 perfis e controlo de acesso: ✅ funcional, com 1 falha critica no registo publico (role).
 - Noticias automaticas (nova submissao, top3, total utilizadores): ✅ funcional.
 - Interface end-to-end (auth, recursos, posts, admin): ✅ funcional.
+- Associacao de posts a recursos com navegacao por home/detalhe: ✅ funcional.
 - Seguranca de producao e testes automaticos: ❌ ainda em falta.
 - Dataset de demonstracao com dezenas de recursos: ⚠️ ainda insuficiente.

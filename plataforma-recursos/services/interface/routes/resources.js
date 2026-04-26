@@ -151,6 +151,7 @@ router.get('/:id', routeAsync(async (req, res) => {
 	const requests = [
 		apiRequest(`/resources/${req.params.id}`, { token: req.session.token, req }),
 		apiRequest(`/resources/${req.params.id}/ratings`, { token: req.session.token, req }),
+		apiRequest(`/posts?resourceId=${req.params.id}&limit=20`, { token: req.session.token, req }),
 	]
 
 	// Só pede avaliação própria se estiver autenticado
@@ -160,7 +161,7 @@ router.get('/:id', routeAsync(async (req, res) => {
 		)
 	}
 
-	const [resource, ratings, myRatingRes] = await Promise.all(requests)
+	const [resource, ratings, postsRes, myRatingRes] = await Promise.all(requests)
 
 	if (!resource.ok) {
 		return res.status(resource.status || 500).render('error', {
@@ -176,6 +177,7 @@ router.get('/:id', routeAsync(async (req, res) => {
 			media: ratings.data?.media || 0,
 			total: ratings.data?.total || 0,
 		},
+		posts: postsRes.ok ? postsRes.data?.items || [] : [],
 		// myRating: número 1-5 ou null — usado na view para pré-seleccionar a estrela
 		myRating: myRatingRes?.data?.rating?.stars || null,
 	})
