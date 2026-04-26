@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: EW2026 Gateway Service
+  version: 1.0.0
+  description: Gateway de entrada da plataforma com proxy para API, Auth e Interface.
+servers:
+  - url: http://localhost:16020
+    description: Gateway publico
+paths:
+  /health:
+    get:
+      tags: [Gateway]
+      summary: Health check do gateway
+      responses:
+        '200':
+          description: Gateway disponivel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /openapi.json:
+    get:
+      tags: [Docs]
+      summary: Obter especificacao OpenAPI do gateway em JSON
+      responses:
+        '200':
+          description: Especificacao OpenAPI do gateway
+
+  /docs:
+    get:
+      tags: [Docs]
+      summary: Hub Swagger agregado com selecao de servico
+      description: Interface Swagger UI com seletor de specs de API, Auth, Interface e Gateway.
+      responses:
+        '200':
+          description: HTML do Swagger UI agregado
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /gateway/docs:
+    get:
+      tags: [Docs]
+      summary: Swagger UI especifico do servico Gateway
+      responses:
+        '200':
+          description: HTML do Swagger UI do Gateway
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /gateway/openapi.json:
+    get:
+      tags: [Docs]
+      summary: Alias de OpenAPI JSON do Gateway
+      responses:
+        '200':
+          description: Especificacao OpenAPI do gateway
+
+  /api/{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Proxy]
+      summary: Proxy para servico API
+      description: Encaminha pedidos /api/* para o servico API.
+      responses:
+        '200':
+          description: Resposta proxied do servico API
+    post:
+      tags: [Proxy]
+      summary: Proxy para servico API
+      responses:
+        '200':
+          description: Resposta proxied do servico API
+    put:
+      tags: [Proxy]
+      summary: Proxy para servico API
+      responses:
+        '200':
+          description: Resposta proxied do servico API
+    patch:
+      tags: [Proxy]
+      summary: Proxy para servico API
+      responses:
+        '200':
+          description: Resposta proxied do servico API
+    delete:
+      tags: [Proxy]
+      summary: Proxy para servico API
+      responses:
+        '200':
+          description: Resposta proxied do servico API
+
+  /auth/{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Proxy]
+      summary: Proxy para servico Auth ou paginas de auth da Interface
+      responses:
+        '200':
+          description: Resposta proxied
+    post:
+      tags: [Proxy]
+      summary: Proxy para servico Auth ou paginas de auth da Interface
+      responses:
+        '200':
+          description: Resposta proxied
+    put:
+      tags: [Proxy]
+      summary: Proxy para servico Auth
+      responses:
+        '200':
+          description: Resposta proxied
+    patch:
+      tags: [Proxy]
+      summary: Proxy para servico Auth
+      responses:
+        '200':
+          description: Resposta proxied
+    delete:
+      tags: [Proxy]
+      summary: Proxy para servico Auth
+      responses:
+        '200':
+          description: Resposta proxied
+
+  /interface/{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Proxy]
+      summary: Proxy com prefixo explicito para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+    post:
+      tags: [Proxy]
+      summary: Proxy com prefixo explicito para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+    put:
+      tags: [Proxy]
+      summary: Proxy com prefixo explicito para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+    patch:
+      tags: [Proxy]
+      summary: Proxy com prefixo explicito para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+    delete:
+      tags: [Proxy]
+      summary: Proxy com prefixo explicito para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+
+  /{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Proxy]
+      summary: Proxy default para Interface
+      description: Qualquer rota nao capturada por /api ou /auth e encaminhada para Interface.
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+    post:
+      tags: [Proxy]
+      summary: Proxy default para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+    put:
+      tags: [Proxy]
+      summary: Proxy default para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+    patch:
+      tags: [Proxy]
+      summary: Proxy default para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface
+    delete:
+      tags: [Proxy]
+      summary: Proxy default para Interface
+      responses:
+        '200':
+          description: Resposta proxied da Interface

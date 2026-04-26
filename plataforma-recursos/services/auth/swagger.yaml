@@ -22,6 +22,10 @@ components:
       type: apiKey
       in: query
       name: token
+    internalServiceToken:
+      type: apiKey
+      in: header
+      name: x-internal-service-token
   schemas:
     ErrorResponse:
       type: object
@@ -173,6 +177,14 @@ components:
               type: boolean
               example: true
 paths:
+  /openapi.json:
+    get:
+      tags: [Docs]
+      summary: Obter especificacao OpenAPI em JSON
+      responses:
+        '200':
+          description: Especificacao OpenAPI do servico Auth
+
   /health:
     get:
       tags: [Health]
@@ -269,6 +281,57 @@ paths:
                 $ref: '#/components/schemas/VerifyResponse'
         '401':
           description: Token invalido/expirado ou conta desativada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/refresh:
+    post:
+      tags: [Auth]
+      summary: Renovar access token com refresh token em cookie
+      responses:
+        '200':
+          description: Access token renovado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          description: Refresh token ausente/invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/refresh-server:
+    post:
+      tags: [Auth]
+      summary: Renovar access token com refresh token enviado no body
+      description: Endpoint usado pela interface em chamadas server-side.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Access token renovado
+        '401':
+          description: Refresh token ausente/invalido
           content:
             application/json:
               schema:
@@ -454,6 +517,34 @@ paths:
                     $ref: '#/components/schemas/UserPublic'
         '401':
           description: Nao autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /internal/stats/users-count:
+    get:
+      tags: [Internal]
+      summary: Estatistica interna de total de utilizadores
+      description: Endpoint interno entre servicos (nao exposto a clientes finais).
+      security:
+        - internalServiceToken: []
+      responses:
+        '200':
+          description: Total de utilizadores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  totalUsers:
+                    type: integer
+                    example: 42
+        '401':
+          description: Token interno ausente/invalido
           content:
             application/json:
               schema:
