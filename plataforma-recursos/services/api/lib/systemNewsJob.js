@@ -146,12 +146,12 @@ async function publishUsersCountNewsIfChanged(counts) {
 	return { created: result.created, reason: 'changed', item: result.item }
 }
 
-function startSystemNewsJob() {
-	console.log('[api][system-news] change-driven mode enabled (no daily scheduler)')
+function initSystemNewsTriggers() {
+	console.log('[api][system-news] change-driven mode enabled')
 }
 
 module.exports = {
-	startSystemNewsJob,
+	initSystemNewsTriggers,
 	publishTop3NewsIfChanged,
 	publishUsersCountNewsIfChanged,
 }

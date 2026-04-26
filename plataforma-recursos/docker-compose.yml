@@ -21,8 +21,6 @@ services:
       - AUTH_URL=http://auth:16027
       - AUTH_COOKIE_NAME=ew.auth
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
-      - NEWS_JOB_DAILY_HOUR=0
-      - NEWS_JOB_DAILY_MINUTE=5
     depends_on:
       - mongodb
     networks:
