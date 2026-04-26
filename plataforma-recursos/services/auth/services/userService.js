@@ -61,7 +61,10 @@ module.exports.insert = async (input) => {
 	if (await User.findOne({ email })) throw new Error('email ja registado')
 
 	const _id = await generateUserId(input?._id || input?.username, email)
-	const role = normalizeRole(input?.role)
+
+	// Registo publico: nunca aceitar elevacao de privilegios pelo body.
+	// Campos de permissao sao controlados internamente.
+	const role = 'consumidor'
 
 	const user = new User({
 		_id,
@@ -70,8 +73,6 @@ module.exports.insert = async (input) => {
 		password,
 		role,
 		filiacao: normalizeFiliacao(input?.filiacao),
-		nivel_acesso: Number.isFinite(Number(input?.nivel_acesso)) ? Number(input.nivel_acesso) : undefined,
-		ativo: input?.ativo === undefined ? true : Boolean(input.ativo),
 	})
 
 	await user.save()
