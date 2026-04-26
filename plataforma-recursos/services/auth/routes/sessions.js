@@ -11,6 +11,7 @@ const express = require('express')
 
 const sessionsController = require('../controllers/sessionsController')
 const { verificaAcesso } = require('../middleware/auth')
+const { rateLimitLogin } = require('../middleware/rateLimit')
 const { validarCampoObrigatorioNoBody, validarPedidoLoginNoBody } = require('../middleware/validate')
 
 const router = express.Router()
@@ -18,7 +19,7 @@ const router = express.Router()
 // ─────────────────────────────────────────────
 // POST /sessions  →  login
 // ─────────────────────────────────────────────
-router.post('/', validarPedidoLoginNoBody(), sessionsController.login)
+router.post('/', rateLimitLogin, validarPedidoLoginNoBody(), sessionsController.login)
 
 // ─────────────────────────────────────────────
 // GET /sessions/verify  →  valida access token
