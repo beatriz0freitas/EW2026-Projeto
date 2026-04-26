@@ -41,7 +41,7 @@ Politica de configuracao (estado atual):
 - ✅ Autenticacao por username/email + password com JWT.
 - ✅ Perfis admin, produtor e consumidor implementados no backend.
 - ✅ Refresh token implementado (cookies no auth e renovacao server-side para a interface).
-- ⚠️ Registo publico permite enviar role no body (risco de elevacao de privilegio; deve ser bloqueado para forcar consumidor por defeito).
+- ✅ Registo publico força `role=consumidor` e ignora `role`/`nivel_acesso` enviados pelo cliente.
 - ⚠️ Autenticacoes alternativas (chave API, Google, Facebook) nao implementadas.
 
 ### Dados de utilizador
@@ -146,37 +146,31 @@ Itens que estavam marcados de forma incorreta e foram corrigidos:
 - ✅ Rotas duplicadas antigas routes/oais/* ja nao existem no estado atual.
 - ✅ auth app.js nao arranca antes da BD; aguarda connect ao Mongo.
 - ⚠️ CORS no auth ja existe, mas no gateway continua em falta.
-- ❌ Makefile nao existe (apesar de referencias no README antigo).
-- ❌ Registo publico ainda pode receber role e subir privilegios se nao for bloqueado no backend.
+- ✅ Registo publico ja nao permite elevacao de privilegios via `role`/`nivel_acesso`.
 
 ---
 
 ## 4) Backlog prioritario para fecho
 
-1. Corrigir seguranca de registo no auth:
-
-- Forcar role=consumidor em POST /register.
-- Ignorar role/nivel_acesso vindos do cliente publico.
-
-2. Hardening transversal:
+1. Hardening transversal:
 
 - Adicionar rate limit em POST /auth/sessions.
 - Adicionar helmet em auth/api/gateway.
 - Definir politica CORS explicita no gateway.
 - Rever rotas internas para nao ficarem expostas no gateway (defesa em profundidade).
 
-3. Metadados e contratos:
+2. Metadados e contratos:
 
 - Reforcar validacao do metadata.json (subtitulo opcional, dataCriacao/dataRegisto, enums visibilidade).
 - Limitar PATCH /api/resources/:id a campos permitidos.
 
-4. Experiencia funcional final:
+3. Experiencia funcional final:
 
 - ✅ Mostrar recursos na home.
 - ✅ Mostrar posts associados no detalhe de recurso (`resourceId`).
 - ✅ Filtro GET `/api/posts?resourceId=...`.
 
-5. Qualidade de entrega:
+4. Qualidade de entrega:
 
 - Criar testes minimos (unitarios ingest + integracao auth/permissoes/OAIS).
 - Aumentar dataset para dezenas de entradas reais para demonstracao final.
@@ -187,7 +181,7 @@ Itens que estavam marcados de forma incorreta e foram corrigidos:
 
 - Nucleo da Proposta 1: ✅ funcional.
 - OAIS ingest/access: ✅ funcional.
-- Auth com 3 perfis e controlo de acesso: ✅ funcional, com 1 falha critica no registo publico (role).
+- Auth com 3 perfis e controlo de acesso: ✅ funcional.
 - Noticias automaticas (nova submissao, top3, total utilizadores): ✅ funcional.
 - Interface end-to-end (auth, recursos, posts, admin): ✅ funcional.
 - Associacao de posts a recursos com navegacao por home/detalhe: ✅ funcional.

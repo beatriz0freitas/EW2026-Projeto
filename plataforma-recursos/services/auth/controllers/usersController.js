@@ -4,7 +4,7 @@ const { publishUsersCountChangedNews } = require('../lib/systemNewsClient')
 
 module.exports.register = async (req, res) => {
 	try {
-		const user = await UserService.insert(req.body)
+		const user = await UserService.insert(req.body, { publicRegistration: true })
 		const counts = await UserService.getStats()
 
 		publishUsersCountChangedNews(counts).catch((err) => {
