@@ -15,11 +15,8 @@ const { Blob } = require('buffer')
 const { Readable } = require('stream')
 const { pipeline } = require('stream/promises')
 
-const { config } = require('../lib/config')
-const { apiRequest } = require('../lib/http')
+const { apiFetch, apiRequest } = require('../lib/http')
 const { routeAsync, requireSession, requireLevel, apiErrorMessage } = require('../lib/web')
-
-const API_URL = config.services.apiUrl
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: { fileSize: 100 * 1024 * 1024 },
@@ -120,10 +117,11 @@ router.post(
 			req.file.originalname || 'sip.zip'
 		)
 
-		const response = await fetch(`${API_URL}/api/oais/ingest`, {
+		const response = await apiFetch('/oais/ingest', {
 			method: 'POST',
-			headers: { Authorization: `Bearer ${req.session.token}` },
+			token: req.session.token,
 			body: form,
+			req,
 		})
 
 		let payload = null
@@ -147,10 +145,10 @@ router.post(
 
 // GET /resources/:id/dip  — download DIP (stream)
 router.get('/:id/dip', routeAsync(async (req, res) => {
-	const headers = {}
-	if (req.session?.token) headers.Authorization = `Bearer ${req.session.token}`
-
-	const apiRes = await fetch(`${API_URL}/api/oais/access/${req.params.id}`, { headers })
+	const apiRes = await apiFetch(`/oais/access/${req.params.id}`, {
+		token: req.session?.token,
+		req,
+	})
 
 	if (!apiRes.ok) {
 		let payload = null
