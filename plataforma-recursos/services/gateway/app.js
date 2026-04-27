@@ -8,7 +8,7 @@ const swaggerHubOptions = {
 	explorer: true,
 	swaggerOptions: {
 		urls: [
-			{ name: 'Gateway', url: '/gateway/openapi.json' },
+			{ name: 'Gateway', url: '/openapi.json' },
 			{ name: 'API', url: '/api/openapi.json' },
 			{ name: 'Auth', url: '/auth/openapi.json' },
 			{ name: 'Interface', url: '/interface/openapi.json' },
@@ -35,15 +35,7 @@ app.use(
 	swaggerUi.setup(gatewaySwaggerDocument, swaggerHubOptions)
 )
 
-app.use(
-	'/gateway/docs',
-	swaggerUi.serveFiles(gatewaySwaggerDocument),
-	swaggerUi.setup(gatewaySwaggerDocument)
-)
 app.get('/openapi.json', (req, res) => {
-	res.json(gatewaySwaggerDocument)
-})
-app.get('/gateway/openapi.json', (req, res) => {
 	res.json(gatewaySwaggerDocument)
 })
 

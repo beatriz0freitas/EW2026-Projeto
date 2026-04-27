@@ -22,7 +22,7 @@ block content
             th Inseridos / atualizados
             th Erros
         tbody
-          each key in ['resources', 'news', 'ratings', 'comments']
+          each key in ['resources', 'news', 'posts', 'ratings', 'comments']
             - var r = importResults[key] || { upserted: 0, errors: [] }
             tr
               td= key

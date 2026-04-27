@@ -134,6 +134,17 @@ components:
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         user:
           $ref: '#/components/schemas/UserPublic'
+    RefreshResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/UserPublic'
     VerifyResponse:
       type: object
       properties:
@@ -284,14 +295,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  token:
-                    type: string
-                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                $ref: '#/components/schemas/RefreshResponse'
         '401':
           description: Refresh token ausente/invalido
           content:
@@ -318,6 +322,10 @@ paths:
       responses:
         '200':
           description: Access token renovado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
         '401':
           description: Refresh token ausente/invalido
           content:

@@ -1,7 +1,7 @@
 /**
  * routes/export.js
  *
- * GET  /api/export          — exporta todos os dados (recursos, taxonomia, notícias, ratings, comentários)
+ * GET  /api/export          — exporta todos os dados (recursos, notícias, posts, ratings, comentários)
  *                             como JSON. Requer autenticação de admin.
  *
  * POST /api/import          — importa um dump gerado pelo endpoint acima.

@@ -36,7 +36,7 @@ async function verificaAcesso(req, res, next) {
 		}
 
 		next()
-	} catch (err) {
+	} catch {
 		return jsonError(res, 401, { code: 'INVALID_TOKEN', message: 'token invalido ou expirado' })
 	}
 }
