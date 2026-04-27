@@ -148,24 +148,6 @@ components:
         publicadoEm:
           type: string
           format: date-time
-    Taxonomy:
-      type: object
-      properties:
-        _id:
-          type: string
-          example: 663d8af2d6b8fd24f7a22b15
-        tipo:
-          type: string
-          example: ficha
-        ano:
-          type: integer
-          example: 8
-        tema:
-          type: string
-          example: algebra
-        hashtag:
-          type: string
-          example: matematica
 paths:
   /api/openapi.json:
     get:
