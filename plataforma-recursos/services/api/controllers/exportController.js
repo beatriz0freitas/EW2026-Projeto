@@ -1,14 +1,16 @@
 const Resource = require('../models/Resource')
 const NewsItem = require('../models/NewsItem')
+const Post = require('../models/Post')
 const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
 const { jsonError } = require('../lib/http')
 
 module.exports.exportAll = async (req, res) => {
 	try {
-		const [resources, news, ratings, comments] = await Promise.all([
+		const [resources, news, posts, ratings, comments] = await Promise.all([
 			Resource.find().lean(),
 			NewsItem.find().lean(),
+			Post.find().lean(),
 			Rating.find().lean(),
 			Comment.find().lean(),
 		])
@@ -18,6 +20,7 @@ module.exports.exportAll = async (req, res) => {
 			exportedAt: new Date().toISOString(),
 			resources,
 			news,
+			posts,
 			ratings,
 			comments,
 		}
@@ -44,6 +47,7 @@ module.exports.importAll = async (req, res) => {
 	const results = {
 		resources: { upserted: 0, errors: [] },
 		news: { upserted: 0, errors: [] },
+		posts: { upserted: 0, errors: [] },
 		ratings: { upserted: 0, errors: [] },
 		comments: { upserted: 0, errors: [] },
 	}
@@ -62,6 +66,7 @@ module.exports.importAll = async (req, res) => {
 
 	await upsertAll(Resource, dump.resources, 'resources')
 	await upsertAll(NewsItem, dump.news, 'news')
+	await upsertAll(Post, dump.posts, 'posts')
 	await upsertAll(Rating, dump.ratings, 'ratings')
 	await upsertAll(Comment, dump.comments, 'comments')
 
