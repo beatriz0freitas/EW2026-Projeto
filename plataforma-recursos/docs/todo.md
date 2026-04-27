@@ -16,6 +16,13 @@ Politica de configuracao (estado atual):
 - segredos via interpolacao de ambiente (`JWT_SECRET`, `SESSION_SECRET`, `INTERNAL_SERVICE_TOKEN`)
 - `.env` e `.env.example` com foco em segredos
 
+Arquitetura de codigo (estado atual):
+
+- API e Auth com separacao explicita de `routes` -> `controllers` -> `models`
+- logica de dominio no Auth extraida para `services/userService.js`
+- middleware de autenticacao consolidado em `services/auth/middleware/auth.js`
+- removido o modulo legado `services/auth/auth/auth.js`
+
 ---
 
 ## 1) Cobertura do enunciado (Proposta 1)
@@ -47,11 +54,12 @@ Politica de configuracao (estado atual):
 ### Dados de utilizador
 
 - ✅ nome, email, filiacao, role, data_registo, ultimo_acesso, ativo, password (hash bcrypt).
+- ⚠️ Campo `nivel_acesso` existe, mas o controlo principal de permissao e por role.
 
 ### Metainformacao de recursos
 
 - ✅ tipo, titulo, visibilidade, produtor e data de registo no sistema existem no fluxo/modelo.
-- ⚠️ subtitulo e dataCriacao nao sao obrigatorios no ingest (ha recursos sem estes campos).
+- ⚠️ `subtitulo` e `dataCriacao` nao sao obrigatorios no ingest (ha recursos sem estes campos).
 - ⚠️ validacao de metadata ainda minima (obrigatorio apenas tipo, titulo, visibilidade).
 
 ### Noticias na pagina principal
@@ -61,7 +69,7 @@ Politica de configuracao (estado atual):
 
 ### Dataset para demonstracao
 
-- ⚠️ Existem entradas reais no storage (atualmente 6 AIPs), mas nao chega a "dezenas".
+- ⚠️ Existem entradas reais no storage, mas ainda nao atinge "dezenas".
 
 ---
 
@@ -69,53 +77,58 @@ Politica de configuracao (estado atual):
 
 ## API (services/api)
 
-- ✅ Estrutura modular com models, routes, middleware e lib.
-- ✅ Swagger incorporado e disponível via Gateway em `http://localhost:16020/api/docs`.
+- ✅ Estrutura modular com `models`, `routes`, `controllers`, `middleware` e `lib`.
+- ✅ Swagger incorporado e disponivel em `/api/docs` (direto e via gateway).
 - ✅ OAIS ingest e access operacionais.
 - ✅ CRUD principal: resources, posts, comments, ratings e news.
-- ✅ Export/import de dados globais (GET /api/export e POST /api/import, admin).
-- ✅ Paginacao e respostas de erro utilitarias centralizadas em lib/http.js.
-- ✅ Endpoint ratings/mine implementado e montado.
-- ✅ NewsItem evoluido para sistema: tipo, eventType, dedupeKey, payload.
-- ✅ Indice unico em dedupeKey para evitar duplicados em noticias de sistema.
-- ✅ Servico comum de publicacao de noticias com dedupe (lib/newsPublisher.js).
-- ✅ Endpoint interno POST /api/news/system com token interno de servico.
-- ✅ Evento automatico system.new_submission no fim do ingest com dedupe por resourceId.
-- ✅ Noticias automaticas `system.top3` e `system.total_users` publicadas por mudanca de estado (nao por agendamento diario).
-- ✅ Contagem de downloads por recurso (downloadCount) no OAIS access para alimentar top3.
+- ✅ Export/import de dados globais (GET `/api/export` e POST `/api/import`, admin).
+- ✅ Paginacao e respostas de erro utilitarias centralizadas em `lib/http.js`.
+- ✅ Endpoint `ratings/mine` implementado e montado.
+- ✅ Noticias de sistema com `tipo`, `eventType`, `dedupeKey`, `payload`.
+- ✅ Indice unico em `dedupeKey` para evitar duplicados em noticias de sistema.
+- ✅ Servico comum de publicacao de noticias com dedupe (`lib/newsPublisher.js`).
+- ✅ Endpoint interno POST `/api/news/system` com token interno de servico.
+- ✅ Evento automatico `system.new_submission` no fim do ingest com dedupe por `resourceId`.
+- ✅ Job diario para `system.top3` e `system.total_users`.
+- ✅ Contagem de downloads por recurso (`downloadCount`) no OAIS access para alimentar top3.
 - ✅ Config valida e exige `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ PATCH de resources substitui metadata inteira; falta whitelist de campos permitidos.
-- ✅ GET /api/posts aceita filtro opcional `resourceId`.
-- ⚠️ Nao ha limite explicito em express.json() no API.
+- ✅ GET `/api/posts` aceita filtro opcional `resourceId`.
+- ⚠️ Nao ha limite explicito em `express.json()` no API.
 - ⚠️ Falta hardening adicional (helmet/cors explicito no gateway/rate limit central).
 
 ## Auth (services/auth)
 
+- ✅ Estrutura explicitamente separada: `routes` + `controllers` + `services` + `models` + `middleware` + `lib`.
+- ✅ Middleware de acesso consolidado em `middleware/auth.js`.
+- ✅ Removido modulo legado `auth/auth.js`.
 - ✅ JWT, refresh token, verify e gestao de utilizadores admin.
-- ✅ Swagger incorporado e disponível via Gateway em `http://localhost:16020/auth/docs`.
-- ✅ Soft-delete de utilizador (ativo=false) em DELETE /users/:id.
-- ✅ Hash de password com bcrypt e ocultacao de password em toJSON().
+- ✅ Swagger incorporado e disponivel em `/docs` (direto) e `/auth/docs` (via gateway).
+- ✅ Soft-delete de utilizador (`ativo=false`) em DELETE `/users/:id`.
+- ✅ Hash de password com bcrypt e ocultacao de password em `toJSON()`.
 - ✅ Validacao de body dedicada para login/campos obrigatorios.
-- ✅ app.js so faz listen apos conectar ao MongoDB.
-- ✅ CORS ja configurado no auth.
+- ✅ app.js so faz `listen` apos conectar ao MongoDB.
+- ✅ CORS configurado no auth.
+- ✅ Endpoints internos legados removidos para simplificar a API Auth.
 - ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
 - ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
-- ⚠️ JWT_REFRESH_SECRET tem fallback por defeito; ideal exigir segredo forte por ambiente.
-- ❌ Rate limiting no login nao implementado.
+- ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito; ideal exigir segredo forte por ambiente.
+- ✅ Rate limiting no login implementado em POST `/auth/sessions` (in-memory por janela temporal).
 - ❌ Helmet nao implementado.
 
 ## Gateway (services/gateway)
 
-- ✅ Reverse proxy funcional: /api -> API, /auth -> Auth, / -> Interface.
-- ✅ Regras especificas para /auth/login, /auth/register e /auth/logout irem para Interface.
-- ✅ Handler central de 502 bad gateway em lib/proxy.js.
-- ✅ proxyTimeout configurado (60s).
-- ✅ Config centralizada em `services/gateway/lib/config.js` com validacao de PORT/URLs.
-- ✅ Exposição de documentação Swagger dos serviços:
-	- `http://localhost:16020/api/docs` -> API Swagger UI
-	- `http://localhost:16020/auth/docs` -> Auth Swagger UI
-	- `http://localhost:16020/interface/docs` -> Interface Swagger UI
+- ✅ Reverse proxy funcional: `/api` -> API, `/auth` -> Auth, `/` -> Interface.
+- ✅ Regras especificas para `/auth/login`, `/auth/register` e `/auth/logout` irem para Interface.
+- ✅ Handler central de 502 bad gateway em `lib/proxy.js`.
+- ✅ `proxyTimeout` configurado (60s).
+- ✅ Config centralizada em `services/gateway/lib/config.js` com validacao de `PORT`/URLs.
+- ✅ Exposicao de documentacao Swagger dos servicos:
+	- `/docs` -> Hub Swagger agregado
+	- `/api/docs` -> API Swagger UI
+	- `/auth/docs` -> Auth Swagger UI
+	- `/interface/docs` -> Interface Swagger UI
 - ❌ CORS explicito no gateway nao implementado.
 - ❌ Helmet no gateway nao implementado.
 - ❌ Rate limiting global nao implementado.
@@ -137,13 +150,15 @@ Politica de configuracao (estado atual):
 
 ## 3) Correcao explicita do checklist anterior
 
-Itens que estavam marcados de forma incorreta e foram corrigidos:
+Itens revistos e corrigidos no estado atual:
 
-- ✅ ratings/mine nao esta em ficheiro solto; esta implementado e montado em routes/ratings.js.
-- ✅ Edicao de post na UI esta implementada (/posts/:id/edit).
+- ✅ `ratings/mine` esta implementado e montado em `routes/ratings.js`.
+- ✅ Edicao de post na UI esta implementada (`/posts/:id/edit`).
 - ✅ Remocao de comentario na UI esta implementada.
-- ✅ Rotas duplicadas antigas routes/oais/* ja nao existem no estado atual.
+- ✅ Rotas duplicadas antigas `routes/oais/*` ja nao existem.
 - ✅ auth app.js nao arranca antes da BD; aguarda connect ao Mongo.
+- ✅ Separacao de responsabilidade no auth foi concluida (`services/userService.js` + `middleware/auth.js`).
+- ✅ `services/auth/auth/auth.js` foi removido.
 - ⚠️ CORS no auth ja existe, mas no gateway continua em falta.
 - ✅ Registo publico ja nao permite elevacao de privilegios via `role`/`nivel_acesso`.
 
@@ -153,15 +168,15 @@ Itens que estavam marcados de forma incorreta e foram corrigidos:
 
 1. Hardening transversal:
 
-- Adicionar rate limit em POST /auth/sessions.
+- ✅ Rate limit em POST /auth/sessions implementado.
 - Adicionar helmet em auth/api/gateway.
 - Definir politica CORS explicita no gateway.
 - Rever rotas internas para nao ficarem expostas no gateway (defesa em profundidade).
 
 2. Metadados e contratos:
 
-- Reforcar validacao do metadata.json (subtitulo opcional, dataCriacao/dataRegisto, enums visibilidade).
-- Limitar PATCH /api/resources/:id a campos permitidos.
+- Reforcar validacao do `metadata.json` (subtitulo opcional, dataCriacao/dataRegisto, enums visibilidade).
+- Limitar PATCH `/api/resources/:id` a campos permitidos.
 
 3. Experiencia funcional final:
 

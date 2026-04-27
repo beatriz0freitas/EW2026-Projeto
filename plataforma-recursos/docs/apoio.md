@@ -214,7 +214,7 @@ Observação: os endpoints em Swagger que exigem autenticação devem receber to
 
 - login gera JWT;
 - endpoint de verificação usado por outros serviços;
-- endpoint `/auth/me` para perfil autenticado.
+- endpoints de sessão (`/auth/sessions/*`) para verificação e renovação de token.
 
 **Fundamentação:**
 
@@ -337,7 +337,7 @@ Observação: os endpoints em Swagger que exigem autenticação devem receber to
 
 **Estado:** Aprovada e implementada.
 
-**Decisão:** modelos para `Resource`, `Post`, `Comment`, `Rating`, `NewsItem`, `Taxonomy`.
+**Decisão:** modelos para `Resource`, `Post`, `Comment`, `Rating` e `NewsItem`.
 
 **Fundamentação:**
 
@@ -348,7 +348,7 @@ Observação: os endpoints em Swagger que exigem autenticação devem receber to
 - base estável para interface e testes;
 - sem overengineering.
 
-**Evidência no código:** [services/api/models/Resource.js](../services/api/models/Resource.js), [services/api/models/Post.js](../services/api/models/Post.js), [services/api/models/Comment.js](../services/api/models/Comment.js), [services/api/models/Rating.js](../services/api/models/Rating.js), [services/api/models/NewsItem.js](../services/api/models/NewsItem.js), [services/api/models/Taxonomy.js](../services/api/models/Taxonomy.js)
+**Evidência no código:** [services/api/models/Resource.js](../services/api/models/Resource.js), [services/api/models/Post.js](../services/api/models/Post.js), [services/api/models/Comment.js](../services/api/models/Comment.js), [services/api/models/Rating.js](../services/api/models/Rating.js), [services/api/models/NewsItem.js](../services/api/models/NewsItem.js)
 
 ---
 
@@ -584,13 +584,6 @@ Base no gateway: `/auth/*`
 - **Configuração:** `AUTH_CORS_ORIGIN` (ex.: `http://localhost:16020`).
 - **Headers/métodos:** `Content-Type`, `Authorization`, `X-Request-Id`; métodos `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
 
-### 7.2.4 `GET /auth/me`
-
-- **Descrição:** devolve perfil completo do utilizador autenticado.
-- **Auth:** obrigatório (`requireAuth`).
-- **Resposta:** `200 { ok: true, user }`.
-- **Erros típicos:** `401`, `404`.
-
 ### 7.2.5 `GET /auth/users`
 
 - **Descrição:** listagem de utilizadores.
@@ -764,23 +757,7 @@ Base no gateway: `/api/*`
 
 ### 7.3.8 Taxonomia
 
-**Evidência:** [services/api/routes/taxonomy.js](../services/api/routes/taxonomy.js)
-
-#### `GET /api/taxonomy`
-
-- **Auth:** não.
-
-#### `POST /api/taxonomy`
-
-- **Auth:** admin.
-- **Body mínimo:** `tipo`.
-- **Body opcional:** `ano`, `tema`, `hashtag`.
-- **Erros típicos:** `409` em duplicado.
-
-#### `DELETE /api/taxonomy/:id`
-
-- **Auth:** admin.
-- **Validação:** `id` Mongo válido.
+- Endpoint removido do serviço API para simplificação.
 
 ## 7.4 Serviço Interface (rotas web)
 
@@ -914,17 +891,9 @@ Todas as rotas abaixo exigem sessão + perfil `admin`:
 
 ---
 
-## 8.7 Objeto `Taxonomy`
+## 8.7 Modelo de taxonomia (removido)
 
-**Evidência de implementação:** [services/api/models/Taxonomy.js](../services/api/models/Taxonomy.js)
-
-- `tipo` (String, obrigatório)
-- `ano` (Number, opcional)
-- `tema` (String, opcional)
-- `hashtag` (String, opcional)
-- `createdAt` (Date)
-
-**Índice único:** `(tipo, ano, tema, hashtag)`.
+- Modelo removido do serviço API para simplificação.
 
 ---
 

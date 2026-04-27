@@ -77,6 +77,11 @@ const config = {
 	internal: {
 		serviceToken: requiredEnv('INTERNAL_SERVICE_TOKEN'),
 	},
+
+	security: {
+		loginRateLimitWindowMs: parsePositiveInt(process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS, 10 * 60 * 1000, 'AUTH_LOGIN_RATE_LIMIT_WINDOW_MS'),
+		loginRateLimitMaxAttempts: parsePositiveInt(process.env.AUTH_LOGIN_RATE_LIMIT_MAX_ATTEMPTS, 10, 'AUTH_LOGIN_RATE_LIMIT_MAX_ATTEMPTS'),
+	},
 }
 
 module.exports = {
