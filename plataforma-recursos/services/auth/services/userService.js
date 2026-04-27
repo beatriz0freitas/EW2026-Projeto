@@ -50,7 +50,8 @@ module.exports.list = () =>
 module.exports.findById = (id) =>
 	User.findOne({ _id: id, ativo: true }, { password: 0 }).exec()
 
-module.exports.insert = async (input) => {
+module.exports.insert = async (input, options = {}) => {
+	const isPublicRegistration = options.publicRegistration === true
 	const nome = String(input?.nome || '').trim()
 	const email = String(input?.email || '').trim().toLowerCase()
 	const password = String(input?.password || '')
@@ -61,10 +62,12 @@ module.exports.insert = async (input) => {
 	if (await User.findOne({ email })) throw new Error('email ja registado')
 
 	const _id = await generateUserId(input?._id || input?.username, email)
-
-	// Registo publico: nunca aceitar elevacao de privilegios pelo body.
-	// Campos de permissao sao controlados internamente.
-	const role = 'consumidor'
+	const role = isPublicRegistration ? 'consumidor' : normalizeRole(input?.role)
+	const nivelAcesso = isPublicRegistration
+		? undefined
+		: Number.isFinite(Number(input?.nivel_acesso))
+			? Number(input.nivel_acesso)
+			: undefined
 
 	const user = new User({
 		_id,
@@ -73,6 +76,8 @@ module.exports.insert = async (input) => {
 		password,
 		role,
 		filiacao: normalizeFiliacao(input?.filiacao),
+		nivel_acesso: nivelAcesso,
+		ativo: input?.ativo === undefined ? true : Boolean(input.ativo),
 	})
 
 	await user.save()
@@ -105,6 +110,15 @@ module.exports.remove = async (id) => {
 		{ new: true, runValidators: true, projection: { password: 0 } }
 	)
 	return toPublicUser(user)
+}
+
+module.exports.getStats = async () => {
+	const [totalUsers, totalActiveUsers] = await Promise.all([
+		User.countDocuments({}),
+		User.countDocuments({ ativo: true }),
+	])
+
+	return { totalUsers, totalActiveUsers }
 }
 
 module.exports.login = async (identifier, password) => {

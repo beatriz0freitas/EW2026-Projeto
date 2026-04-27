@@ -1,42 +1,48 @@
 extends ../layout
 
 block content
-  h1 Importar dados
+  section.w3-card.w3-white.w3-padding.w3-margin-top
+    h1 Administração · Importar dados
+    p
+      a.w3-button.w3-border(href='/admin/users') Utilizadores
+      a.w3-button.w3-border(href='/admin/news') Notícias
+      a.w3-button.w3-border(href='/admin/data') Dados
 
-  if importResults
-    if importOk
-      p.alert.alert--success Importacao concluida com sucesso.
-    else
-      p.alert.alert--warning Importacao concluida com erros parciais.
+  section.w3-card.w3-white.w3-padding.w3-margin-top
+    if importResults
+      if importOk
+        p.w3-text-green Importacao concluida com sucesso.
+      else
+        p.w3-text-orange Importacao concluida com erros parciais.
 
-    table
-      thead
-        tr
-          th Colecao
-          th Inseridos / atualizados
-          th Erros
-      tbody
-        each key in ['resources', 'taxonomy', 'news', 'ratings', 'comments']
-          - var r = importResults[key] || { upserted: 0, errors: [] }
-          tr
-            td= key
-            td= r.upserted
-            td= r.errors.length
-              if r.errors.length
-                ul
-                  each e in r.errors
-                    li= e.id + ': ' + e.message
+      table.w3-table-all.w3-striped
+        thead
+          tr.w3-teal
+            th Colecao
+            th Inseridos / atualizados
+            th Erros
+        tbody
+          each key in ['resources', 'news', 'ratings', 'comments']
+            - var r = importResults[key] || { upserted: 0, errors: [] }
+            tr
+              td= key
+              td= r.upserted
+              td
+                = r.errors.length
+                if r.errors.length
+                  ul.w3-ul
+                    each e in r.errors
+                      li= e.id + ': ' + e.message
 
-  form(method='POST' action='/admin/import')
-    .form-group
+    form(method='POST' action='/admin/import')
       label(for='dump') JSON do dump
-      textarea#dump.form-control(
+      textarea#dump.w3-input(
         name='dump'
         rows='20'
         placeholder='Cola aqui o conteudo do ficheiro exportado...'
         required
       )
-    button.btn(type='submit') Importar
+      button.w3-button.w3-teal(type='submit') Importar
 
-  p
-    a(href='/admin/data') Voltar aos dados
+    p
+      a.w3-button.w3-border(href='/admin/data') Voltar aos dados

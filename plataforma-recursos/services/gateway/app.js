@@ -1,6 +1,21 @@
 const express = require('express')
+const swaggerUi = require('swagger-ui-express')
+const YAML = require('yamljs')
 const routes = require('./routes')
 const { config } = require('./lib/config')
+const gatewaySwaggerDocument = YAML.load('./swagger.yaml')
+const swaggerHubOptions = {
+	explorer: true,
+	swaggerOptions: {
+		urls: [
+			{ name: 'Gateway', url: '/gateway/openapi.json' },
+			{ name: 'API', url: '/api/openapi.json' },
+			{ name: 'Auth', url: '/auth/openapi.json' },
+			{ name: 'Interface', url: '/interface/openapi.json' },
+		],
+		'urls.primaryName': 'Gateway',
+	},
+}
 
 const app = express()
 
@@ -12,6 +27,24 @@ app.use((req, res, next) => {
 
 app.get('/health', (req, res) => {
 	res.json({ status: 'ok' })
+})
+
+app.use(
+	'/docs',
+	swaggerUi.serveFiles(gatewaySwaggerDocument, swaggerHubOptions),
+	swaggerUi.setup(gatewaySwaggerDocument, swaggerHubOptions)
+)
+
+app.use(
+	'/gateway/docs',
+	swaggerUi.serveFiles(gatewaySwaggerDocument),
+	swaggerUi.setup(gatewaySwaggerDocument)
+)
+app.get('/openapi.json', (req, res) => {
+	res.json(gatewaySwaggerDocument)
+})
+app.get('/gateway/openapi.json', (req, res) => {
+	res.json(gatewaySwaggerDocument)
 })
 
 app.use('/', routes)

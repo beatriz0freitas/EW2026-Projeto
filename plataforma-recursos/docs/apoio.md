@@ -34,23 +34,30 @@
 
 ## Swagger (estado atual)
 
+- Hub agregado (seleção API/Auth/Interface): `http://localhost:16020/docs`
+
 ### API
 
 - Especificação: `services/api/swagger.yaml`
-- UI no serviço API: `/api/docs`
-- UI via gateway: `/api/docs`
+- UI via gateway: `http://localhost:16020/api/docs`
 
 ### Auth
 
 - Especificação: `services/auth/swagger.yaml`
-- UI no serviço Auth: `/docs`
-- UI via gateway: `/auth/docs`
+- UI via gateway: `http://localhost:16020/auth/docs`
+
+### Interface
+
+- Especificação: `services/interface/swagger.yaml`
+- UI via gateway: `http://localhost:16020/interface/docs`
 
 ### Utilização prática
 
 - Para demo local com gateway, usar:
+  - `http://localhost:16020/docs`
   - `http://localhost:16020/api/docs`
   - `http://localhost:16020/auth/docs`
+  - `http://localhost:16020/interface/docs`
 
 Observação: os endpoints em Swagger que exigem autenticação devem receber token válido (`Bearer`) para testes em rotas protegidas.
 

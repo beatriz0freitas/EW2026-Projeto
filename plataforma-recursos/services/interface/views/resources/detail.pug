@@ -38,4 +38,18 @@ block content
 
 		p
 			a.w3-button.w3-border(href='/resources') Voltar à lista
+			if canManageResource
+				a.w3-button.w3-border(href=`/resources/${resource._id}/edit`) Editar recurso
+			if user && (user.role === 'produtor' || user.role === 'admin')
+				a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar post sobre este recurso
 
+	section.w3-card.w3-white.w3-padding.w3-margin-top
+		h2 Posts sobre este recurso
+		if !posts || !posts.length
+			p Ainda não existem posts associados a este recurso.
+		else
+			ul.w3-ul.w3-hoverable
+				each post in posts
+					li
+						a(href=`/posts/${post._id}`)= post.titulo
+						span.w3-text-grey.w3-small  · por #{post.autorNome || 'autor desconhecido'}

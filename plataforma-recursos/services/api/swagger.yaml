@@ -167,6 +167,14 @@ components:
           type: string
           example: matematica
 paths:
+  /api/openapi.json:
+    get:
+      tags: [Docs]
+      summary: Obter especificacao OpenAPI em JSON
+      responses:
+        '200':
+          description: Especificacao OpenAPI da API
+
   /api/health:
     get:
       tags: [Health]
@@ -606,6 +614,40 @@ paths:
                     type: integer
                     example: 12
 
+  /api/resources/{id}/ratings/mine:
+    get:
+      tags: [Ratings]
+      summary: Obter rating do utilizador autenticado para o recurso
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rating do utilizador no recurso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  rating:
+                    allOf:
+                      - $ref: '#/components/schemas/Rating'
+                    nullable: true
+        '401':
+          description: Nao autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/news:
     get:
       tags: [News]
@@ -649,6 +691,48 @@ paths:
         '201':
           description: Noticia criada
 
+  /api/news/system:
+    post:
+      tags: [News]
+      summary: Criar noticia de sistema (uso interno entre servicos)
+      description: Requer header interno X-Internal-Service-Token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo, conteudo, eventType]
+              properties:
+                titulo:
+                  type: string
+                conteudo:
+                  type: string
+                eventType:
+                  type: string
+                dedupeKey:
+                  type: string
+                payload:
+                  type: object
+                  additionalProperties: true
+            example:
+              titulo: Atualizacao de utilizadores da plataforma
+              conteudo: O sistema tem agora 3 utilizadores ativos (3 no total).
+              eventType: system.total_users
+              dedupeKey: system.total_users:2026-04-26T11:28:56.000Z
+              payload:
+                totalUsers: 3
+                totalActiveUsers: 3
+      responses:
+        '201':
+          description: Noticia de sistema criada
+        '401':
+          description: Token interno ausente ou invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/news/{id}:
     delete:
       tags: [News]
@@ -665,17 +749,25 @@ paths:
         '200':
           description: Noticia removida
 
-  /api/taxonomy:
+  /api/export:
     get:
-      tags: [Taxonomy]
-      summary: Listar taxonomia
+      tags: [Export]
+      summary: Exportar dados globais da plataforma (admin)
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: Lista de itens de taxonomia
+          description: Dump JSON de dados da plataforma
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
 
+  /api/import:
     post:
-      tags: [Taxonomy]
-      summary: Criar item de taxonomia (admin)
+      tags: [Export]
+      summary: Importar dump JSON da plataforma (admin)
       security:
         - bearerAuth: []
       requestBody:
@@ -684,39 +776,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [tipo]
-              properties:
-                tipo:
-                  type: string
-                ano:
-                  type: integer
-                tema:
-                  type: string
-                hashtag:
-                  type: string
-            example:
-              tipo: ficha
-              ano: 8
-              tema: algebra
-              hashtag: matematica
-      responses:
-        '201':
-          description: Item criado
-        '409':
-          description: Item duplicado
-
-  /api/taxonomy/{id}:
-    delete:
-      tags: [Taxonomy]
-      summary: Apagar item de taxonomia (admin)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+              additionalProperties: true
       responses:
         '200':
-          description: Item removido
+          description: Importacao concluida
+        '207':
+          description: Importacao parcialmente concluida

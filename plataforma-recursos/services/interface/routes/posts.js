@@ -46,7 +46,7 @@ router.get('/new', requireSession, requireLevel('produtor'), (req, res) => {
 		heading: 'Criar post',
 		action: '/posts',
 		submitLabel: 'Publicar',
-		post: { titulo: '', conteudo: '', resourceId: '' },
+		post: { titulo: '', conteudo: '', resourceId: req.query.resourceId || '' },
 	})
 })
 
@@ -221,4 +221,3 @@ router.post(
 )
 
 module.exports = router
-

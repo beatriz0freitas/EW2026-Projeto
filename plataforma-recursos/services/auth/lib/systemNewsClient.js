@@ -1,20 +1,17 @@
 const { config } = require('./config')
 
-async function publishNewUserRegisteredNews(user) {
-	if (!user || !user._id) return false
+async function publishUsersCountChangedNews(counts) {
+	const normalizedCounts = {
+		totalUsers: Number(counts?.totalUsers || 0),
+		totalActiveUsers: Number(counts?.totalActiveUsers || 0),
+	}
 
 	const payload = {
-		eventType: 'system.new_user',
-		dedupeKey: `system.new_user:${String(user._id)}`,
-		titulo: 'Novo utilizador registado',
-		conteudo: `Foi registado um novo utilizador: ${user.nome || user._id}.`,
+		eventType: 'system.total_users',
+		titulo: 'Atualizacao de utilizadores da plataforma',
+		conteudo: `O sistema tem agora ${normalizedCounts.totalActiveUsers} utilizadores ativos (${normalizedCounts.totalUsers} no total).`,
 		createdBy: 'system',
-		payload: {
-			userId: String(user._id),
-			role: user.role || 'consumidor',
-			nome: user.nome || null,
-			dataRegisto: user.data_registo || null,
-		},
+		payload: normalizedCounts,
 	}
 
 	try {
@@ -41,5 +38,5 @@ async function publishNewUserRegisteredNews(user) {
 }
 
 module.exports = {
-	publishNewUserRegisteredNews,
+	publishUsersCountChangedNews,
 }
