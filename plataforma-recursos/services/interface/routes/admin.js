@@ -12,11 +12,8 @@ const express = require('express')
 const { Readable } = require('stream')
 const { pipeline } = require('stream/promises')
 
-const { config } = require('../lib/config')
-const { authRequest, apiRequest } = require('../lib/http')
+const { authRequest, apiRequest, apiFetch } = require('../lib/http')
 const { routeAsync, requireSession, requireLevel, apiErrorMessage } = require('../lib/web')
-
-const API_URL = config.services.apiUrl
 
 const router = express.Router()
 router.use(requireSession, requireLevel('admin'))
@@ -24,7 +21,7 @@ router.use(requireSession, requireLevel('admin'))
 // ─── Utilizadores ────────────────────────────────────────────────────────────
 
 router.get('/users', routeAsync(async (req, res) => {
-	const response = await authRequest('/users', { token: req.session.token })
+	const response = await authRequest('/users', { token: req.session.token, req })
 	if (!response.ok) {
 		return res.status(response.status || 500).render('error', {
 			title: 'Gestão de utilizadores',
@@ -39,6 +36,7 @@ router.post('/users/:id/role', routeAsync(async (req, res) => {
 		method: 'PATCH',
 		token: req.session.token,
 		body: { role: req.body.role },
+		req,
 	})
 	if (!response.ok) {
 		req.flashError(apiErrorMessage(response.data, 'Não foi possível atualizar o role.'))
@@ -52,6 +50,7 @@ router.post('/users/:id/delete', routeAsync(async (req, res) => {
 	const response = await authRequest(`/users/${req.params.id}`, {
 		method: 'DELETE',
 		token: req.session.token,
+		req,
 	})
 	if (!response.ok) {
 		req.flashError(apiErrorMessage(response.data, 'Não foi possível remover o utilizador.'))
@@ -109,12 +108,10 @@ router.post('/news/:id/delete', routeAsync(async (req, res) => {
 // O Content-Disposition: attachment da API já faz o browser descarregar o ficheiro.
 
 router.get('/export', routeAsync(async (req, res) => {
-	const apiRes = await fetch(`${API_URL}/api/export`, {
+	const apiRes = await apiFetch('/export', {
 		method: 'GET',
-		headers: {
-			Accept: 'application/json',
-			Authorization: `Bearer ${req.session.token}`,
-		},
+		token: req.session.token,
+		req,
 	})
 
 	if (!apiRes.ok) {

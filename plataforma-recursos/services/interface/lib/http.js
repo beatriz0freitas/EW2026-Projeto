@@ -4,14 +4,14 @@
  * Camada de comunicação HTTP para os serviços auth e API.
  *
  * NOVO: interceptor de 401
- *   Se um pedido à API devolver 401, tenta renovar o access token chamando
+ *   Se um pedido ao auth ou a API devolver 401, tenta renovar o access token chamando
  *   POST /sessions/refresh-server no auth com o refresh token guardado na sessao.
  *   Se a renovação for bem-sucedida, actualiza req.session.token e repete
  *   o pedido original uma vez. Se falhar, devolve o 401 original para que
  *   o route handler possa redirecionar para login.
  *
  * Uso:
- *   const { authRequest, apiRequest } = require('../lib/http')
+ *   const { authRequest, apiRequest, apiFetch } = require('../lib/http')
  *   // pedidos normais — sem mudanças
  *   const res = await apiRequest('/resources', { token: req.session.token })
  *
@@ -43,6 +43,22 @@ async function requestJson(baseUrl, endpoint, { method = 'GET', token, body } = 
 	return { ok: response.ok, status: response.status, data: payload }
 }
 
+async function requestRaw(baseUrl, endpoint, { method = 'GET', token, headers = {}, body } = {}) {
+	const mergedHeaders = { ...headers }
+	const hasAcceptHeader = Object.keys(mergedHeaders).some(
+		(headerName) => headerName.toLowerCase() === 'accept'
+	)
+
+	if (!hasAcceptHeader) mergedHeaders.Accept = 'application/json'
+	if (token) mergedHeaders.Authorization = `Bearer ${token}`
+
+	return fetch(`${baseUrl}${endpoint}`, {
+		method,
+		headers: mergedHeaders,
+		body,
+	})
+}
+
 // ─── Renovação de token ───────────────────────────────────────────────────────
 
 /**
@@ -62,41 +78,59 @@ async function tryRefresh(req) {
 	})
 
 	if (result.ok && result.data?.token) {
+		if (result.data.user) {
+			req.session.user = result.data.user
+			if (req.res?.locals) req.res.locals.user = result.data.user
+		}
+		if (result.data.refreshToken) {
+			req.session.refreshToken = result.data.refreshToken
+		}
 		return result.data.token
 	}
 	return null
 }
 
 // ─── authRequest ─────────────────────────────────────────────────────────────
-// Pedidos ao serviço auth — sem interceptor (o auth é quem emite tokens,
-// não faz sentido tentar renovar contra si próprio).
+// Pedidos JSON ao serviço auth com renovação automática quando `req` existe.
+
+async function requestJsonWithAutoRefresh(baseUrl, endpoint, options = {}) {
+	const { req, ...rest } = options
+	const result = await requestJson(baseUrl, endpoint, rest)
+
+	if (result.status !== 401 || !req?.session) return result
+
+	const newToken = await tryRefresh(req)
+	if (!newToken) return result
+
+	req.session.token = newToken
+	return requestJson(baseUrl, endpoint, { ...rest, token: newToken })
+}
 
 function authRequest(endpoint, options = {}) {
-	return requestJson(AUTH_URL, endpoint, options)
+	return requestJsonWithAutoRefresh(AUTH_URL, endpoint, options)
 }
 
 // ─── apiRequest ──────────────────────────────────────────────────────────────
-// Pedidos ao serviço API com interceptor automático de 401.
-//
-// Passa `req` nas options para activar o interceptor:
-//   apiRequest('/resources', { token: req.session.token, req })
-//
-// Se não passares `req`, o comportamento é idêntico ao original.
 
-async function apiRequest(endpoint, options = {}) {
-	const { req, ...rest } = options
-	const result = await requestJson(API_URL, `/api${endpoint}`, rest)
-
-	// Não é 401 ou não temos sessão para renovar → devolve directamente
-	if (result.status !== 401 || !req?.session) return result
-
-	// Tentar renovar o token
-	const newToken = await tryRefresh(req)
-	if (!newToken) return result   // renovação falhou → devolve 401 original
-
-	// Actualizar a sessão e repetir o pedido com o novo token
-	req.session.token = newToken
-	return requestJson(API_URL, `/api${endpoint}`, { ...rest, token: newToken })
+function apiRequest(endpoint, options = {}) {
+	return requestJsonWithAutoRefresh(API_URL, `/api${endpoint}`, options)
 }
 
-module.exports = { authRequest, apiRequest }
+async function requestRawWithAutoRefresh(baseUrl, endpoint, options = {}) {
+	const { req, ...rest } = options
+	const response = await requestRaw(baseUrl, endpoint, rest)
+
+	if (response.status !== 401 || !req?.session) return response
+
+	const newToken = await tryRefresh(req)
+	if (!newToken) return response
+
+	req.session.token = newToken
+	return requestRaw(baseUrl, endpoint, { ...rest, token: newToken })
+}
+
+function apiFetch(endpoint, options = {}) {
+	return requestRawWithAutoRefresh(API_URL, `/api${endpoint}`, options)
+}
+
+module.exports = { authRequest, apiRequest, apiFetch }
