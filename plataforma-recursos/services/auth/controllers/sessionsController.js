@@ -60,7 +60,7 @@ module.exports.refresh = async (req, res) => {
 	const newAccessToken = signAccessToken(user)
 	res.cookie(config.cookies.name, newAccessToken, buildAuthCookieOptions())
 
-	res.json({ ok: true, token: newAccessToken })
+	res.json({ ok: true, token: newAccessToken, user: user.toJSON() })
 }
 
 module.exports.refreshServer = async (req, res) => {
@@ -79,7 +79,7 @@ module.exports.refreshServer = async (req, res) => {
 	}
 
 	const newAccessToken = signAccessToken(user)
-	res.json({ ok: true, token: newAccessToken })
+	res.json({ ok: true, token: newAccessToken, user: user.toJSON() })
 }
 
 module.exports.logout = (req, res) => {
