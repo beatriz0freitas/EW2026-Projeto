@@ -48,20 +48,13 @@ Arquitetura de codigo (estado atual):
 - ✅ Autenticacao por username/email + password com JWT.
 - ✅ Perfis admin, produtor e consumidor implementados no backend.
 - ✅ Refresh token implementado (cookies no auth e renovacao server-side para a interface).
-<<<<<<< HEAD
-- ✅ Registo publico forcado para `role=consumidor` e sem aceitar campos privilegiados do cliente.
-=======
 - ✅ Registo publico força `role=consumidor` e ignora `role`/`nivel_acesso` enviados pelo cliente.
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
 - ⚠️ Autenticacoes alternativas (chave API, Google, Facebook) nao implementadas.
 
 ### Dados de utilizador
 
 - ✅ nome, email, filiacao, role, data_registo, ultimo_acesso, ativo, password (hash bcrypt).
-<<<<<<< HEAD
 - ⚠️ Campo `nivel_acesso` existe, mas o controlo principal de permissao e por role.
-=======
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
 
 ### Metainformacao de recursos
 
@@ -84,11 +77,10 @@ Arquitetura de codigo (estado atual):
 
 ## API (services/api)
 
-<<<<<<< HEAD
 - ✅ Estrutura modular com `models`, `routes`, `controllers`, `middleware` e `lib`.
 - ✅ Swagger incorporado e disponivel em `/api/docs` (direto e via gateway).
 - ✅ OAIS ingest e access operacionais.
-- ✅ CRUD principal: resources, posts, comments, ratings, news, taxonomy.
+- ✅ CRUD principal: resources, posts, comments, ratings e news.
 - ✅ Export/import de dados globais (GET `/api/export` e POST `/api/import`, admin).
 - ✅ Paginacao e respostas de erro utilitarias centralizadas em `lib/http.js`.
 - ✅ Endpoint `ratings/mine` implementado e montado.
@@ -101,55 +93,24 @@ Arquitetura de codigo (estado atual):
 - ✅ Contagem de downloads por recurso (`downloadCount`) no OAIS access para alimentar top3.
 - ✅ Config valida e exige `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ PATCH de resources substitui metadata inteira; falta whitelist de campos permitidos.
-- ⚠️ GET `/api/posts` ainda nao filtra por `resourceId`.
+- ✅ GET `/api/posts` aceita filtro opcional `resourceId`.
 - ⚠️ Nao ha limite explicito em `express.json()` no API.
-=======
-- ✅ Estrutura modular com models, routes, middleware e lib.
-- ✅ Swagger incorporado e disponível via Gateway em `http://localhost:16020/api/docs`.
-- ✅ OAIS ingest e access operacionais.
-- ✅ CRUD principal: resources, posts, comments, ratings e news.
-- ✅ Export/import de dados globais (GET /api/export e POST /api/import, admin).
-- ✅ Paginacao e respostas de erro utilitarias centralizadas em lib/http.js.
-- ✅ Endpoint ratings/mine implementado e montado.
-- ✅ NewsItem evoluido para sistema: tipo, eventType, dedupeKey, payload.
-- ✅ Indice unico em dedupeKey para evitar duplicados em noticias de sistema.
-- ✅ Servico comum de publicacao de noticias com dedupe (lib/newsPublisher.js).
-- ✅ Endpoint interno POST /api/news/system com token interno de servico.
-- ✅ Evento automatico system.new_submission no fim do ingest com dedupe por resourceId.
-- ✅ Noticias automaticas `system.top3` e `system.total_users` publicadas por mudanca de estado (nao por agendamento diario).
-- ✅ Contagem de downloads por recurso (downloadCount) no OAIS access para alimentar top3.
-- ✅ Config valida e exige `INTERNAL_SERVICE_TOKEN` no arranque.
-- ⚠️ PATCH de resources substitui metadata inteira; falta whitelist de campos permitidos.
-- ✅ GET /api/posts aceita filtro opcional `resourceId`.
-- ⚠️ Nao ha limite explicito em express.json() no API.
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
 - ⚠️ Falta hardening adicional (helmet/cors explicito no gateway/rate limit central).
 
 ## Auth (services/auth)
 
-<<<<<<< HEAD
 - ✅ Estrutura explicitamente separada: `routes` + `controllers` + `services` + `models` + `middleware` + `lib`.
 - ✅ Middleware de acesso consolidado em `middleware/auth.js`.
 - ✅ Removido modulo legado `auth/auth.js`.
-- ✅ JWT, refresh token, verify, me e gestao de utilizadores admin.
+- ✅ JWT, refresh token, verify e gestao de utilizadores admin.
 - ✅ Swagger incorporado e disponivel em `/docs` (direto) e `/auth/docs` (via gateway).
 - ✅ Soft-delete de utilizador (`ativo=false`) em DELETE `/users/:id`.
 - ✅ Hash de password com bcrypt e ocultacao de password em `toJSON()`.
 - ✅ Validacao de body dedicada para login/campos obrigatorios.
 - ✅ app.js so faz `listen` apos conectar ao MongoDB.
 - ✅ CORS configurado no auth.
-- ✅ Endpoint interno seguro para stats: GET `/internal/stats/users-count`.
-- ✅ Publicacao automatica de noticia `system.new_user` apos registo (auth -> api, best-effort).
-=======
-- ✅ JWT, refresh token, verify e gestao de utilizadores admin.
-- ✅ Swagger incorporado e disponível via Gateway em `http://localhost:16020/auth/docs`.
-- ✅ Soft-delete de utilizador (ativo=false) em DELETE /users/:id.
-- ✅ Hash de password com bcrypt e ocultacao de password em toJSON().
-- ✅ Validacao de body dedicada para login/campos obrigatorios.
-- ✅ app.js so faz listen apos conectar ao MongoDB.
-- ✅ CORS ja configurado no auth.
+- ✅ Endpoints internos legados removidos para simplificar a API Auth.
 - ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
 - ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
 - ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
 - ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito; ideal exigir segredo forte por ambiente.
@@ -158,26 +119,16 @@ Arquitetura de codigo (estado atual):
 
 ## Gateway (services/gateway)
 
-<<<<<<< HEAD
 - ✅ Reverse proxy funcional: `/api` -> API, `/auth` -> Auth, `/` -> Interface.
 - ✅ Regras especificas para `/auth/login`, `/auth/register` e `/auth/logout` irem para Interface.
 - ✅ Handler central de 502 bad gateway em `lib/proxy.js`.
 - ✅ `proxyTimeout` configurado (60s).
 - ✅ Config centralizada em `services/gateway/lib/config.js` com validacao de `PORT`/URLs.
 - ✅ Exposicao de documentacao Swagger dos servicos:
-  - `/api/docs` -> API Swagger UI
-  - `/auth/docs` -> Auth Swagger UI
-=======
-- ✅ Reverse proxy funcional: /api -> API, /auth -> Auth, / -> Interface.
-- ✅ Regras especificas para /auth/login, /auth/register e /auth/logout irem para Interface.
-- ✅ Handler central de 502 bad gateway em lib/proxy.js.
-- ✅ proxyTimeout configurado (60s).
-- ✅ Config centralizada em `services/gateway/lib/config.js` com validacao de PORT/URLs.
-- ✅ Exposição de documentação Swagger dos serviços:
-	- `http://localhost:16020/api/docs` -> API Swagger UI
-	- `http://localhost:16020/auth/docs` -> Auth Swagger UI
-	- `http://localhost:16020/interface/docs` -> Interface Swagger UI
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
+	- `/docs` -> Hub Swagger agregado
+	- `/api/docs` -> API Swagger UI
+	- `/auth/docs` -> Auth Swagger UI
+	- `/interface/docs` -> Interface Swagger UI
 - ❌ CORS explicito no gateway nao implementado.
 - ❌ Helmet no gateway nao implementado.
 - ❌ Rate limiting global nao implementado.
@@ -192,13 +143,8 @@ Arquitetura de codigo (estado atual):
 - ✅ Posts: listar, criar, detalhe, editar, apagar, comentar e remover comentario.
 - ✅ Admin: utilizadores, noticias, export e import de dump.
 - ✅ Interceptor 401 com renovacao automatica via refresh-server.
-<<<<<<< HEAD
-- ⚠️ Home ainda nao mostra lista de recursos (apenas atalhos + noticias).
-- ⚠️ Pagina de detalhe de recurso ainda nao apresenta posts associados por `resourceId`.
-=======
 - ✅ Home mostra lista resumida de recursos recentes.
 - ✅ Pagina de detalhe de recurso apresenta posts associados por `resourceId`.
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
 
 ---
 
@@ -214,11 +160,7 @@ Itens revistos e corrigidos no estado atual:
 - ✅ Separacao de responsabilidade no auth foi concluida (`services/userService.js` + `middleware/auth.js`).
 - ✅ `services/auth/auth/auth.js` foi removido.
 - ⚠️ CORS no auth ja existe, mas no gateway continua em falta.
-<<<<<<< HEAD
-- ✅ Registo publico ja nao permite elevacao de privilegios por `role`/`nivel_acesso` no body.
-=======
 - ✅ Registo publico ja nao permite elevacao de privilegios via `role`/`nivel_acesso`.
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
 
 ---
 
@@ -226,10 +168,7 @@ Itens revistos e corrigidos no estado atual:
 
 1. Hardening transversal:
 
-<<<<<<< HEAD
-=======
-- Adicionar rate limit em POST /auth/sessions.
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
+- ✅ Rate limit em POST /auth/sessions implementado.
 - Adicionar helmet em auth/api/gateway.
 - Definir politica CORS explicita no gateway.
 - Rever rotas internas para nao ficarem expostas no gateway (defesa em profundidade).
@@ -241,15 +180,9 @@ Itens revistos e corrigidos no estado atual:
 
 3. Experiencia funcional final:
 
-<<<<<<< HEAD
-- Mostrar recursos na home.
-- Mostrar posts associados no detalhe de recurso (`resourceId`).
-- (Opcional) Filtro GET `/api/posts?resourceId=...`.
-=======
 - ✅ Mostrar recursos na home.
 - ✅ Mostrar posts associados no detalhe de recurso (`resourceId`).
 - ✅ Filtro GET `/api/posts?resourceId=...`.
->>>>>>> 03cd6d1f3cef85e5067a38b7c16f23cec56000ee
 
 4. Qualidade de entrega:
 

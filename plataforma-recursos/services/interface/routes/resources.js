@@ -27,7 +27,7 @@ const upload = multer({
 
 const router = express.Router()
 
-function buildTaxonomyOptions(items = []) {
+function buildFilterOptionsFromResources(items = []) {
 	const values = {
 		tipos: new Set(),
 		anos: new Set(),
@@ -207,7 +207,7 @@ router.get('/', routeAsync(async (req, res) => {
 			tema:    req.query.tema    || '',
 			hashtag: req.query.hashtag || '',
 		},
-		filterOptions: resourcesForFilters.ok ? buildTaxonomyOptions(resourcesForFilters.items) : { tipos: [], anos: [], temas: [], hashtags: [] },
+		filterOptions: resourcesForFilters.ok ? buildFilterOptionsFromResources(resourcesForFilters.items) : { tipos: [], anos: [], temas: [], hashtags: [] },
 		pagination: {
 			page:       list.data?.page       || 1,
 			totalPages: list.data?.totalPages || 1,
@@ -290,7 +290,7 @@ router.get('/:id/edit', requireSession, requireLevel('produtor'), routeAsync(asy
 			dataCriacao: metadataResource.dataCriacao || '',
 			hashtags: Array.isArray(metadataResource.hashtags) ? metadataResource.hashtags.join(', ') : '',
 		},
-		suggestions: resourcesForSuggestions.ok ? buildTaxonomyOptions(resourcesForSuggestions.items) : { tipos: [], anos: [], temas: [], hashtags: [] },
+		suggestions: resourcesForSuggestions.ok ? buildFilterOptionsFromResources(resourcesForSuggestions.items) : { tipos: [], anos: [], temas: [], hashtags: [] },
 	})
 }))
 

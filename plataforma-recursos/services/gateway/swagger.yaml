@@ -44,26 +44,6 @@ paths:
               schema:
                 type: string
 
-  /gateway/docs:
-    get:
-      tags: [Docs]
-      summary: Swagger UI especifico do servico Gateway
-      responses:
-        '200':
-          description: HTML do Swagger UI do Gateway
-          content:
-            text/html:
-              schema:
-                type: string
-
-  /gateway/openapi.json:
-    get:
-      tags: [Docs]
-      summary: Alias de OpenAPI JSON do Gateway
-      responses:
-        '200':
-          description: Especificacao OpenAPI do gateway
-
   /api/{path}:
     parameters:
       - name: path
