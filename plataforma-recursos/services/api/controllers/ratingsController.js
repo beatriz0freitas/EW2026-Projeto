@@ -1,6 +1,7 @@
 const Rating = require('../models/Rating')
 const Resource = require('../models/Resource')
 const { jsonError, invalidId, isMongoId } = require('../lib/http')
+const { publishTop3NewsIfChanged } = require('../lib/systemNewsJob')
 
 module.exports.upsertByResource = async (req, res) => {
 	if (!isMongoId(req.params.id)) return invalidId(res)
@@ -18,6 +19,10 @@ module.exports.upsertByResource = async (req, res) => {
 			{ stars, updatedAt: new Date() },
 			{ upsert: true, new: true, setDefaultsOnInsert: true }
 		)
+
+		publishTop3NewsIfChanged().catch((err) => {
+			console.error('[api][ratings] warning: could not publish top3 news after rating update:', err)
+		})
 
 		res.status(201).json({ ok: true, rating })
 	} catch {

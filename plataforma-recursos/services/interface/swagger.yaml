@@ -1,0 +1,659 @@
+openapi: 3.0.3
+info:
+  title: EW2026 Interface Service
+  version: 1.0.0
+  description: Interface web server-side (Pug) da plataforma de recursos educativos.
+servers:
+  - url: http://localhost:16020
+    description: Interface via gateway
+  - url: http://localhost:16026
+    description: Interface direta
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: ew.sid
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+    ErrorPage:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Erro interno
+        message:
+          type: string
+          example: Ocorreu um erro inesperado. Tente novamente.
+paths:
+  /openapi.json:
+    get:
+      tags: [Docs]
+      summary: Obter especificacao OpenAPI em JSON
+      responses:
+        '200':
+          description: Especificacao OpenAPI da Interface
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check da interface
+      responses:
+        '200':
+          description: Serviço disponível
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /:
+    get:
+      tags: [Home]
+      summary: Página inicial da interface
+      responses:
+        '200':
+          description: HTML renderizado da página inicial
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /auth/login:
+    get:
+      tags: [Auth]
+      summary: Formulário de login
+      responses:
+        '200':
+          description: HTML do formulário de login
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Auth]
+      summary: Submeter login
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@teste.com
+                password:
+                  type: string
+                  example: Admin123
+      responses:
+        '302':
+          description: Redireciona para home em sucesso ou para login em erro
+
+  /auth/register:
+    get:
+      tags: [Auth]
+      summary: Formulário de registo
+      responses:
+        '200':
+          description: HTML do formulário de registo
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Auth]
+      summary: Submeter registo
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [nome, email, password]
+              properties:
+                nome:
+                  type: string
+                  example: Utilizador Demo
+                email:
+                  type: string
+                  format: email
+                  example: demo@teste.com
+                password:
+                  type: string
+                  example: Demo123
+                filiacao:
+                  type: string
+                  example: Universidade do Minho
+      responses:
+        '302':
+          description: Redireciona para login em sucesso ou para registo em erro
+
+  /auth/logout:
+    get:
+      tags: [Auth]
+      summary: Terminar sessão (GET)
+      security:
+        - sessionCookie: []
+      responses:
+        '302':
+          description: Redireciona para login
+    post:
+      tags: [Auth]
+      summary: Terminar sessão (POST)
+      security:
+        - sessionCookie: []
+      responses:
+        '302':
+          description: Redireciona para login
+
+  /resources:
+    get:
+      tags: [Resources]
+      summary: Listar recursos com filtros e paginação
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: tipo
+          in: query
+          schema:
+            type: string
+        - name: ano
+          in: query
+          schema:
+            type: string
+        - name: tema
+          in: query
+          schema:
+            type: string
+        - name: hashtag
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HTML de listagem de recursos
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /resources/new:
+    get:
+      tags: [Resources]
+      summary: Formulário de submissão de recurso
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: HTML do formulário
+          content:
+            text/html:
+              schema:
+                type: string
+        '302':
+          description: Redirecionamento caso não autenticado/sem permissões
+    post:
+      tags: [Resources]
+      summary: Submeter SIP (ZIP) para ingestão
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [sip]
+              properties:
+                sip:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redireciona para detalhe do recurso ou para o formulário em erro
+
+  /resources/{id}:
+    get:
+      tags: [Resources]
+      summary: Ver detalhe de recurso
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HTML com detalhe do recurso
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: Página de erro quando recurso não existe
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/ErrorPage'
+
+  /resources/{id}/dip:
+    get:
+      tags: [Resources]
+      summary: Download do DIP do recurso
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ficheiro ZIP do DIP
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Sem autenticação para recurso privado
+        '403':
+          description: Sem permissões
+        '404':
+          description: Recurso não encontrado
+
+  /resources/{id}/ratings:
+    post:
+      tags: [Resources]
+      summary: Submeter avaliação de recurso
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [stars]
+              properties:
+                stars:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+      responses:
+        '302':
+          description: Redireciona para detalhe do recurso
+
+  /posts:
+    get:
+      tags: [Posts]
+      summary: Listar posts
+      responses:
+        '200':
+          description: HTML com lista de posts
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Posts]
+      summary: Criar novo post
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [titulo, conteudo]
+              properties:
+                titulo:
+                  type: string
+                conteudo:
+                  type: string
+                resourceId:
+                  type: string
+      responses:
+        '302':
+          description: Redireciona para detalhe do post ou para formulário em erro
+
+  /posts/new:
+    get:
+      tags: [Posts]
+      summary: Formulário para criar post
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: HTML do formulário
+          content:
+            text/html:
+              schema:
+                type: string
+        '302':
+          description: Redirecionamento caso sem permissões
+
+  /posts/{id}:
+    get:
+      tags: [Posts]
+      summary: Ver detalhe de post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HTML com detalhe do post
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /posts/{id}/edit:
+    get:
+      tags: [Posts]
+      summary: Formulário de edição de post
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HTML do formulário de edição
+          content:
+            text/html:
+              schema:
+                type: string
+        '302':
+          description: Redirecionamento em falta de permissões
+    post:
+      tags: [Posts]
+      summary: Guardar alterações de post
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [titulo, conteudo]
+              properties:
+                titulo:
+                  type: string
+                conteudo:
+                  type: string
+                resourceId:
+                  type: string
+      responses:
+        '302':
+          description: Redireciona para o detalhe do post
+
+  /posts/{id}/comments:
+    post:
+      tags: [Posts]
+      summary: Criar comentário num post
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto:
+                  type: string
+      responses:
+        '302':
+          description: Redireciona para o detalhe do post
+
+  /posts/{id}/comments/{cid}/delete:
+    post:
+      tags: [Posts]
+      summary: Remover comentário de post
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redireciona para o detalhe do post
+
+  /posts/{id}/delete:
+    post:
+      tags: [Posts]
+      summary: Remover post
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redireciona para lista de posts
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Listar utilizadores
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: HTML com gestão de utilizadores
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /admin/users/{id}/role:
+    post:
+      tags: [Admin]
+      summary: Atualizar role de utilizador
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [admin, produtor, consumidor]
+      responses:
+        '302':
+          description: Redireciona para gestão de utilizadores
+
+  /admin/users/{id}/delete:
+    post:
+      tags: [Admin]
+      summary: Remover utilizador
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redireciona para gestão de utilizadores
+
+  /admin/news:
+    get:
+      tags: [Admin]
+      summary: Listar notícias
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: HTML com gestão de notícias
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin]
+      summary: Criar notícia
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [titulo, conteudo]
+              properties:
+                titulo:
+                  type: string
+                conteudo:
+                  type: string
+      responses:
+        '302':
+          description: Redireciona para gestão de notícias
+
+  /admin/news/{id}/delete:
+    post:
+      tags: [Admin]
+      summary: Remover notícia
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redireciona para gestão de notícias
+
+  /admin/export:
+    get:
+      tags: [Admin]
+      summary: Exportar dump de dados
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Ficheiro JSON para download
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '302':
+          description: Redireciona para dashboard de dados em erro
+
+  /admin/import:
+    get:
+      tags: [Admin]
+      summary: Formulário de importação de dump JSON
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: HTML do formulário de importação
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin]
+      summary: Importar dump JSON
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [dump]
+              properties:
+                dump:
+                  type: string
+                  description: JSON completo no textarea
+      responses:
+        '200':
+          description: HTML com relatório de importação
+          content:
+            text/html:
+              schema:
+                type: string
+        '302':
+          description: Redireciona para o formulário em caso de erro
+
+  /admin/data:
+    get:
+      tags: [Admin]
+      summary: Dashboard de operações de dados
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: HTML do dashboard de dados
+          content:
+            text/html:
+              schema:
+                type: string

@@ -1,13 +1,14 @@
 const UserService = require('../services/userService')
 const { jsonError } = require('../lib/http')
-const { publishNewUserRegisteredNews } = require('../lib/systemNewsClient')
+const { publishUsersCountChangedNews } = require('../lib/systemNewsClient')
 
 module.exports.register = async (req, res) => {
 	try {
-		const user = await UserService.insert(req.body)
+		const user = await UserService.insert(req.body, { publicRegistration: true })
+		const counts = await UserService.getStats()
 
-		publishNewUserRegisteredNews(user).catch((err) => {
-			console.error('[auth] warning: could not publish new user news:', err)
+		publishUsersCountChangedNews(counts).catch((err) => {
+			console.error('[auth] warning: could not publish users-count news:', err)
 		})
 
 		res.status(201).json({ ok: true, user })

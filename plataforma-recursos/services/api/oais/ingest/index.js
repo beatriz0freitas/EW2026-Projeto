@@ -7,6 +7,7 @@ const { requireLevel } = require('../../middleware/auth')
 const { config } = require('../../lib/config')
 const { jsonError } = require('../../lib/http')
 const { publishNews } = require('../../lib/newsPublisher')
+const { publishTop3NewsIfChanged } = require('../../lib/systemNewsJob')
 
 const router = express.Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } })
@@ -66,6 +67,10 @@ router.post(
 		} catch (newsErr) {
 			console.error('[api][ingest] warning: could not publish new submission news:', newsErr)
 		}
+
+		publishTop3NewsIfChanged().catch((err) => {
+			console.error('[api][ingest] warning: could not publish top3 news after ingest:', err)
+		})
 
 		res.status(201).json({ ok: true, resourceId: result.resourceId })
 	}

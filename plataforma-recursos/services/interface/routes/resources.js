@@ -27,6 +27,75 @@ const upload = multer({
 
 const router = express.Router()
 
+function buildTaxonomyOptions(items = []) {
+	const values = {
+		tipos: new Set(),
+		anos: new Set(),
+		temas: new Set(),
+		hashtags: new Set(),
+	}
+
+	for (const item of items) {
+		const resource = item?.metadata?.resource || {}
+
+		if (resource.tipo) values.tipos.add(String(resource.tipo))
+		if (resource.ano !== undefined && resource.ano !== null && resource.ano !== '') {
+			values.anos.add(String(resource.ano))
+		}
+		if (resource.tema) values.temas.add(String(resource.tema))
+		if (Array.isArray(resource.hashtags)) {
+			for (const hashtag of resource.hashtags) {
+				if (hashtag) values.hashtags.add(String(hashtag))
+			}
+		}
+	}
+
+	return {
+		tipos: Array.from(values.tipos).sort(),
+		anos: Array.from(values.anos).sort((a, b) => Number(a) - Number(b)),
+		temas: Array.from(values.temas).sort(),
+		hashtags: Array.from(values.hashtags).sort(),
+	}
+}
+
+async function fetchAllVisibleResources(req) {
+	const limit = 50
+	let page = 1
+	let totalPages = 1
+	const allItems = []
+
+	do {
+		const response = await apiRequest(`/resources?limit=${limit}&page=${page}`, {
+			token: req.session.token,
+			req,
+		})
+
+		if (!response.ok) {
+			return { ok: false, items: [] }
+		}
+
+		allItems.push(...(response.data?.items || []))
+		totalPages = Number(response.data?.totalPages || 1)
+		page += 1
+	} while (page <= totalPages)
+
+	return { ok: true, items: allItems }
+}
+
+function normalizeHashtags(input) {
+	return String(input || '')
+		.split(',')
+		.map((value) => value.trim())
+		.filter(Boolean)
+}
+
+function canManageResource(user, resource) {
+	if (!user || !resource) return false
+	if (user.role === 'admin') return true
+	const uid = String(user._id || user.id || user.sub || '')
+	return !!uid && String(resource.produtor) === uid
+}
+
 // GET /resources/new
 router.get('/new', requireSession, requireLevel('produtor'), (req, res) => {
 	res.render('resources/form', { title: 'Submeter recurso' })
@@ -114,10 +183,13 @@ router.get('/', routeAsync(async (req, res) => {
 	if (req.query.tema)    params.set('tema',    String(req.query.tema))
 	if (req.query.hashtag) params.set('hashtag', String(req.query.hashtag))
 
-	const list = await apiRequest(`/resources?${params.toString()}`, {
-		token: req.session.token,
-		req,
-	})
+	const [list, resourcesForFilters] = await Promise.all([
+		apiRequest(`/resources?${params.toString()}`, {
+			token: req.session.token,
+			req,
+		}),
+		fetchAllVisibleResources(req),
+	])
 
 	if (!list.ok) {
 		return res.status(list.status || 500).render('error', {
@@ -135,6 +207,7 @@ router.get('/', routeAsync(async (req, res) => {
 			tema:    req.query.tema    || '',
 			hashtag: req.query.hashtag || '',
 		},
+		filterOptions: resourcesForFilters.ok ? buildTaxonomyOptions(resourcesForFilters.items) : { tipos: [], anos: [], temas: [], hashtags: [] },
 		pagination: {
 			page:       list.data?.page       || 1,
 			totalPages: list.data?.totalPages || 1,
@@ -151,6 +224,7 @@ router.get('/:id', routeAsync(async (req, res) => {
 	const requests = [
 		apiRequest(`/resources/${req.params.id}`, { token: req.session.token, req }),
 		apiRequest(`/resources/${req.params.id}/ratings`, { token: req.session.token, req }),
+		apiRequest(`/posts?resourceId=${req.params.id}&limit=20`, { token: req.session.token, req }),
 	]
 
 	// Só pede avaliação própria se estiver autenticado
@@ -160,7 +234,7 @@ router.get('/:id', routeAsync(async (req, res) => {
 		)
 	}
 
-	const [resource, ratings, myRatingRes] = await Promise.all(requests)
+	const [resource, ratings, postsRes, myRatingRes] = await Promise.all(requests)
 
 	if (!resource.ok) {
 		return res.status(resource.status || 500).render('error', {
@@ -176,9 +250,105 @@ router.get('/:id', routeAsync(async (req, res) => {
 			media: ratings.data?.media || 0,
 			total: ratings.data?.total || 0,
 		},
+		posts: postsRes.ok ? postsRes.data?.items || [] : [],
+		canManageResource: canManageResource(req.session?.user, resource.data.resource),
 		// myRating: número 1-5 ou null — usado na view para pré-seleccionar a estrela
 		myRating: myRatingRes?.data?.rating?.stars || null,
 	})
+}))
+
+router.get('/:id/edit', requireSession, requireLevel('produtor'), routeAsync(async (req, res) => {
+	const [resourceRes, resourcesForSuggestions] = await Promise.all([
+		apiRequest(`/resources/${req.params.id}`, { token: req.session.token, req }),
+		fetchAllVisibleResources(req),
+	])
+
+	if (!resourceRes.ok) {
+		return res.status(resourceRes.status || 500).render('error', {
+			title: 'Recurso não encontrado',
+			message: apiErrorMessage(resourceRes.data, 'Não foi possível carregar o recurso.'),
+		})
+	}
+
+	const resource = resourceRes.data?.resource
+	if (!canManageResource(req.session?.user, resource)) {
+		req.flashError('Não tem permissões para editar este recurso.')
+		return res.redirect(`/resources/${req.params.id}`)
+	}
+
+	const metadataResource = resource?.metadata?.resource || {}
+	res.render('resources/edit', {
+		title: 'Editar recurso',
+		resource,
+		form: {
+			tipo: metadataResource.tipo || '',
+			titulo: metadataResource.titulo || '',
+			subtitulo: metadataResource.subtitulo || '',
+			ano: metadataResource.ano || '',
+			tema: metadataResource.tema || '',
+			visibilidade: metadataResource.visibilidade || 'privado',
+			dataCriacao: metadataResource.dataCriacao || '',
+			hashtags: Array.isArray(metadataResource.hashtags) ? metadataResource.hashtags.join(', ') : '',
+		},
+		suggestions: resourcesForSuggestions.ok ? buildTaxonomyOptions(resourcesForSuggestions.items) : { tipos: [], anos: [], temas: [], hashtags: [] },
+	})
+}))
+
+router.post('/:id/edit', requireSession, requireLevel('produtor'), routeAsync(async (req, res) => {
+	const currentResourceRes = await apiRequest(`/resources/${req.params.id}`, {
+		token: req.session.token,
+		req,
+	})
+
+	if (!currentResourceRes.ok) {
+		return res.status(currentResourceRes.status || 500).render('error', {
+			title: 'Recurso não encontrado',
+			message: apiErrorMessage(currentResourceRes.data, 'Não foi possível carregar o recurso.'),
+		})
+	}
+
+	const currentResource = currentResourceRes.data?.resource
+	if (!canManageResource(req.session?.user, currentResource)) {
+		req.flashError('Não tem permissões para editar este recurso.')
+		return res.redirect(`/resources/${req.params.id}`)
+	}
+
+	const currentMetadata = currentResource?.metadata && typeof currentResource.metadata === 'object'
+		? currentResource.metadata
+		: {}
+	const currentMetadataResource = currentMetadata.resource && typeof currentMetadata.resource === 'object'
+		? currentMetadata.resource
+		: {}
+
+	const nextMetadata = {
+		...currentMetadata,
+		resource: {
+			...currentMetadataResource,
+			tipo: String(req.body.tipo || '').trim(),
+			titulo: String(req.body.titulo || '').trim(),
+			subtitulo: String(req.body.subtitulo || '').trim() || undefined,
+			ano: req.body.ano ? Number(req.body.ano) : undefined,
+			tema: String(req.body.tema || '').trim() || undefined,
+			visibilidade: req.body.visibilidade === 'publico' ? 'publico' : 'privado',
+			dataCriacao: String(req.body.dataCriacao || '').trim() || undefined,
+			hashtags: normalizeHashtags(req.body.hashtags),
+		},
+	}
+
+	const response = await apiRequest(`/resources/${req.params.id}`, {
+		method: 'PATCH',
+		token: req.session.token,
+		body: { metadata: nextMetadata },
+		req,
+	})
+
+	if (!response.ok) {
+		req.flashError(apiErrorMessage(response.data, 'Não foi possível guardar o recurso.'))
+		return res.redirect(`/resources/${req.params.id}/edit`)
+	}
+
+	req.flashSuccess('Recurso atualizado com sucesso.')
+	res.redirect(`/resources/${req.params.id}`)
 }))
 
 // POST /resources/:id/ratings  — submeter avaliação

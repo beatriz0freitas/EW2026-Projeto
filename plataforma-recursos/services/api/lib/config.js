@@ -22,24 +22,6 @@ function requiredEnv(name) {
 	return value
 }
 
-function parseHour(value, fallback, name) {
-	const resolved = value ?? fallback
-	const parsed = Number(resolved)
-	if (!Number.isInteger(parsed) || parsed < 0 || parsed > 23) {
-		throw new Error(`${name} inválida: ${value}`)
-	}
-	return parsed
-}
-
-function parseMinute(value, fallback, name) {
-	const resolved = value ?? fallback
-	const parsed = Number(resolved)
-	if (!Number.isInteger(parsed) || parsed < 0 || parsed > 59) {
-		throw new Error(`${name} inválida: ${value}`)
-	}
-	return parsed
-}
-
 const config = {
 	port: parsePort(process.env.PORT, 16025, 'PORT'),
 	mongoUrl: process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/ew2026',
@@ -49,10 +31,6 @@ const config = {
 	},
 	internal: {
 		serviceToken: requiredEnv('INTERNAL_SERVICE_TOKEN'),
-	},
-	newsJobs: {
-		dailyHour: parseHour(process.env.NEWS_JOB_DAILY_HOUR, 0, 'NEWS_JOB_DAILY_HOUR'),
-		dailyMinute: parseMinute(process.env.NEWS_JOB_DAILY_MINUTE, 5, 'NEWS_JOB_DAILY_MINUTE'),
 	},
 	storage: {
 		aipDir: process.env.AIP_DIR || '/aip',

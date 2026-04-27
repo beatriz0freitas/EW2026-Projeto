@@ -81,6 +81,7 @@ components:
     RegisterRequest:
       type: object
       required: [nome, email, password]
+      description: Registo publico. O utilizador criado fica sempre com role `consumidor`; quaisquer campos `role` ou `nivel_acesso` enviados pelo cliente sao ignorados.
       properties:
         _id:
           type: string
@@ -95,10 +96,6 @@ components:
         password:
           type: string
           example: Password123
-        role:
-          type: string
-          enum: [admin, produtor, consumidor]
-          example: consumidor
         filiacao:
           oneOf:
             - type: string
@@ -107,11 +104,6 @@ components:
               additionalProperties: true
               example:
                 instituicao: Universidade do Minho
-        nivel_acesso:
-          type: integer
-          minimum: 1
-          maximum: 10
-          example: 1
         ativo:
           type: boolean
           example: true
@@ -173,6 +165,14 @@ components:
               type: boolean
               example: true
 paths:
+  /openapi.json:
+    get:
+      tags: [Docs]
+      summary: Obter especificacao OpenAPI em JSON
+      responses:
+        '200':
+          description: Especificacao OpenAPI do servico Auth
+
   /health:
     get:
       tags: [Health]
@@ -185,6 +185,7 @@ paths:
     post:
       tags: [Auth]
       summary: Registar utilizador
+      description: Endpoint publico de registo. O backend força sempre `role=consumidor` e ignora `role`/`nivel_acesso` enviados pelo cliente.
       requestBody:
         required: true
         content:
@@ -197,7 +198,6 @@ paths:
                   nome: Utilizador Demo
                   email: demo@teste.com
                   password: Demo123
-                  role: consumidor
                   filiacao: Universidade do Minho
       responses:
         '201':
@@ -269,6 +269,57 @@ paths:
                 $ref: '#/components/schemas/VerifyResponse'
         '401':
           description: Token invalido/expirado ou conta desativada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/refresh:
+    post:
+      tags: [Auth]
+      summary: Renovar access token com refresh token em cookie
+      responses:
+        '200':
+          description: Access token renovado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          description: Refresh token ausente/invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/refresh-server:
+    post:
+      tags: [Auth]
+      summary: Renovar access token com refresh token enviado no body
+      description: Endpoint usado pela interface em chamadas server-side.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Access token renovado
+        '401':
+          description: Refresh token ausente/invalido
           content:
             application/json:
               schema:
@@ -426,34 +477,6 @@ paths:
           description: Utilizador desativado
         '400':
           description: Tentativa de desativar o proprio utilizador
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /me:
-    get:
-      tags: [Auth]
-      summary: Obter utilizador autenticado
-      security:
-        - bearerAuth: []
-        - cookieAuth: []
-        - queryAuth: []
-      responses:
-        '200':
-          description: Utilizador da sessao
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  user:
-                    $ref: '#/components/schemas/UserPublic'
-        '401':
-          description: Nao autenticado
           content:
             application/json:
               schema:

@@ -1,0 +1,48 @@
+extends ../layout
+
+block content
+	- const r = typeof form !== 'undefined' && form ? form : {}
+	- const t = typeof suggestions !== 'undefined' && suggestions ? suggestions : { tipos: [], anos: [], temas: [], hashtags: [] }
+	section.w3-card.w3-white.w3-padding.w3-margin-top
+		h1 Editar recurso
+		p.w3-text-grey Atualiza a metainformação do recurso já armazenado na plataforma.
+
+		form(action=`/resources/${resource._id}/edit` method='post')
+			label(for='titulo') Título
+			input#titulo.w3-input(type='text' name='titulo' maxlength='200' required value=(r.titulo || ''))
+
+			label(for='subtitulo') Subtítulo
+			input#subtitulo.w3-input(type='text' name='subtitulo' maxlength='200' value=(r.subtitulo || ''))
+
+			label(for='tipo') Tipo
+			input#tipo.w3-input(type='text' name='tipo' list='tipos-list' required value=(r.tipo || ''))
+			datalist#tipos-list
+				each tipo in t.tipos
+					option(value=tipo)
+
+			label(for='ano') Ano
+			input#ano.w3-input(type='number' name='ano' min='0' max='3000' value=(r.ano || ''))
+
+			label(for='tema') Tema
+			input#tema.w3-input(type='text' name='tema' list='temas-list' value=(r.tema || ''))
+			datalist#temas-list
+				each tema in t.temas
+					option(value=tema)
+
+			label(for='hashtags') Hashtags
+			input#hashtags.w3-input(type='text' name='hashtags' list='hashtags-list' value=(r.hashtags || ''))
+			datalist#hashtags-list
+				each hashtag in t.hashtags
+					option(value=hashtag)
+
+			label(for='dataCriacao') Data de criação
+			input#dataCriacao.w3-input(type='text' name='dataCriacao' value=(r.dataCriacao || ''))
+
+			label(for='visibilidade') Visibilidade
+			select#visibilidade.w3-select(name='visibilidade' required)
+				option(value='publico' selected=(r.visibilidade === 'publico')) publico
+				option(value='privado' selected=(r.visibilidade !== 'publico')) privado
+
+			p.w3-margin-top
+				button.w3-button.w3-teal(type='submit') Guardar alterações
+				a.w3-button.w3-border(href=`/resources/${resource._id}`) Cancelar

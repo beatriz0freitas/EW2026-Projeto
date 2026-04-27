@@ -11,7 +11,7 @@ html(lang='pt')
 			a.w3-bar-item.w3-button(href='/resources') Recursos
 			a.w3-bar-item.w3-button(href='/posts') Posts
 			if user && user.role === 'admin'
-				a.w3-bar-item.w3-button(href='/admin/data') Admin
+				a.w3-bar-item.w3-button(href='/admin/users') Menu administrador
 			if user
 				form.w3-bar-item.w3-right(action='/auth/logout' method='post')
 					button.w3-button.w3-white.w3-border(type='submit') Logout
@@ -32,4 +32,3 @@ html(lang='pt')
 
 		footer.w3-container.w3-padding.w3-small.w3-text-grey
 			p Plataforma EW2026 · Interface Web
-
