@@ -1,4 +1,3 @@
-const http = require('http')
 const { jsonError } = require('../lib/http')
 const { config } = require('../lib/config')
 
@@ -6,32 +5,24 @@ const AUTH_URL = config.auth.url
 const AUTH_COOKIE_NAME = config.auth.cookieName
 
 // Chama GET /sessions/verify no serviço auth e devolve o payload,
-// ou null se o token for inválido/ausente.
-function verifyTokenRemote(token) {
-	return new Promise((resolve) => {
-		const url = new URL('/sessions/verify', AUTH_URL)
-		const options = {
-			hostname: url.hostname,
-			port: url.port || 80,
-			path: url.pathname,
+// ou null se o token for invalido/ausente.
+async function verifyTokenRemote(token) {
+	try {
+		const response = await fetch(new URL('/sessions/verify', AUTH_URL), {
 			method: 'GET',
-			headers: { Authorization: `Bearer ${token}` },
-		}
-		const req = http.request(options, (res) => {
-			let body = ''
-			res.on('data', (chunk) => (body += chunk))
-			res.on('end', () => {
-				try {
-					const data = JSON.parse(body)
-					resolve(data.ok ? data.payload : null)
-				} catch {
-					resolve(null)
-				}
-			})
+			headers: {
+				Accept: 'application/json',
+				Authorization: `Bearer ${token}`,
+			},
 		})
-		req.on('error', () => resolve(null))
-		req.end()
-	})
+
+		if (!response.ok) return null
+
+		const data = await response.json().catch(() => null)
+		return data?.ok ? data.payload : null
+	} catch {
+		return null
+	}
 }
 
 // Extrai o token por ordem de precedência:
