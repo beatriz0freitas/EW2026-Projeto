@@ -1,4 +1,16 @@
 services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ew2026_nginx
+    ports:
+      - "16020:80"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - gateway
+    networks:
+      - ew2026-net
+
   mongodb:
     image: mongo:7
     container_name: ew2026_mongo
@@ -64,8 +76,8 @@ services:
       context: ./services/gateway
       dockerfile: Dockerfile
     container_name: ew2026_gateway
-    ports:
-      - "16020:16020"
+    expose:
+      - "16020"
     environment:
       - PORT=16020
       - API_URL=http://api:16025

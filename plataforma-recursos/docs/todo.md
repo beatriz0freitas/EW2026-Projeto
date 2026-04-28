@@ -18,6 +18,7 @@ Politica de configuracao (estado atual):
 
 Arquitetura de codigo (estado atual):
 
+- `nginx` exposto ao exterior e `gateway` apenas na rede Docker
 - API e Auth com separacao explicita de `routes` -> `controllers` -> `models`
 - logica de dominio no Auth extraida para `services/userService.js`
 - middleware de autenticacao consolidado em `services/auth/middleware/auth.js`
@@ -133,6 +134,13 @@ Arquitetura de codigo (estado atual):
 - ❌ Helmet no gateway nao implementado.
 - ❌ Rate limiting global nao implementado.
 - ⚠️ Sem circuit breaker (apenas timeout e erro 502).
+
+## Nginx (infra/nginx)
+
+- ✅ `nginx` exposto ao exterior e a encaminhar trafego para o `gateway`.
+- ✅ Compressao `gzip` ativa para respostas textuais comuns.
+- ✅ Limite de upload (`client_max_body_size`) definido na borda.
+- ✅ Gateway deixou de estar publicado diretamente no host e ficou apenas acessivel na rede Docker.
 
 ## Interface (services/interface)
 
