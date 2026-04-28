@@ -190,7 +190,7 @@ paths:
     post:
       tags: [OAIS]
       summary: Ingerir SIP (ZIP) e criar recurso
-      description: Requer autenticacao com role produtor ou admin.
+      description: Requer autenticacao com role produtor ou admin. Aceita apenas ficheiros .zip (ate 100 MB por omissao).
       security:
         - bearerAuth: []
       requestBody:
@@ -204,7 +204,14 @@ paths:
                 sip:
                   type: string
                   format: binary
+                  description: Ficheiro SIP em ZIP.
       responses:
+        '400':
+          description: Ficheiro em falta, demasiado grande ou com tipo invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '201':
           description: SIP ingerido com sucesso
           content:
@@ -858,6 +865,7 @@ paths:
     post:
       tags: [Export]
       summary: Importar dump da plataforma com filtros opcionais (admin)
+      description: Aceita JSON no corpo ou multipart/form-data com dumpFile. Quando usado dumpFile, apenas ficheiros .json sao aceites (ate 256 MB por omissao).
       security:
         - bearerAuth: []
       requestBody:
@@ -967,6 +975,12 @@ paths:
                   type: integer
                   minimum: 1
       responses:
+        '400':
+          description: Dump invalido, demasiado grande ou com tipo de ficheiro invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '200':
           description: Importacao concluida
         '207':
