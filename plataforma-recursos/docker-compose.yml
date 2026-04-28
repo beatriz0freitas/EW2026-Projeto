@@ -83,6 +83,7 @@ services:
       - API_URL=http://api:16025
       - AUTH_URL=http://auth:16027
       - INTERFACE_URL=http://interface:16026
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:16020}
     depends_on:
       - api
       - auth
