@@ -1,5 +1,4 @@
 const express = require('express')
-const multer = require('multer')
 
 const { ingestSipZip } = require('./sip')
 const Resource = require('../../models/Resource')
@@ -8,9 +7,29 @@ const { config } = require('../../lib/config')
 const { jsonError } = require('../../lib/http')
 const { publishNews } = require('../../lib/newsPublisher')
 const { publishTop3NewsIfChanged } = require('../../lib/systemNewsJob')
+const { createSingleMemoryUpload } = require('../../lib/upload')
 
 const router = express.Router()
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } })
+const uploadSip = createSingleMemoryUpload({
+	fieldName: 'sip',
+	maxFileSizeBytes: config.oais.maxSipFileSizeBytes,
+	allowedExtensions: ['.zip'],
+	allowedMimeTypes: ['application/zip', 'application/x-zip-compressed'],
+	errors: {
+		fileTooLarge: {
+			code: 'SIP_FILE_TOO_LARGE',
+			message: 'ficheiro SIP excede o tamanho máximo suportado pela API',
+		},
+		fieldTooLarge: {
+			code: 'SIP_FIELDS_TOO_LARGE',
+			message: 'campos do pedido excedem o tamanho suportado pela API',
+		},
+		invalidType: {
+			code: 'INVALID_SIP_FILE',
+			message: 'o ficheiro SIP tem de ser um ZIP',
+		},
+	},
+})
 
 // POST /api/oais/ingest
 // Só produtores e admins podem submeter recursos.
@@ -18,7 +37,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100
 router.post(
 	'/ingest',
 	requireLevel('produtor'),
-	upload.single('sip'),
+	uploadSip,
 	async (req, res) => {
 		if (!req.file) {
 			return jsonError(res, 400, {

@@ -15,40 +15,34 @@
  */
 
 const express = require('express')
-const multer = require('multer')
 
 const exportController = require('../controllers/exportController')
 const { config } = require('../lib/config')
-const { jsonError } = require('../lib/http')
 const { requireLevel } = require('../middleware/auth')
+const { createSingleMemoryUpload } = require('../lib/upload')
 
 const router = express.Router()
-const upload = multer({
-	storage: multer.memoryStorage(),
-	limits: {
-		fileSize: config.dataTransfer.maxImportFileSizeBytes,
-		fieldSize: 20 * 1024 * 1024,
+const processarUploadDump = createSingleMemoryUpload({
+	fieldName: 'dumpFile',
+	maxFileSizeBytes: config.dataTransfer.maxImportFileSizeBytes,
+	maxFieldSizeBytes: 20 * 1024 * 1024,
+	allowedExtensions: ['.json'],
+	allowedMimeTypes: ['application/json', 'text/json'],
+	errors: {
+		fileTooLarge: {
+			code: 'DUMP_FILE_TOO_LARGE',
+			message: 'ficheiro de dump excede o tamanho máximo suportado pela API',
+		},
+		fieldTooLarge: {
+			code: 'DUMP_TEXT_TOO_LARGE',
+			message: 'conteúdo JSON em texto excede o tamanho suportado; usa dumpFile',
+		},
+		invalidType: {
+			code: 'INVALID_DUMP_FILE_TYPE',
+			message: 'o dumpFile tem de ser um ficheiro JSON',
+		},
 	},
 })
-
-function processarUploadDump(req, res, next) {
-	upload.single('dumpFile')(req, res, (err) => {
-		if (!err) return next()
-		if (err.code === 'LIMIT_FILE_SIZE') {
-			return jsonError(res, 400, {
-				code: 'DUMP_FILE_TOO_LARGE',
-				message: 'ficheiro de dump excede o tamanho máximo suportado pela API',
-			})
-		}
-		if (err.code === 'LIMIT_FIELD_VALUE') {
-			return jsonError(res, 400, {
-				code: 'DUMP_TEXT_TOO_LARGE',
-				message: 'conteúdo JSON em texto excede o tamanho suportado; usa dumpFile',
-			})
-		}
-		return next(err)
-	})
-}
 
 
 // GET /api/export
