@@ -349,6 +349,22 @@ router.post('/:id/edit', requireSession, requireLevel('produtor'), routeAsync(as
 	res.redirect(`/resources/${req.params.id}`)
 }))
 
+router.post('/:id/delete', requireSession, requireLevel('produtor'), routeAsync(async (req, res) => {
+	const response = await apiRequest(`/resources/${req.params.id}`, {
+		method: 'DELETE',
+		token: req.session.token,
+		req,
+	})
+
+	if (!response.ok) {
+		req.flashError(apiErrorMessage(response.data, 'Não foi possível eliminar o recurso.'))
+		return res.redirect(`/resources/${req.params.id}`)
+	}
+
+	req.flashSuccess('Recurso eliminado com sucesso.')
+	res.redirect('/resources')
+}))
+
 // POST /resources/:id/ratings  — submeter avaliação
 router.post('/:id/ratings', requireSession, routeAsync(async (req, res) => {
 	const stars = Number(req.body.stars)

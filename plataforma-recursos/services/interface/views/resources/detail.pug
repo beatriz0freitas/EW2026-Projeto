@@ -40,6 +40,8 @@ block content
 			a.w3-button.w3-border(href='/resources') Voltar à lista
 			if canManageResource
 				a.w3-button.w3-border(href=`/resources/${resource._id}/edit`) Editar recurso
+				form(action=`/resources/${resource._id}/delete` method='post' style='display:inline')
+					button.w3-button.w3-red(type='submit' onclick="return confirm('Tem a certeza que pretende eliminar este recurso? Esta ação não pode ser revertida.');") Eliminar recurso
 			if user && (user.role === 'produtor' || user.role === 'admin')
 				a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar post sobre este recurso
 
