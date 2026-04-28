@@ -35,6 +35,11 @@ router.post(
 			zipBuffer: req.file.buffer,
 			aipDir,
 			producerId: req.user.sub,
+			uploadedFile: {
+				originalName: req.file.originalname,
+				mimeType: req.file.mimetype,
+				size: req.file.size,
+			},
 		})
 
 		if (!result.ok) {

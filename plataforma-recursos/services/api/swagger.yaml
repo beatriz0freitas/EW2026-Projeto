@@ -62,6 +62,27 @@ components:
         produtor:
           type: string
           example: produtor.teste
+        aipPath:
+          type: string
+          example: /aip/663d8af2d6b8fd24f7a22b10
+        aipFile:
+          type: object
+          properties:
+            originalName:
+              type: string
+              example: ficha-algebra.zip
+            storageName:
+              type: string
+              example: sip.zip
+            path:
+              type: string
+              example: /aip/663d8af2d6b8fd24f7a22b10/sip.zip
+            mimeType:
+              type: string
+              example: application/zip
+            size:
+              type: integer
+              example: 183245
         metadata:
           type: object
           additionalProperties: true

@@ -7,6 +7,7 @@ const path = require('path')
 const unzipper = require('unzipper')
 
 const Resource = require('../../models/Resource')
+const { buildResourceAipPath, buildStoredAipFile } = require('../../lib/aipStorage')
 
 // Calcula o SHA-256 de um ficheiro para comparar com o manifest.
 function sha256File(filePath) {
@@ -133,7 +134,7 @@ function validateMetadata(metadata) {
 }
 
 // Ingest (SIP ZIP -> validação -> guardar AIP em disco -> registo no Mongo).
-async function ingestSipZip({ zipBuffer, aipDir, producerId }) {
+async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 	const errors = []
 
 	// 1) Extrair o SIP para uma pasta temporária.
@@ -217,19 +218,42 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId }) {
 		const resourceDoc = new Resource({
 			metadata,
 			aipPath: '__pending__',
+			aipFile: {
+				originalName: uploadedFile?.originalName || 'sip.zip',
+				storageName: 'sip.zip',
+				path: '__pending__',
+				mimeType: uploadedFile?.mimeType || 'application/zip',
+				size: Number(uploadedFile?.size) || zipBuffer.length,
+			},
 			produtor: producerId || null,
 		})
 
 		const resourceId = String(resourceDoc._id)
-		const resourceAipDir = path.join(aipDir, resourceId)
-		await ensureDir(resourceAipDir)
+		const resourceAipDir = buildResourceAipPath(aipDir, resourceId)
 
-		const bagDst = path.join(resourceAipDir, 'bag')
-		await copyDir(extractDir, bagDst)
-		await fsp.writeFile(path.join(resourceAipDir, 'sip.zip'), zipBuffer)
+		try {
+			await ensureDir(resourceAipDir)
 
-		resourceDoc.aipPath = resourceAipDir
-		await resourceDoc.save()
+			const bagDst = path.join(resourceAipDir, 'bag')
+			await copyDir(extractDir, bagDst)
+			await fsp.writeFile(path.join(resourceAipDir, 'sip.zip'), zipBuffer)
+
+			resourceDoc.aipPath = resourceAipDir
+			resourceDoc.aipFile = buildStoredAipFile({
+				resourceAipPath: resourceAipDir,
+				originalName: uploadedFile?.originalName,
+				mimeType: uploadedFile?.mimeType,
+				size: uploadedFile?.size ?? zipBuffer.length,
+			})
+			await resourceDoc.save()
+		} catch (err) {
+			try {
+				await fsp.rm(resourceAipDir, { recursive: true, force: true })
+			} catch (cleanupErr) {
+				console.error(`[api][ingest] warning: failed to rollback AIP dir ${resourceAipDir}:`, cleanupErr)
+			}
+			throw err
+		}
 
 		return { ok: true, resourceId }
 	} catch (err) {

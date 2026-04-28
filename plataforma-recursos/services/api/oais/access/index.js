@@ -49,7 +49,7 @@ router.get('/access/:id', optionalAuth, async (req, res) => {
 	}
 
 	// 3) Devolver o ZIP (DIP = SIP)
-	const zipPath = await getDipZipPath({ resourceId: req.params.id, aipDir })
+	const zipPath = await getDipZipPath({ resource, aipDir })
 	if (!zipPath) {
 		return jsonError(res, 404, {
 			code: 'AIP_FILE_NOT_FOUND',
@@ -57,7 +57,7 @@ router.get('/access/:id', optionalAuth, async (req, res) => {
 		})
 	}
 
-	const filename = `resource-${req.params.id}.zip`
+	const filename = resource?.aipFile?.originalName || `resource-${req.params.id}.zip`
 	res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
 	res.setHeader('Content-Type', 'application/zip')
 

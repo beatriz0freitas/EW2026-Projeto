@@ -1,8 +1,10 @@
 const fsp = require('fs/promises')
-const path = require('path')
-
 const Resource = require('../models/Resource')
+const Post = require('../models/Post')
+const Rating = require('../models/Rating')
+const Comment = require('../models/Comment')
 const { config } = require('../lib/config')
+const { resolveResourceAipPath } = require('../lib/aipStorage')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 
 function buildFilters(query) {
@@ -95,15 +97,26 @@ module.exports.deleteById = async (req, res) => {
 			return jsonError(res, 403, 'acesso negado')
 		}
 
-		await Resource.deleteOne({ _id: resource._id })
-
-		const aipDir = config.storage.aipDir
-		const resourceDir = path.join(aipDir, String(resource._id))
+		const resourceDir = resolveResourceAipPath(resource, config.storage.aipDir)
 		try {
 			await fsp.rm(resourceDir, { recursive: true, force: true })
 		} catch (fsErr) {
-			console.error(`[resources] aviso: não foi possível apagar AIP em disco: ${resourceDir}`, fsErr)
+			console.error(`[resources] erro: não foi possível apagar AIP em disco: ${resourceDir}`, fsErr)
+			return jsonError(res, 500, {
+				code: 'AIP_DELETE_FAILED',
+				message: 'não foi possível apagar o recurso em disco',
+			})
 		}
+
+		const posts = await Post.find({ resourceId: resource._id }).select('_id').lean()
+		const postIds = posts.map((post) => post._id)
+
+		await Promise.all([
+			Resource.deleteOne({ _id: resource._id }),
+			Rating.deleteMany({ resourceId: resource._id }),
+			Post.deleteMany({ resourceId: resource._id }),
+			postIds.length ? Comment.deleteMany({ postId: { $in: postIds } }) : Promise.resolve(),
+		])
 
 		res.json({ ok: true })
 	} catch {
