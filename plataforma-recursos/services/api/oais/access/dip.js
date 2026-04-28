@@ -1,11 +1,11 @@
 const fs = require('fs')
-const path = require('path')
 
-async function getDipZipPath({ resourceId, aipDir }) {
-	const zipPath = path.join(aipDir, String(resourceId), 'sip.zip')
+const { resolveStoredZipPath } = require('../../lib/aipStorage')
+
+async function getDipZipPath({ resource, aipDir }) {
+	const zipPath = resolveStoredZipPath(resource, aipDir)
 	if (!fs.existsSync(zipPath)) return null
 	return zipPath
 }
 
 module.exports = { getDipZipPath }
-
