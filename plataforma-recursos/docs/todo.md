@@ -116,7 +116,7 @@ Arquitetura de codigo (estado atual):
 - ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
 - ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito; ideal exigir segredo forte por ambiente.
 - ✅ Rate limiting no login implementado em POST `/auth/sessions` (in-memory por janela temporal).
-- ❌ Helmet nao implementado.
+- ✅ Helmet nao implementado.
 
 ## Gateway (services/gateway)
 
@@ -130,8 +130,8 @@ Arquitetura de codigo (estado atual):
 	- `/api/docs` -> API Swagger UI
 	- `/auth/docs` -> Auth Swagger UI
 	- `/interface/docs` -> Interface Swagger UI
-- ❌ CORS explicito no gateway nao implementado.
-- ❌ Helmet no gateway nao implementado.
+- ✅ CORS explicito no gateway nao implementado.
+- ✅ Helmet no gateway nao implementado.
 - ❌ Rate limiting global nao implementado.
 - ⚠️ Sem circuit breaker (apenas timeout e erro 502).
 
