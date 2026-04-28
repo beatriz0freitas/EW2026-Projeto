@@ -28,7 +28,7 @@ app.use(
 	})
 )
 
-app.use(express.json({ limit: '5mb' }))
+app.use(express.json({ limit: config.dataTransfer.jsonBodyLimitLegado }))
 app.use(cookieParser())
 
 app.use((req, res, next) => {

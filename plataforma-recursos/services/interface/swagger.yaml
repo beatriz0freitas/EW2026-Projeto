@@ -680,7 +680,7 @@ paths:
   /admin/import:
     get:
       tags: [Admin]
-      summary: Formulário de importação de dump JSON com filtros
+      summary: Formulário de importação de dump com filtros
       security:
         - sessionCookie: []
       responses:
@@ -692,17 +692,23 @@ paths:
                 type: string
     post:
       tags: [Admin]
-      summary: Importar dump JSON com filtros
+      summary: Importar dump com filtros
       security:
         - sessionCookie: []
       requestBody:
         required: true
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
-              required: [dump]
               properties:
+                dumpFile:
+                  type: string
+                  format: binary
+                  description: Ficheiro JSON descarregado pela exportação, com recursos completos e ficheiros AIP.
+                dumpText:
+                  type: string
+                  description: Alternativa legada para colar manualmente o JSON do dump.
                 scope:
                   type: string
                   enum: [all, resources, news]
@@ -743,9 +749,6 @@ paths:
                 recentLimit:
                   type: integer
                   minimum: 1
-                dump:
-                  type: string
-                  description: JSON completo no textarea
       responses:
         '200':
           description: HTML com relatório de importação

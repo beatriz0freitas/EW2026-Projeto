@@ -8,6 +8,30 @@ const { buildResourceAipPath, buildStoredAipFile, exportAipFiles, restoreAipFile
 const { construirFiltrosTransferencia, construirDumpFiltrado } = require('../lib/dataTransferFilters')
 const { jsonError } = require('../lib/http')
 
+function extrairDumpDoPedido(req) {
+	if (req.file?.buffer?.length) {
+		try {
+			return JSON.parse(req.file.buffer.toString('utf8'))
+		} catch {
+			throw new Error('INVALID_DUMP_FILE')
+		}
+	}
+
+	if (typeof req.body?.dump === 'string' && req.body.dump.trim()) {
+		try {
+			return JSON.parse(req.body.dump)
+		} catch {
+			throw new Error('INVALID_DUMP_TEXT')
+		}
+	}
+
+	if (req.body?.dump && typeof req.body.dump === 'object' && !Array.isArray(req.body.dump)) {
+		return req.body.dump
+	}
+
+	return req.body
+}
+
 module.exports.exportAll = async (req, res) => {
 	try {
 		const filtros = construirFiltrosTransferencia(req.query)
@@ -55,10 +79,19 @@ module.exports.exportAll = async (req, res) => {
 
 module.exports.importAll = async (req, res) => {
 	const payload = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {}
-	const dump = payload.dump && typeof payload.dump === 'object' && !Array.isArray(payload.dump)
-		? payload.dump
-		: req.body
-	const filtros = construirFiltrosTransferencia(payload.filters || req.query)
+	let dump
+
+	try {
+		dump = extrairDumpDoPedido(req)
+	} catch (err) {
+		const code = err?.message === 'INVALID_DUMP_FILE' ? 'INVALID_DUMP_FILE' : 'INVALID_DUMP_TEXT'
+		const message = code === 'INVALID_DUMP_FILE'
+			? 'ficheiro de dump inválido ou com JSON mal formado'
+			: 'campo dump inválido ou com JSON mal formado'
+		return jsonError(res, 400, { code, message })
+	}
+
+	const filtros = construirFiltrosTransferencia(payload.filters || payload || req.query)
 
 	if (!dump || !['1', '2'].includes(dump.version)) {
 		return jsonError(res, 400, {

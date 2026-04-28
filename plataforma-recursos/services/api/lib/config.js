@@ -35,6 +35,10 @@ const config = {
 	storage: {
 		aipDir: process.env.AIP_DIR || '/aip',
 	},
+	dataTransfer: {
+		maxImportFileSizeBytes: 256 * 1024 * 1024,
+		jsonBodyLimitLegado: '20mb',
+	},
 }
 
 module.exports = { config }
