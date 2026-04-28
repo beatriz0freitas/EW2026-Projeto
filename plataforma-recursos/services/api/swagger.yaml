@@ -857,7 +857,7 @@ paths:
   /api/import:
     post:
       tags: [Export]
-      summary: Importar dump JSON da plataforma com filtros opcionais (admin)
+      summary: Importar dump da plataforma com filtros opcionais (admin)
       security:
         - bearerAuth: []
       requestBody:
@@ -915,6 +915,57 @@ paths:
                     recentLimit:
                       type: integer
                       minimum: 1
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                dumpFile:
+                  type: string
+                  format: binary
+                  description: Ficheiro JSON de dump exportado previamente, incluindo recursos completos e ficheiros AIP.
+                dump:
+                  type: string
+                  description: Alternativa legada para colar JSON em texto.
+                scope:
+                  type: string
+                  enum: [all, resources, news]
+                resourceType:
+                  type: string
+                resourceYear:
+                  type: integer
+                  minimum: 0
+                  maximum: 3000
+                resourceTheme:
+                  type: string
+                resourceHashtag:
+                  type: string
+                resourceVisibility:
+                  type: string
+                  enum: [publico, privado]
+                resourceProducer:
+                  type: string
+                resourceCreatedFrom:
+                  type: string
+                  format: date
+                resourceCreatedTo:
+                  type: string
+                  format: date
+                newsType:
+                  type: string
+                  enum: [manual, system]
+                newsEventType:
+                  type: string
+                newsCreatedBy:
+                  type: string
+                newsPublishedFrom:
+                  type: string
+                  format: date
+                newsPublishedTo:
+                  type: string
+                  format: date
+                recentLimit:
+                  type: integer
+                  minimum: 1
       responses:
         '200':
           description: Importacao concluida

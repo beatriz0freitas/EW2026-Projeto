@@ -10,9 +10,11 @@ block content
 
   section.w3-card.w3-white.w3-padding.w3-margin-top
     p.w3-small
-      | Os filtros abaixo são aplicados sobre o dump colado. Sem filtros, a importação continua a repor a totalidade dos dados do ficheiro.
+      | Os filtros abaixo são aplicados sobre o dump importado. Sem filtros, a importação continua a repor a totalidade dos dados do ficheiro.
     p.w3-small
       | Se o escopo incluir recursos, os posts, ratings, comentários e ficheiros AIP ligados a esses recursos acompanham a importação.
+    p.w3-small
+      | O caminho recomendado é carregar o ficheiro descarregado na exportação. O campo de JSON colado fica disponível apenas como alternativa para dumps pequenos ou em modo legado.
 
     if importError
       p.w3-text-red= importError
@@ -51,15 +53,22 @@ block content
                     each e in r.errors
                       li= e.id + ': ' + e.message
 
-    form(method='POST' action='/admin/import')
+    form(method='POST' action='/admin/import' enctype='multipart/form-data')
       include data-transfer-filters.pug
-      label(for='dump') JSON do dump
-      textarea#dump.w3-input(
-        name='dump'
+      label(for='dumpFile') Ficheiro do dump
+      input#dumpFile.w3-input.w3-border(
+        type='file'
+        name='dumpFile'
+        accept='.json,application/json'
+      )
+      p.w3-small
+        | Usa preferencialmente o ficheiro descarregado pela exportação, incluindo o conteúdo completo do recurso e respetivos ficheiros AIP.
+      label(for='dumpText') JSON do dump (alternativa)
+      textarea#dumpText.w3-input(
+        name='dumpText'
         rows='20'
-        placeholder='Cola aqui o conteudo do ficheiro exportado...'
-        required
-      )= dumpValue
+        placeholder='Opcional: cola aqui o conteúdo do ficheiro exportado...'
+      )= dumpText
       button.w3-button.w3-teal(type='submit') Importar
 
     p

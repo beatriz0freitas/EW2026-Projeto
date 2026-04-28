@@ -1,4 +1,100 @@
-# Apoio de Implementação e Decisão (guia prático)
+# Apoio de Implementação e Decisão
+
+> Objetivo: servir de guia curto para perceber o enunciado, o estado atual da solução e as decisões de arquitetura/implementação já tomadas.
+>
+> Atualizado em: 2026-04-28
+
+## 1) O que o enunciado pede
+
+Os pontos essenciais a cobrir são:
+
+- fluxo OAIS: Producer → SIP → Ingest → AIP → Access → DIP → Consumer;
+- gestão de recursos educativos com pesquisa, detalhe e disponibilização;
+- autenticação e perfis `admin`, `produtor` e `consumidor`;
+- criação de posts, comentários e ratings sobre recursos;
+- controlo de acesso a recursos públicos e privados;
+- interface web para usar o sistema de ponta a ponta;
+- Swagger/documentação para facilitar teste e validação.
+
+## 2) Estado atual da solução
+
+### Arquitetura
+
+- A solução está dividida em `gateway`, `auth`, `api` e `interface`.
+- O `nginx` fica exposto ao exterior e encaminha para o `gateway`.
+- O `gateway` faz o routing funcional para API, Auth e Interface.
+
+### API
+
+- O serviço API já cobre ingestão OAIS, acesso, recursos, posts, comentários, ratings e notícias.
+- O ingest aceita SIP em ZIP com validações básicas de estrutura e integridade.
+- O access devolve DIP e respeita visibilidade pública/privada.
+- A API expõe Swagger em `/api/docs`.
+
+### Auth
+
+- O serviço Auth trata registo, login, refresh token, verificação de sessão e gestão de utilizadores.
+- Os perfis `admin`, `produtor` e `consumidor` já existem no backend.
+- A password é guardada com hash e não é devolvida nas respostas.
+- O Auth expõe Swagger em `/docs`.
+
+### Interface
+
+- A Interface permite login, registo, consulta de recursos, upload SIP, download DIP, posts, comentários e administração básica.
+- A renovação de token é tratada de forma automática quando necessário.
+- A Interface expõe Swagger em `/interface/docs`.
+
+### Estado funcional resumido
+
+- o núcleo da Proposta 1 está funcional;
+- o fluxo OAIS principal está implementado;
+- a navegação entre home, detalhe do recurso e posts associados já existe;
+- ainda faltam testes automáticos e algum hardening adicional.
+
+## 3) Decisões tomadas e respetiva justificação
+
+### Separação por serviços
+
+Escolhi separar a solução em serviços porque reduz acoplamento, facilita manutenção e torna o projeto mais claro para demonstrar. Em vez de um monólito grande, cada componente tem uma responsabilidade simples e bem definida.
+
+### `nginx` + `gateway`
+
+Mantive o `nginx` como entrada externa e o `gateway` como ponto lógico da aplicação. Isto permite ter uma borda técnica mais limpa, sem perder o routing já implementado e sem espalhar regras por vários sítios.
+
+### MongoDB + storage em disco
+
+Usei MongoDB para metadados e entidades do domínio, e disco para os ficheiros AIP. Esta divisão é mais natural para OAIS: os dados descritivos ficam pesquisáveis e o conteúdo arquivístico fica guardado como ficheiro.
+
+### DIP inicial igual ao SIP
+
+Na fase atual, o DIP é devolvido sem transformação complexa. Foi a opção mais simples e alinhada com o enunciado, que permite começar com `DIP = SIP`. Assim cumpro o requisito sem introduzir complexidade desnecessária.
+
+### Segurança no backend
+
+As decisões de acesso são validadas no backend e não apenas na interface. Isto evita depender da UI para segurança e garante que o sistema continua protegido mesmo com pedidos diretos à API.
+
+### JWT + refresh token
+
+Optei por JWT com refresh token porque funciona bem numa arquitetura distribuída e evita sessão pesada no servidor. A interface consegue renovar automaticamente o acesso sem obrigar o utilizador a voltar a autenticar-se a cada expiração.
+
+## 4) O que não foi escolhido e porquê
+
+- Não foi escolhida uma arquitetura monolítica porque dificultaria evolução e depuração.
+- Não foi colocada toda a lógica de segurança na interface porque isso seria frágil e facilmente contornável.
+- Não foi feita uma transformação complexa do DIP nesta fase porque aumentaria o custo sem trazer valor imediato ao núcleo funcional.
+- Não foram introduzidos provedores externos de autenticação porque o enunciado pode ser cumprido com autenticação local simples e direta.
+- Não foram adicionadas otimizações prematuras ou padrões excessivos porque o foco foi cumprir o essencial com estabilidade.
+
+## 5) Limitações atuais
+
+- faltam testes mínimos de unidade e integração;
+- faltam algumas medidas de hardening transversal;
+- a validação de metadados ainda pode ser reforçada;
+- o dataset de demonstração ainda pode crescer.
+
+## 6) Conclusão curta
+
+A solução atual cumpre o núcleo funcional pedido pelo enunciado, com OAIS, autenticação, perfis, recursos, posts, comentários, ratings e interface web. As escolhas feitas privilegiam simplicidade, separação de responsabilidades e uma implementação fácil de explicar e manter.# Apoio de Implementação e Decisão (guia prático)
 
 > **Objetivo:** consulta direta para dúvidas de implementação, arquitetura e decisões.
 >
