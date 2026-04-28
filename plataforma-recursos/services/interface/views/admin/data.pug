@@ -10,10 +10,15 @@ block content
 
   section.w3-card.w3-white.w3-padding.w3-margin-top
     h2 Exportar
-    p Descarrega um ficheiro JSON com todos os recursos, taxonomia, noticias, ratings e comentarios.
-    a.w3-button.w3-teal(href='/admin/export') Descarregar dump JSON
+    p Descarrega um ficheiro JSON com filtros opcionais sobre recursos e notícias.
+    p.w3-small
+      | A exportação sem filtros continua a incluir a totalidade dos dados. Quando filtras recursos, os posts, ratings, comentários e ficheiros AIP associados acompanham automaticamente os recursos selecionados.
+    form(method='GET' action='/admin/export')
+      include data-transfer-filters.pug
+      button.w3-button.w3-teal(type='submit') Descarregar dump filtrado
+      a.w3-button.w3-border.w3-margin-left(href='/admin/export') Exportacao completa
 
   section.w3-card.w3-white.w3-padding.w3-margin-top
     h2 Importar
-    p Repoe dados a partir de um ficheiro de dump gerado pelo processo de exportacao.
+    p Repõe dados a partir de um ficheiro de dump gerado pelo processo de exportação, com os mesmos filtros opcionais.
     a.w3-button.w3-border(href='/admin/import') Ir para o formulário de importação
