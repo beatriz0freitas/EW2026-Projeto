@@ -591,9 +591,81 @@ paths:
   /admin/export:
     get:
       tags: [Admin]
-      summary: Exportar dump de dados
+      summary: Exportar dump de dados com filtros opcionais
       security:
         - sessionCookie: []
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [all, resources, news]
+            default: all
+        - name: resourceType
+          in: query
+          schema:
+            type: string
+        - name: resourceYear
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 3000
+        - name: resourceTheme
+          in: query
+          schema:
+            type: string
+        - name: resourceHashtag
+          in: query
+          schema:
+            type: string
+        - name: resourceVisibility
+          in: query
+          schema:
+            type: string
+            enum: [publico, privado]
+        - name: resourceProducer
+          in: query
+          schema:
+            type: string
+        - name: resourceCreatedFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: resourceCreatedTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: newsType
+          in: query
+          schema:
+            type: string
+            enum: [manual, system]
+        - name: newsEventType
+          in: query
+          schema:
+            type: string
+        - name: newsCreatedBy
+          in: query
+          schema:
+            type: string
+        - name: newsPublishedFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: newsPublishedTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: recentLimit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
           description: Ficheiro JSON para download
@@ -608,7 +680,7 @@ paths:
   /admin/import:
     get:
       tags: [Admin]
-      summary: Formulário de importação de dump JSON
+      summary: Formulário de importação de dump JSON com filtros
       security:
         - sessionCookie: []
       responses:
@@ -620,7 +692,7 @@ paths:
                 type: string
     post:
       tags: [Admin]
-      summary: Importar dump JSON
+      summary: Importar dump JSON com filtros
       security:
         - sessionCookie: []
       requestBody:
@@ -631,6 +703,46 @@ paths:
               type: object
               required: [dump]
               properties:
+                scope:
+                  type: string
+                  enum: [all, resources, news]
+                resourceType:
+                  type: string
+                resourceYear:
+                  type: integer
+                  minimum: 0
+                  maximum: 3000
+                resourceTheme:
+                  type: string
+                resourceHashtag:
+                  type: string
+                resourceVisibility:
+                  type: string
+                  enum: [publico, privado]
+                resourceProducer:
+                  type: string
+                resourceCreatedFrom:
+                  type: string
+                  format: date
+                resourceCreatedTo:
+                  type: string
+                  format: date
+                newsType:
+                  type: string
+                  enum: [manual, system]
+                newsEventType:
+                  type: string
+                newsCreatedBy:
+                  type: string
+                newsPublishedFrom:
+                  type: string
+                  format: date
+                newsPublishedTo:
+                  type: string
+                  format: date
+                recentLimit:
+                  type: integer
+                  minimum: 1
                 dump:
                   type: string
                   description: JSON completo no textarea

@@ -5,10 +5,12 @@ const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
 const { config } = require('../lib/config')
 const { buildResourceAipPath, buildStoredAipFile, exportAipFiles, restoreAipFiles } = require('../lib/aipStorage')
+const { construirFiltrosTransferencia, construirDumpFiltrado } = require('../lib/dataTransferFilters')
 const { jsonError } = require('../lib/http')
 
 module.exports.exportAll = async (req, res) => {
 	try {
+		const filtros = construirFiltrosTransferencia(req.query)
 		const [resources, news, posts, ratings, comments] = await Promise.all([
 			Resource.find().lean(),
 			NewsItem.find().lean(),
@@ -16,8 +18,11 @@ module.exports.exportAll = async (req, res) => {
 			Rating.find().lean(),
 			Comment.find().lean(),
 		])
+
+		const dumpFiltrado = construirDumpFiltrado({ resources, news, posts, ratings, comments }, filtros)
 		const aip = []
-		for (const resource of resources) {
+
+		for (const resource of dumpFiltrado.resources) {
 			try {
 				aip.push(await exportAipFiles(resource, config.storage.aipDir))
 			} catch (err) {
@@ -29,20 +34,19 @@ module.exports.exportAll = async (req, res) => {
 			}
 		}
 
-		const dump = {
-			version: '2',
-			exportedAt: new Date().toISOString(),
-			resources,
-			news,
-			posts,
-			ratings,
-			comments,
-			aip,
-		}
-
 		res.setHeader('Content-Disposition', `attachment; filename="ew2026-export-${Date.now()}.json"`)
 		res.setHeader('Content-Type', 'application/json')
-		res.json(dump)
+		res.json({
+			version: '2',
+			exportedAt: new Date().toISOString(),
+			filtersApplied: filtros,
+			resources: dumpFiltrado.resources,
+			news: dumpFiltrado.news,
+			posts: dumpFiltrado.posts,
+			ratings: dumpFiltrado.ratings,
+			comments: dumpFiltrado.comments,
+			aip,
+		})
 	} catch (err) {
 		console.error('[export] erro:', err)
 		jsonError(res, 500, 'erro interno ao exportar')
@@ -50,7 +54,11 @@ module.exports.exportAll = async (req, res) => {
 }
 
 module.exports.importAll = async (req, res) => {
-	const dump = req.body
+	const payload = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {}
+	const dump = payload.dump && typeof payload.dump === 'object' && !Array.isArray(payload.dump)
+		? payload.dump
+		: req.body
+	const filtros = construirFiltrosTransferencia(payload.filters || req.query)
 
 	if (!dump || !['1', '2'].includes(dump.version)) {
 		return jsonError(res, 400, {
@@ -67,13 +75,17 @@ module.exports.importAll = async (req, res) => {
 		comments: { upserted: 0, errors: [] },
 		aip: { restored: 0, errors: [] },
 	}
+
 	const importedResourceIds = new Set()
+	const dumpFiltrado = construirDumpFiltrado(dump, filtros)
 
 	async function upsertAll(Model, docs, key) {
 		if (!Array.isArray(docs)) return
+
 		for (const doc of docs) {
 			try {
 				const nextDoc = { ...doc }
+
 				if (key === 'resources') {
 					const resourceAipPath = buildResourceAipPath(config.storage.aipDir, doc._id)
 					nextDoc.aipPath = resourceAipPath
@@ -84,8 +96,10 @@ module.exports.importAll = async (req, res) => {
 						size: doc.aipFile?.size,
 					})
 				}
+
 				await Model.findByIdAndUpdate(doc._id, { $set: nextDoc }, { upsert: true, new: true })
 				results[key].upserted++
+
 				if (key === 'resources') {
 					importedResourceIds.add(String(doc._id))
 				}
@@ -98,13 +112,15 @@ module.exports.importAll = async (req, res) => {
 	async function restoreAllAip(resources, aipEntries) {
 		if (!Array.isArray(resources) || !resources.length) return
 
-		const entriesById = new Map(Array.isArray(aipEntries) ? aipEntries.map((entry) => [String(entry.resourceId), entry]) : [])
+		const entriesById = new Map(
+			Array.isArray(aipEntries) ? aipEntries.map((entry) => [String(entry.resourceId), entry]) : []
+		)
 
 		for (const resource of resources) {
 			const resourceId = String(resource._id)
 			if (!importedResourceIds.has(resourceId)) continue
-			const entry = entriesById.get(resourceId)
 
+			const entry = entriesById.get(resourceId)
 			if (!entry) {
 				results.aip.errors.push({
 					id: resourceId,
@@ -129,17 +145,18 @@ module.exports.importAll = async (req, res) => {
 		}
 	}
 
-	await upsertAll(Resource, dump.resources, 'resources')
-	await upsertAll(NewsItem, dump.news, 'news')
-	await upsertAll(Post, dump.posts, 'posts')
-	await upsertAll(Rating, dump.ratings, 'ratings')
-	await upsertAll(Comment, dump.comments, 'comments')
-	await restoreAllAip(dump.resources, dump.aip)
+	await upsertAll(Resource, dumpFiltrado.resources, 'resources')
+	await upsertAll(NewsItem, dumpFiltrado.news, 'news')
+	await upsertAll(Post, dumpFiltrado.posts, 'posts')
+	await upsertAll(Rating, dumpFiltrado.ratings, 'ratings')
+	await upsertAll(Comment, dumpFiltrado.comments, 'comments')
+	await restoreAllAip(dumpFiltrado.resources, dumpFiltrado.aip)
 
-	const totalErrors = Object.values(results).reduce((sum, r) => sum + r.errors.length, 0)
+	const totalErrors = Object.values(results).reduce((sum, result) => sum + result.errors.length, 0)
 
 	res.status(totalErrors === 0 ? 200 : 207).json({
 		ok: totalErrors === 0,
+		filtersApplied: filtros,
 		results,
 	})
 }

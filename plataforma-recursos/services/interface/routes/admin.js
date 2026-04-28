@@ -1,17 +1,21 @@
 /**
  * routes/admin.js
  *
- * NOVO:
- *   GET  /admin/export          — proxy do GET /api/export; devolve o ficheiro JSON
- *                                 directamente ao browser com Content-Disposition: attachment
- *   GET  /admin/import          — formulário de importação (textarea com JSON)
- *   POST /admin/import          — envia o JSON para POST /api/import e mostra resultado
+ * GET  /admin/export          — proxy do GET /api/export; devolve o ficheiro JSON
+ *                               directamente ao browser com Content-Disposition: attachment
+ * GET  /admin/import          — formulário de importação (textarea com JSON + filtros)
+ * POST /admin/import          — envia o JSON para POST /api/import e mostra resultado
  */
 
 const express = require('express')
 const { Readable } = require('stream')
 const { pipeline } = require('stream/promises')
 
+const {
+	construirFormularioFiltrosDados,
+	construirQueryFiltrosDados,
+	construirResumoFiltrosDados,
+} = require('../lib/dataTransferFilters')
 const { authRequest, apiRequest, apiFetch } = require('../lib/http')
 const { routeAsync, requireSession, requireLevel, apiErrorMessage } = require('../lib/web')
 
@@ -108,7 +112,9 @@ router.post('/news/:id/delete', routeAsync(async (req, res) => {
 // O Content-Disposition: attachment da API já faz o browser descarregar o ficheiro.
 
 router.get('/export', routeAsync(async (req, res) => {
-	const apiRes = await apiFetch('/export', {
+	const filterForm = construirFormularioFiltrosDados(req.query)
+	const query = construirQueryFiltrosDados(filterForm)
+	const apiRes = await apiFetch(`/export${query.toString() ? `?${query.toString()}` : ''}`, {
 		method: 'GET',
 		token: req.session.token,
 		req,
@@ -139,37 +145,62 @@ router.get('/export', routeAsync(async (req, res) => {
 // POST /admin/import  — envia JSON para POST /api/import
 
 router.get('/import', (req, res) => {
-	res.render('admin/import', { title: 'Admin · Importar dados' })
+	res.render('admin/import', {
+		title: 'Admin · Importar dados',
+		filterForm: construirFormularioFiltrosDados(),
+		filterSummary: [],
+		dumpValue: '',
+	})
 })
 
 router.post('/import', routeAsync(async (req, res) => {
 	const raw = (req.body.dump || '').trim()
+	const filterForm = construirFormularioFiltrosDados(req.body)
 
 	// Validação local antes de enviar
 	let parsed
 	try {
 		parsed = JSON.parse(raw)
 	} catch {
-		req.flashError('JSON inválido. Verifica o conteúdo colado.')
-		return res.redirect('/admin/import')
+		return res.status(400).render('admin/import', {
+			title: 'Admin · Importar dados',
+			filterForm,
+			filterSummary: construirResumoFiltrosDados(filterForm),
+			dumpValue: raw,
+			importError: 'JSON inválido. Verifica o conteúdo colado.',
+		})
 	}
 
 	const response = await apiRequest('/import', {
 		method: 'POST',
 		token: req.session.token,
-		body: parsed,
+		body: {
+			dump: parsed,
+			filters: filterForm,
+		},
 		req,
 	})
 
 	if (!response.ok && response.status !== 207) {
-		req.flashError(apiErrorMessage(response.data, 'Não foi possível importar os dados.'))
-		return res.redirect('/admin/import')
+		return res.status(response.status || 500).render('admin/import', {
+			title: 'Admin · Importar dados',
+			filterForm,
+			filterSummary: construirResumoFiltrosDados(filterForm),
+			dumpValue: raw,
+			importError: apiErrorMessage(response.data, 'Não foi possível importar os dados.'),
+		})
 	}
 
 	// status 207 = sucesso parcial — mostrar relatório na mesma página
 	const results = response.data?.results || {}
+	const filtrosAplicados = construirFormularioFiltrosDados(
+		response.data?.filtersApplied || response.data?.selection || filterForm
+	)
 	res.render('admin/import', {
 		title: 'Admin · Importar dados',
+		filterForm,
+		dumpValue: raw,
+		filterSummary: construirResumoFiltrosDados(filtrosAplicados),
 		importResults: results,
 		importOk: response.data?.ok === true,
 	})
@@ -178,7 +209,11 @@ router.post('/import', routeAsync(async (req, res) => {
 // ─── Dashboard de dados (export + import na mesma página) ─────────────────────
 
 router.get('/data', (req, res) => {
-	res.render('admin/data', { title: 'Admin · Dados' })
+	res.render('admin/data', {
+		title: 'Admin · Dados',
+		filterForm: construirFormularioFiltrosDados(),
+		filterSummary: [],
+	})
 })
 
 module.exports = router

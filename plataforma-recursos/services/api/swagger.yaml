@@ -755,9 +755,96 @@ paths:
   /api/export:
     get:
       tags: [Export]
-      summary: Exportar dados globais da plataforma (admin)
+      summary: Exportar dados da plataforma com filtros opcionais (admin)
       security:
         - bearerAuth: []
+      parameters:
+        - name: scope
+          in: query
+          description: Escopo a exportar.
+          schema:
+            type: string
+            enum: [all, resources, news]
+            default: all
+        - name: resourceType
+          in: query
+          description: Filtra recursos por metadata.resource.tipo quando o escopo inclui recursos.
+          schema:
+            type: string
+        - name: resourceYear
+          in: query
+          description: Filtra recursos por metadata.resource.ano.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 3000
+        - name: resourceTheme
+          in: query
+          description: Filtra recursos por metadata.resource.tema.
+          schema:
+            type: string
+        - name: resourceHashtag
+          in: query
+          description: Filtra recursos por hashtag.
+          schema:
+            type: string
+        - name: resourceVisibility
+          in: query
+          description: Filtra recursos por visibilidade.
+          schema:
+            type: string
+            enum: [publico, privado]
+        - name: resourceProducer
+          in: query
+          description: Filtra recursos pelo id do produtor.
+          schema:
+            type: string
+        - name: resourceCreatedFrom
+          in: query
+          description: Filtra recursos criados a partir desta data.
+          schema:
+            type: string
+            format: date
+        - name: resourceCreatedTo
+          in: query
+          description: Filtra recursos criados até esta data.
+          schema:
+            type: string
+            format: date
+        - name: newsType
+          in: query
+          description: Filtra noticias por tipo.
+          schema:
+            type: string
+            enum: [manual, system]
+        - name: newsEventType
+          in: query
+          description: Filtra noticias por eventType.
+          schema:
+            type: string
+        - name: newsCreatedBy
+          in: query
+          description: Filtra noticias por createdBy.
+          schema:
+            type: string
+        - name: newsPublishedFrom
+          in: query
+          description: Filtra noticias publicadas a partir desta data.
+          schema:
+            type: string
+            format: date
+        - name: newsPublishedTo
+          in: query
+          description: Filtra noticias publicadas até esta data.
+          schema:
+            type: string
+            format: date
+        - name: recentLimit
+          in: query
+          description: Limita recursos e noticias aos N registos mais recentes.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
           description: Dump JSON de dados da plataforma
@@ -770,7 +857,7 @@ paths:
   /api/import:
     post:
       tags: [Export]
-      summary: Importar dump JSON da plataforma (admin)
+      summary: Importar dump JSON da plataforma com filtros opcionais (admin)
       security:
         - bearerAuth: []
       requestBody:
@@ -780,6 +867,54 @@ paths:
             schema:
               type: object
               additionalProperties: true
+              properties:
+                dump:
+                  type: object
+                  additionalProperties: true
+                  description: Dump exportado previamente. O formato bruto legado tambem continua aceite.
+                filters:
+                  type: object
+                  properties:
+                    scope:
+                      type: string
+                      enum: [all, resources, news]
+                    resourceType:
+                      type: string
+                    resourceYear:
+                      type: integer
+                      minimum: 0
+                      maximum: 3000
+                    resourceTheme:
+                      type: string
+                    resourceHashtag:
+                      type: string
+                    resourceVisibility:
+                      type: string
+                      enum: [publico, privado]
+                    resourceProducer:
+                      type: string
+                    resourceCreatedFrom:
+                      type: string
+                      format: date
+                    resourceCreatedTo:
+                      type: string
+                      format: date
+                    newsType:
+                      type: string
+                      enum: [manual, system]
+                    newsEventType:
+                      type: string
+                    newsCreatedBy:
+                      type: string
+                    newsPublishedFrom:
+                      type: string
+                      format: date
+                    newsPublishedTo:
+                      type: string
+                      format: date
+                    recentLimit:
+                      type: integer
+                      minimum: 1
       responses:
         '200':
           description: Importacao concluida
