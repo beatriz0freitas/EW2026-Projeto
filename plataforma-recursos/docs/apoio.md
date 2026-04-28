@@ -6,7 +6,7 @@
 
 ## Decisões vigentes (resumo)
 
-- Arquitetura: `gateway` (entrada), `auth` (identidade), `api` (domínio), `interface` (UI).
+- Arquitetura: `nginx` (borda externa), `gateway` (routing de aplicação), `auth` (identidade), `api` (domínio), `interface` (UI).
 - Segurança: autorização sempre no backend; UI apenas apoia UX.
 - Padrão de código: rotas pequenas + helpers partilhados + validação precoce + erros consistentes.
 - Configuração: `docker-compose.yml` com variáveis não sensíveis hardcoded por serviço; segredos por interpolação (`${JWT_SECRET}`, `${SESSION_SECRET}`, `${INTERNAL_SERVICE_TOKEN}`).
@@ -27,6 +27,7 @@
 
 - Fluxo OAIS fechado na UI: upload SIP (produtor/admin) e download DIP (público e privado com autorização).
 - Gateway encaminha páginas HTML de auth (`/auth/login`, `/auth/register`, `/auth/logout`) para a Interface; endpoints JSON continuam no serviço Auth.
+- `nginx` fica exposto ao exterior e reencaminha todo o tráfego para o `gateway`, mantendo o gateway apenas na rede Docker.
 - API aceita token por header, cookie e query string (compatibilidade).
 - Sessão web da interface implementada e configurável por `SESSION_COOKIE_NAME`.
 - API e Auth já publicam/consomem notícias de sistema (submissões, utilizadores e jobs diários) usando token interno.
@@ -122,23 +123,24 @@ Observação: os endpoints em Swagger que exigem autenticação devem receber to
 
 ---
 
-### D-02 — Gateway como único ponto de entrada
+### D-02 — `nginx` como borda externa e `gateway` como entrada lógica
 
 **Estado:** Aprovada e implementada.
 
-**Decisão:** expor externamente só o gateway (rota para API/Auth/Interface).
+**Decisão:** expor externamente só o `nginx`; manter o `gateway` como ponto de entrada lógico para Interface/API/Auth.
 
 **Fundamentação:**
 
-- Centraliza roteamento;
-- Prepara terreno para CORS, rate limit e políticas transversais.
+- Preserva a lógica de routing já implementada no `gateway`, incluindo o conflito `/auth/*`;
+- Coloca uma borda HTTP própria para HTTPS, compressão, limites de upload e futuras políticas transversais.
 
 **Impacto positivo:**
 
 - Menor superfície de ataque externa;
-- Configuração de cliente simplificada.
+- Configuração de cliente simplificada;
+- Menor custo de mudança do que mover todo o routing para `nginx`.
 
-**Evidência no código:** [services/gateway/app.js](../services/gateway/app.js)
+**Evidência no código:** [docker-compose.yml](../docker-compose.yml), [infra/nginx/default.conf](../infra/nginx/default.conf), [services/gateway/app.js](../services/gateway/app.js)
 
 ---
 
