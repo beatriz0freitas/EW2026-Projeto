@@ -4,6 +4,7 @@ const { randomUUID } = require('crypto')
 const swaggerUi = require('swagger-ui-express')
 const YAML = require('yamljs')
 const cookieParser = require('cookie-parser')
+const helmet = require('helmet')
 
 const routes = require('./routes')
 const { config } = require('./lib/config')
@@ -13,7 +14,21 @@ const swaggerDocument = YAML.load('./swagger.yaml')
 
 const app = express()
 
-app.use(express.json())
+app.use(
+	helmet({
+		contentSecurityPolicy: {
+			directives: {
+				defaultSrc: ["'self'"],
+				scriptSrc: ["'self'", "'unsafe-inline'", 'unpkg.com', 'cdn.jsdelivr.net'],
+				styleSrc: ["'self'", "'unsafe-inline'", 'unpkg.com', 'cdn.jsdelivr.net'],
+				imgSrc: ["'self'", 'data:'],
+				connectSrc: ["'self'"],
+			},
+		},
+	})
+)
+
+app.use(express.json({ limit: '5mb' }))
 app.use(cookieParser())
 
 app.use((req, res, next) => {
