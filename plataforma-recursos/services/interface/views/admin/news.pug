@@ -23,17 +23,19 @@ block content
 		else
 			ul.w3-ul.w3-hoverable
 				each item in items
-					- const eventLabel = item.eventType === 'system.new_submission' ? 'Nova submissão' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
+					- const eventLabel = item.eventType === 'system.new_submission' ? 'Novo recurso' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
+					- const displayTitle = item.eventType === 'system.new_submission' ? 'Novo recurso publicado' : item.eventType === 'system.top3' ? 'Recursos mais descarregados' : item.titulo
+					- const displayContent = item.eventType === 'system.new_submission' && item.payload && item.payload.title ? `${item.payload.producerName || 'Alguém'} publicou o recurso "${item.payload.title}".` : item.conteudo
 					li
 						div
 							if item.tipo === 'system'
-								span.w3-tag.w3-blue-grey Sistema
+								span.w3-tag.w3-blue-grey Automática
 							else
-								span.w3-tag.w3-teal Manual
+								span.w3-tag.w3-teal Criada no painel
 							if eventLabel
 								span.w3-tag.w3-light-grey(style='margin-left:8px')= eventLabel
-						strong= item.titulo
-						p= item.conteudo
+						strong= displayTitle
+						p= displayContent
 						if item.publicadoEm
 							p.w3-text-grey.w3-small Publicado em #{new Date(item.publicadoEm).toLocaleString('pt-PT')}
 						form(action=`/admin/news/${item._id}/delete` method='post')

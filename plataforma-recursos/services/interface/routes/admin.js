@@ -51,14 +51,14 @@ function processarUploadDump(req, res, next) {
 			return renderImportWithError(
 				req,
 				res,
-				'O ficheiro de dump excede o tamanho máximo suportado pela interface.'
+				'O ficheiro escolhido é maior do que a plataforma consegue receber.'
 			)
 		}
 		if (err.code === 'LIMIT_FIELD_VALUE') {
 			return renderImportWithError(
 				req,
 				res,
-				'O conteúdo colado excede o tamanho suportado. Usa o ficheiro de dump exportado.'
+				'O conteúdo colado é demasiado grande. Usa o ficheiro exportado.'
 			)
 		}
 		return next(err)
@@ -86,10 +86,10 @@ router.post('/users/:id/role', routeAsync(async (req, res) => {
 		req,
 	})
 	if (!response.ok) {
-		req.flashError(apiErrorMessage(response.data, 'Não foi possível atualizar o role.'))
+		req.flashError(apiErrorMessage(response.data, 'Não foi possível atualizar o perfil.'))
 		return res.redirect('/admin/users')
 	}
-	req.flashSuccess('Role de utilizador atualizado.')
+	req.flashSuccess('Perfil de utilizador atualizado.')
 	res.redirect('/admin/users')
 }))
 
@@ -205,7 +205,7 @@ router.post('/import', processarUploadDump, routeAsync(async (req, res) => {
 		return renderImportWithError(
 			req,
 			res,
-			'Seleciona um ficheiro de dump ou cola o JSON no campo alternativo.'
+			'Seleciona um ficheiro exportado ou cola o conteúdo no campo alternativo.'
 		)
 	}
 
@@ -213,7 +213,7 @@ router.post('/import', processarUploadDump, routeAsync(async (req, res) => {
 		try {
 			JSON.parse(dumpText)
 		} catch {
-			return renderImportWithError(req, res, 'JSON inválido. Verifica o conteúdo colado.')
+			return renderImportWithError(req, res, 'O conteúdo colado não parece válido. Verifica o ficheiro e tenta novamente.')
 		}
 	}
 

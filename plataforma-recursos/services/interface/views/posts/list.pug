@@ -3,16 +3,16 @@ extends ../layout
 block content
 	section.pagina-listagem
 		section.cabecalho-pagina
-			h1 Posts
+			h1 Publicações
 			p Conversas e notas ligadas aos recursos educativos.
 			.cabecalho-acoes
 				a.w3-button.botao-claro(href='/resources') Ver recursos
 				if user && (user.role === 'produtor' || user.role === 'admin')
-					a.w3-button.botao-principal(href='/posts/new') Criar novo post
+					a.w3-button.botao-principal(href='/posts/new') Criar nova publicação
 
 		section.w3-card.w3-white.secao-card
 			if !items.length
-				p Ainda não existem posts.
+				p Ainda não existem publicações.
 			else
 				ul.lista-cards
 					each post in items

@@ -97,7 +97,9 @@ function appendFormFields(form, fields) {
 function apiErrorMessageWithDetails(payload, fallback) {
 	const base = apiErrorMessage(payload, fallback)
 	const details = Array.isArray(payload?.details)
-		? payload.details.map((detail) => detail?.message).filter(Boolean)
+		? payload.details
+			.map((detail) => detail?.message)
+			.filter((message) => message && !/(SIP|BagIt|JSON|metadata|metadados|manifest|checksum|sha|data\/|AIP|API)/i.test(message))
 		: []
 	if (!details.length) return base
 	return `${base}: ${details.join(' ')}`
@@ -165,7 +167,7 @@ router.post(
 
 		const resourceId = payload?.resourceId
 		if (!resourceId) {
-			req.flashError('Submissão concluída, mas não foi possível obter o id do recurso.')
+			req.flashError('Recurso recebido, mas não foi possível abrir a página respetiva.')
 			return res.redirect('/resources')
 		}
 
@@ -182,7 +184,7 @@ router.post(
 	upload.single('sip'),
 	routeAsync(async (req, res) => {
 		if (!req.file) {
-			req.flashError('Ficheiro SIP (ZIP) em falta.')
+			req.flashError('Ficheiro ZIP preparado em falta.')
 			return res.redirect('/resources/new')
 		}
 
@@ -210,7 +212,7 @@ router.post(
 
 		const resourceId = payload?.resourceId
 		if (!resourceId) {
-			req.flashError('Submissão concluída, mas não foi possível obter o id do recurso.')
+			req.flashError('Recurso recebido, mas não foi possível abrir a página respetiva.')
 			return res.redirect('/resources')
 		}
 
@@ -230,7 +232,7 @@ router.get('/:id/dip', routeAsync(async (req, res) => {
 		let payload = null
 		try { payload = await apiRes.json() } catch { payload = null }
 		return res.status(apiRes.status || 500).render('error', {
-			title: 'Download indisponível',
+			title: 'Descarregamento indisponível',
 			message: apiErrorMessage(payload, 'Não foi possível descarregar o recurso.'),
 		})
 	}

@@ -9,12 +9,12 @@ html(lang='pt')
 		header.w3-bar.w3-teal.app-header
 			a.w3-bar-item.w3-button.w3-xlarge(href='/') EW2026
 			a.w3-bar-item.w3-button(href='/resources') Recursos
-			a.w3-bar-item.w3-button(href='/posts') Posts
+			a.w3-bar-item.w3-button(href='/posts') Publicações
 			if user && user.role === 'admin'
-				a.w3-bar-item.w3-button(href='/admin/users') Menu administrador
+				a.w3-bar-item.w3-button(href='/admin/users') Administração
 			if user
 				form.w3-bar-item.w3-right(action='/auth/logout' method='post')
-					button.w3-button.w3-white.w3-border(type='submit') Logout
+					button.w3-button.w3-white.w3-border(type='submit') Sair
 				span.w3-bar-item.w3-right Olá, #{user.nome}
 			else
 				a.w3-bar-item.w3-button.w3-right(href='/auth/register') Registar
@@ -31,4 +31,4 @@ html(lang='pt')
 			block content
 
 		footer.w3-container.w3-padding.w3-small.w3-text-grey
-			p Plataforma EW2026 · Interface Web
+			p Plataforma EW2026 · Recursos educativos

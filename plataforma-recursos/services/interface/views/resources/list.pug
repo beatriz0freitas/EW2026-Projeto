@@ -8,7 +8,7 @@ block content
 			.cabecalho-acoes
 				if user && (user.role === 'produtor' || user.role === 'admin')
 					a.w3-button.botao-claro(href='/resources/new') Submeter recurso
-				a.w3-button.botao-principal(href='/posts') Ver posts
+				a.w3-button.botao-principal(href='/posts') Ver publicações
 			.etiquetas
 				span.etiqueta Total: #{pagination.total}
 				span.etiqueta.etiqueta--vermelha Página #{pagination.page} de #{pagination.totalPages}
@@ -40,7 +40,7 @@ block content
 							option(value=tema selected=(f.tema === tema))= tema
 
 				div
-					label(for='hashtag') Hashtag
+					label(for='hashtag') Etiqueta
 					select#hashtag.w3-select(name='hashtag')
 						option(value='') Todas
 						each hashtag in options.hashtags

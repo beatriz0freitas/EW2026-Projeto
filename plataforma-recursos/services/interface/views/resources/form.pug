@@ -3,25 +3,25 @@ extends ../layout
 block content
 	section.resource-form-page
 		section.resource-form-hero
-			p.resource-form-hero__eyebrow Fluxo guiado
+			p.resource-form-hero__eyebrow Passo a passo
 			h1 Submeter recurso
 			p.resource-form-hero__lead
-				| A submissão simples cobre a maioria dos casos: preenches os metadados, anexas os ficheiros e a plataforma gera o SIP BagIt automaticamente.
+				| Preenche a informação principal, junta os ficheiros e a plataforma prepara tudo automaticamente.
 			.resource-form-hero__meta
-				span.resource-chip SIP gerado automaticamente
-				span.resource-chip Validação visual em tempo real
-				a.resource-chip.resource-chip--link(href='/templates/metadados.exemplo.json' download='metadados.json') Template de metadados
+				span.resource-chip Preparação automática
+				span.resource-chip Ajuda enquanto preenches
+				a.resource-chip.resource-chip--link(href='/templates/metadados.exemplo.json' download='modelo-recurso.json') Modelo de preenchimento
 
 		section.resource-form-layout
 			section.w3-card.w3-white.form-card
 				.form-card__top
 					div
-						h2 Submissão simples
+						h2 Envio simples
 						p.form-card__lead
-							| Usa um exemplo rápido se quiseres perceber a estrutura ideal antes de preencher tudo manualmente.
+							| Podes começar com um exemplo e ajustar os campos ao teu recurso.
 					.example-toolbar(role='group' aria-label='Exemplos de preenchimento')
 						span.example-toolbar__label Exemplo rápido
-						button.w3-button.w3-border(type='button' data-example='dataset') Dataset
+						button.w3-button.w3-border(type='button' data-example='dataset') Dados
 						button.w3-button.w3-border(type='button' data-example='artigo') Artigo
 						button.w3-button.w3-border(type='button' data-example='slides') Slides
 						button.w3-button.w3-border(type='button' data-example='clear') Limpar
@@ -46,14 +46,14 @@ block content
 							.field-label-row
 								label(for='tipo') Tipo
 								span.field-badge.field-badge--required Obrigatório
-							input#tipo.w3-input(type='text' name='tipo' list='tipos-recurso' required placeholder='Ex: livro, artigo, slides')
+							input#tipo.w3-input(type='text' name='tipo' list='tipos-recurso' required placeholder='Ex: livro, artigo, slides, dados')
 							datalist#tipos-recurso
 								option(value='artigo')
 								option(value='livro')
 								option(value='relatorio')
 								option(value='tese')
 								option(value='slides')
-								option(value='dataset')
+								option(value='dados')
 								option(value='aplicacao')
 								option(value='trabalho')
 								option(value='teste')
@@ -65,7 +65,7 @@ block content
 								label(for='ano') Ano
 								span.field-badge Opcional
 							input#ano.w3-input(type='number' name='ano' min='0' max='3000' placeholder='Ex: 2022')
-							p.field-feedback(data-default-text='Aceita valores entre 0 e 3000.') Aceita valores entre 0 e 3000.
+							p.field-feedback(data-default-text='Escreve o ano se souberes.') Escreve o ano se souberes.
 
 						.form-field(data-field='tema')
 							.field-label-row
@@ -79,14 +79,14 @@ block content
 								label(for='dataCriacao') Data de criação
 								span.field-badge Opcional
 							input#dataCriacao.w3-input(type='text' name='dataCriacao' maxlength='80' placeholder='Ex: 2024-10-12')
-							p.field-feedback(data-default-text='Formato sugerido: AAAA ou AAAA-MM-DD.') Formato sugerido: AAAA ou AAAA-MM-DD.
+							p.field-feedback(data-default-text='Podes escrever só o ano ou uma data completa.') Podes escrever só o ano ou uma data completa.
 
 						.form-field.resource-form-grid__full(data-field='hashtags')
 							.field-label-row
-								label(for='hashtags') Hashtags
+								label(for='hashtags') Etiquetas
 								span.field-badge Opcional
-							input#hashtags.w3-input(type='text' name='hashtags' maxlength='300' placeholder='Ex: #historia, #portugal')
-							p.field-feedback(data-default-text='Separa por vírgulas; podes usar com ou sem #.') Separa por vírgulas; podes usar com ou sem #.
+							input#hashtags.w3-input(type='text' name='hashtags' maxlength='300' placeholder='Ex: historia, portugal')
+							p.field-feedback(data-default-text='Separa por vírgulas; podes escrever palavras simples.') Separa por vírgulas; podes escrever palavras simples.
 
 						.form-field.resource-form-grid__full(data-field='descricao')
 							.field-label-row
@@ -123,7 +123,7 @@ block content
 								span.stat-pill__label Limite
 								strong 20
 						input#ficheiros.w3-input(type='file' name='ficheiros' multiple required)
-						p#info-ficheiros.field-feedback(data-default-text='Podes anexar até 20 ficheiros; o SIP será montado automaticamente.') Podes anexar até 20 ficheiros; o SIP será montado automaticamente.
+						p#info-ficheiros.field-feedback(data-default-text='Podes anexar até 20 ficheiros; a plataforma prepara o envio automaticamente.') Podes anexar até 20 ficheiros; a plataforma prepara o envio automaticamente.
 						ul#ficheiros-lista.file-list
 
 					.form-actions
@@ -132,22 +132,22 @@ block content
 
 				hr.form-divider
 				details.form-advanced
-					summary Submissão avançada (SIP)
+					summary Importar ficheiro preparado
 					p.w3-text-grey.w3-small
-						| Usa esta opção apenas se já tiveres um SIP BagIt em ZIP preparado.
+						| Usa esta opção apenas se já tiveres um ficheiro ZIP preparado para esta plataforma.
 					form#form-sip(action='/resources/new' method='post' enctype='multipart/form-data')
 						.form-field(data-field='sip')
 							.field-label-row
-								label(for='sip') Ficheiro SIP (ZIP)
+								label(for='sip') Ficheiro ZIP preparado
 								span.field-badge.field-badge--required Obrigatório
 							input#sip.w3-input(type='file' name='sip' accept='.zip,application/zip' required)
-							p.field-feedback(data-default-text='Aceita ficheiros .zip com bagit.txt, manifest-sha256.txt e data/metadata.json.') Aceita ficheiros .zip com bagit.txt, manifest-sha256.txt e data/metadata.json.
+							p.field-feedback(data-default-text='Aceita ficheiros .zip preparados para importação.') Aceita ficheiros .zip preparados para importação.
 						p.w3-margin-top
-							button.w3-button.w3-border(type='submit') Submeter SIP
+							button.w3-button.w3-border(type='submit') Importar ZIP
 
 			aside.resource-sidebar
 				section.w3-card.w3-white.side-card
-					h3 Estado dos metadados
+					h3 Pronto a enviar?
 					p#estado-geral.sidebar-summary(aria-live='polite') Preenche os campos obrigatórios para ficares pronto a submeter.
 					.progress-track
 						span#estado-progresso.progress-track__value
@@ -165,7 +165,7 @@ block content
 							span.validation-item__label Ano e data
 							span.validation-item__value Opcional
 						li.validation-item(data-status='hashtags')
-							span.validation-item__label Hashtags
+							span.validation-item__label Etiquetas
 							span.validation-item__value Opcional
 						li.validation-item(data-status='ficheiros')
 							span.validation-item__label Ficheiros
@@ -176,8 +176,8 @@ block content
 					ul.quick-guide
 						li Se quiseres, começa com um exemplo e ajusta só o que interessa.
 						li O mínimo recomendado é título, tipo, visibilidade e pelo menos um ficheiro.
-						li Hashtags e descrição melhoram bastante a descoberta do recurso.
+						li Etiquetas e descrição ajudam outras pessoas a encontrar o recurso.
 					p
-						a.resource-inline-link(href='/templates/metadados.exemplo.json' download='metadados.json') Transferir template de metadados
+						a.resource-inline-link(href='/templates/metadados.exemplo.json' download='modelo-recurso.json') Transferir modelo de preenchimento
 
 	script(src='/javascripts/resources-form.js')

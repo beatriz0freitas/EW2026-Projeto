@@ -1,5 +1,5 @@
 .w3-section
-  label Escopo
+  label O que queres incluir
   p
     label.w3-margin-right
       input(type='radio' name='scope' value='all' checked=filterForm.scope === 'all')
@@ -40,7 +40,7 @@
     placeholder='Ex.: algebra'
   )
 
-  label(for='resourceHashtag') Hashtag do recurso
+  label(for='resourceHashtag') Etiqueta do recurso
   input#resourceHashtag.w3-input.w3-border(
     type='text'
     name='resourceHashtag'
@@ -59,7 +59,7 @@
     type='text'
     name='resourceProducer'
     value=filterForm.resourceProducer
-    placeholder='ID do produtor'
+    placeholder='Nome ou identificador'
   )
 
   label(for='resourceCreatedFrom') Recurso criado desde
@@ -78,18 +78,18 @@
 
 .w3-section
   h3 Notícias
-  label(for='newsType') Tipo de notícia
+  label(for='newsType') Origem da notícia
   select#newsType.w3-select(name='newsType')
     option(value='' selected=!filterForm.newsType) Todas
-    option(value='manual' selected=filterForm.newsType === 'manual') manual
-    option(value='system' selected=filterForm.newsType === 'system') system
+    option(value='manual' selected=filterForm.newsType === 'manual') Criadas no painel
+    option(value='system' selected=filterForm.newsType === 'system') Automáticas
 
-  label(for='newsEventType') Evento da notícia
+  label(for='newsEventType') Assunto da notícia
   input#newsEventType.w3-input.w3-border(
     type='text'
     name='newsEventType'
     value=filterForm.newsEventType
-    placeholder='Ex.: system.top3'
+    placeholder='Ex.: top 3 de recursos'
   )
 
   label(for='newsCreatedBy') Autor da notícia
@@ -97,7 +97,7 @@
     type='text'
     name='newsCreatedBy'
     value=filterForm.newsCreatedBy
-    placeholder='Ex.: system'
+    placeholder='Ex.: administrador'
   )
 
   label(for='newsPublishedFrom') Notícia publicada desde
@@ -115,7 +115,7 @@
   )
 
 .w3-section
-  h3 Ordenação e recência
+  h3 Quantidade
   label(for='recentLimit') Número de itens mais recentes
   input#recentLimit.w3-input.w3-border(
     type='number'
@@ -126,4 +126,4 @@
     placeholder='Ex.: 10'
   )
   p.w3-small
-    | O limite de recência é aplicado às coleções base. Os dados dependentes acompanham os recursos selecionados.
+    | Este limite aplica-se aos recursos e notícias principais. A informação relacionada é incluída automaticamente.
