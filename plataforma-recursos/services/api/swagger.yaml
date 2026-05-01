@@ -238,6 +238,78 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/oais/ingest/simples:
+    post:
+      tags: [OAIS]
+      summary: Criar recurso por submissao simples
+      description: Recebe metadados e ficheiros soltos, gera automaticamente um SIP BagIt e executa o mesmo processo de ingestao.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [titulo, tipo, visibilidade, ficheiros]
+              properties:
+                titulo:
+                  type: string
+                subtitulo:
+                  type: string
+                tipo:
+                  type: string
+                ano:
+                  type: integer
+                tema:
+                  type: string
+                hashtags:
+                  type: string
+                  description: Lista separada por virgulas.
+                dataCriacao:
+                  type: string
+                descricao:
+                  type: string
+                visibilidade:
+                  type: string
+                  enum: [publico, privado]
+                ficheiros:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Recurso criado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  resourceId:
+                    type: string
+        '400':
+          description: Pedido invalido ou demasiado grande
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Nao autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Metadados ou SIP gerado invalidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/oais/access/{id}:
     get:
       tags: [OAIS]

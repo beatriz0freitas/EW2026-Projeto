@@ -38,6 +38,95 @@ function visibilityQuery(user) {
 	}
 }
 
+function limparTexto(valor) {
+	return String(valor || '').trim()
+}
+
+function normalizarHashtags(valor) {
+	if (Array.isArray(valor)) {
+		return valor.map((item) => limparTexto(item)).filter(Boolean)
+	}
+	return limparTexto(valor)
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
+
+function construirMetadataAtualizada(metadataAtual, metadataRecebida) {
+	const erros = []
+	const origem = metadataRecebida?.resource && typeof metadataRecebida.resource === 'object'
+		? metadataRecebida.resource
+		: metadataRecebida
+
+	if (!origem || typeof origem !== 'object' || Array.isArray(origem)) {
+		return {
+			ok: false,
+			errors: [{ code: 'BAD_METADATA', message: 'metadata.resource deve ser um objeto' }],
+		}
+	}
+
+	const metadataBase = metadataAtual && typeof metadataAtual === 'object' && !Array.isArray(metadataAtual)
+		? metadataAtual
+		: {}
+	const resourceBase = metadataBase.resource && typeof metadataBase.resource === 'object'
+		? metadataBase.resource
+		: {}
+	const resource = { ...resourceBase }
+	const camposTexto = ['tipo', 'titulo', 'subtitulo', 'tema', 'dataCriacao', 'descricao']
+
+	for (const campo of camposTexto) {
+		if (Object.prototype.hasOwnProperty.call(origem, campo)) {
+			const valor = limparTexto(origem[campo])
+			if (valor) resource[campo] = valor
+			else if (['subtitulo', 'tema', 'dataCriacao', 'descricao'].includes(campo)) delete resource[campo]
+			else resource[campo] = ''
+		}
+	}
+
+	if (Object.prototype.hasOwnProperty.call(origem, 'ano')) {
+		const anoTexto = limparTexto(origem.ano)
+		if (!anoTexto) {
+			delete resource.ano
+		} else {
+			const ano = Number(anoTexto)
+			if (!Number.isInteger(ano) || ano < 0 || ano > 3000) {
+				erros.push({ code: 'BAD_METADATA', message: 'ano deve ser um inteiro entre 0 e 3000' })
+			} else {
+				resource.ano = ano
+			}
+		}
+	}
+
+	if (Object.prototype.hasOwnProperty.call(origem, 'visibilidade')) {
+		if (!['publico', 'privado'].includes(origem.visibilidade)) {
+			erros.push({ code: 'BAD_METADATA', message: 'visibilidade deve ser publico ou privado' })
+		} else {
+			resource.visibilidade = origem.visibilidade
+		}
+	}
+
+	if (Object.prototype.hasOwnProperty.call(origem, 'hashtags')) {
+		const hashtags = normalizarHashtags(origem.hashtags)
+		if (hashtags.length) resource.hashtags = hashtags
+		else delete resource.hashtags
+	}
+
+	if (!resource.tipo) erros.push({ code: 'BAD_METADATA', message: 'tipo é obrigatório' })
+	if (!resource.titulo) erros.push({ code: 'BAD_METADATA', message: 'titulo é obrigatório' })
+	if (!['publico', 'privado'].includes(resource.visibilidade)) {
+		erros.push({ code: 'BAD_METADATA', message: 'visibilidade deve ser publico ou privado' })
+	}
+
+	if (erros.length) return { ok: false, errors: erros }
+	return {
+		ok: true,
+		metadata: {
+			...metadataBase,
+			resource,
+		},
+	}
+}
+
 module.exports.list = async (req, res) => {
 	try {
 		const { page, limit, skip } = getPagination(req.query)
@@ -79,7 +168,15 @@ module.exports.patchById = async (req, res) => {
 			return jsonError(res, 403, 'acesso negado')
 		}
 		if (req.body.metadata && typeof req.body.metadata === 'object') {
-			resource.metadata = req.body.metadata
+			const resultado = construirMetadataAtualizada(resource.metadata, req.body.metadata)
+			if (!resultado.ok) {
+				return jsonError(res, 400, {
+					code: 'BAD_METADATA',
+					message: 'metadados inválidos',
+					details: resultado.errors,
+				})
+			}
+			resource.metadata = resultado.metadata
 		}
 		await resource.save()
 		res.json({ ok: true, resource })

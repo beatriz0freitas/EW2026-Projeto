@@ -57,6 +57,15 @@ function parseManifest(text) {
 	return entries
 }
 
+function normalizeManifestPath(filePath) {
+	const normalized = path.posix.normalize(String(filePath || '').replace(/\\/g, '/'))
+	if (!normalized || normalized.startsWith('../') || normalized === '..' || path.posix.isAbsolute(normalized)) {
+		return null
+	}
+	if (!normalized.startsWith('data/')) return null
+	return normalized
+}
+
 // Cria diretoria mesmo que já exista.
 async function ensureDir(dirPath) {
 	await fsp.mkdir(dirPath, { recursive: true })
@@ -88,14 +97,14 @@ async function safeUnzipToDir(zipBuffer, outDir) {
 
 		const normalized = path.normalize(rawPath)
 		if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
-			throw new Error(`Unsafe path in zip: ${rawPath}`)
+			throw new Error(`caminho inseguro no ZIP: ${rawPath}`)
 		}
 
 		const target = path.join(outDir, normalized)
 		const resolvedOut = path.resolve(outDir) + path.sep
 		const resolvedTarget = path.resolve(target)
 		if (!resolvedTarget.startsWith(resolvedOut)) {
-			throw new Error(`Zip-slip detected for path: ${rawPath}`)
+			throw new Error(`zip-slip detetado no caminho: ${rawPath}`)
 		}
 
 		if (file.type === 'Directory') {
@@ -118,18 +127,30 @@ async function safeUnzipToDir(zipBuffer, outDir) {
 function validateMetadata(metadata) {
 	const errors = []
 	if (!metadata || typeof metadata !== 'object') {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.json must be a JSON object' })
+		errors.push({ code: 'BAD_METADATA', message: 'metadata.json deve ser um objeto JSON' })
 		return errors
 	}
 	if (!metadata.resource || typeof metadata.resource !== 'object') {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource is required' })
+		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource é obrigatório' })
 		return errors
 	}
 
 	const resource = metadata.resource
-	if (!resource.tipo) errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.tipo is required' })
-	if (!resource.titulo) errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.titulo is required' })
-	if (!resource.visibilidade) errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.visibilidade is required (publico|privado)' })
+	if (!resource.tipo || typeof resource.tipo !== 'string') {
+		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.tipo é obrigatório' })
+	}
+	if (!resource.titulo || typeof resource.titulo !== 'string') {
+		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.titulo é obrigatório' })
+	}
+	if (!['publico', 'privado'].includes(resource.visibilidade)) {
+		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.visibilidade deve ser publico ou privado' })
+	}
+	if (resource.ano !== undefined && (!Number.isInteger(Number(resource.ano)) || Number(resource.ano) < 0 || Number(resource.ano) > 3000)) {
+		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.ano deve ser um inteiro entre 0 e 3000' })
+	}
+	if (resource.hashtags !== undefined && !Array.isArray(resource.hashtags)) {
+		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.hashtags deve ser uma lista' })
+	}
 	return errors
 }
 
@@ -150,10 +171,10 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 		const dataDir = path.join(extractDir, 'data')
 		const metadataPath = path.join(dataDir, 'metadata.json')
 
-		if (!fs.existsSync(bagitPath)) errors.push({ code: 'MISSING_BAGIT', message: 'Missing bagit.txt' })
-		if (!fs.existsSync(manifestPath)) errors.push({ code: 'MISSING_MANIFEST', message: 'Missing manifest-sha256.txt' })
-		if (!fs.existsSync(dataDir)) errors.push({ code: 'MISSING_DATA_DIR', message: 'Missing data/ directory' })
-		if (!fs.existsSync(metadataPath)) errors.push({ code: 'MISSING_METADATA', message: 'Missing data/metadata.json' })
+		if (!fs.existsSync(bagitPath)) errors.push({ code: 'MISSING_BAGIT', message: 'bagit.txt em falta' })
+		if (!fs.existsSync(manifestPath)) errors.push({ code: 'MISSING_MANIFEST', message: 'manifest-sha256.txt em falta' })
+		if (!fs.existsSync(dataDir)) errors.push({ code: 'MISSING_DATA_DIR', message: 'diretoria data/ em falta' })
+		if (!fs.existsSync(metadataPath)) errors.push({ code: 'MISSING_METADATA', message: 'data/metadata.json em falta' })
 
 		if (errors.length) return { ok: false, errors }
 
@@ -162,7 +183,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 		try {
 			metadata = JSON.parse(await fsp.readFile(metadataPath, 'utf-8'))
 		} catch (err) {
-			return { ok: false, errors: [{ code: 'BAD_METADATA', message: `Invalid JSON in metadata.json: ${err.message}` }] }
+			return { ok: false, errors: [{ code: 'BAD_METADATA', message: `JSON inválido em metadata.json: ${err.message}` }] }
 		}
 
 		errors.push(...validateMetadata(metadata))
@@ -174,27 +195,29 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 
 		for (const entry of manifestEntries) {
 			if (!entry.checksum || !entry.filePath) {
-				errors.push({ code: 'BAD_MANIFEST', message: `Invalid manifest line: ${entry.raw || ''}` })
+				errors.push({ code: 'BAD_MANIFEST', message: `linha inválida no manifesto: ${entry.raw || ''}` })
 				continue
 			}
 			if (!/^[a-fA-F0-9]{64}$/.test(entry.checksum)) {
-				errors.push({ code: 'BAD_MANIFEST', message: `Invalid sha256 checksum for ${entry.filePath}` })
+				errors.push({ code: 'BAD_MANIFEST', message: `checksum SHA-256 inválido para ${entry.filePath}` })
 				continue
 			}
-			if (!entry.filePath.startsWith('data/')) {
-				errors.push({ code: 'BAD_MANIFEST', message: `Manifest path must start with data/: ${entry.filePath}` })
+			const safeManifestPath = normalizeManifestPath(entry.filePath)
+			if (!safeManifestPath) {
+				errors.push({ code: 'BAD_MANIFEST', message: `O caminho no manifesto deve ficar dentro de data/: ${entry.filePath}` })
 				continue
 			}
 
-			const fullPath = path.join(extractDir, entry.filePath)
+			entry.filePath = safeManifestPath
+			const fullPath = path.join(extractDir, safeManifestPath)
 			if (!fs.existsSync(fullPath)) {
-				errors.push({ code: 'MISSING_PAYLOAD', message: `Missing file referenced in manifest: ${entry.filePath}` })
+				errors.push({ code: 'MISSING_PAYLOAD', message: `ficheiro referenciado no manifesto em falta: ${safeManifestPath}` })
 				continue
 			}
 
 			const digest = await sha256File(fullPath)
 			if (digest.toLowerCase() !== entry.checksum.toLowerCase()) {
-				errors.push({ code: 'CHECKSUM_MISMATCH', message: `Checksum mismatch for ${entry.filePath}` })
+				errors.push({ code: 'CHECKSUM_MISMATCH', message: `checksum diferente para ${safeManifestPath}` })
 			}
 		}
 
@@ -206,7 +229,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 		for (const filePathAbs of dataFiles) {
 			const rel = path.relative(extractDir, filePathAbs).split(path.sep).join('/')
 			if (!manifestPaths.has(rel)) {
-				errors.push({ code: 'BAD_MANIFEST', message: `File under data/ not listed in manifest: ${rel}` })
+				errors.push({ code: 'BAD_MANIFEST', message: `ficheiro em data/ não listado no manifesto: ${rel}` })
 			}
 		}
 
