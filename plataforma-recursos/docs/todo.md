@@ -145,6 +145,49 @@ Validação desta atualização:
 - ⚠️ Refresh token é devolvido também em JSON no login.
 - ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito.
 - ❌ Helmet não implementado.
+- ✅ Endpoints internos legados removidos para simplificar a API Auth.
+- ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
+- ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
+- ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
+- ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito; ideal exigir segredo forte por ambiente.
+- ✅ Rate limiting no login implementado em POST `/auth/sessions` (in-memory por janela temporal).
+- ✅ Helmet nao implementado.
+
+## Gateway (services/gateway)
+
+- ✅ Reverse proxy funcional: `/api` -> API, `/auth` -> Auth, `/` -> Interface.
+- ✅ Regras especificas para `/auth/login`, `/auth/register` e `/auth/logout` irem para Interface.
+- ✅ Handler central de 502 bad gateway em `lib/proxy.js`.
+- ✅ `proxyTimeout` configurado (60s).
+- ✅ Config centralizada em `services/gateway/lib/config.js` com validacao de `PORT`/URLs.
+- ✅ Exposicao de documentacao Swagger dos servicos:
+	- `/docs` -> Hub Swagger agregado
+	- `/api/docs` -> API Swagger UI
+	- `/auth/docs` -> Auth Swagger UI
+	- `/interface/docs` -> Interface Swagger UI
+- ✅ CORS explicito no gateway nao implementado.
+- ✅ Helmet no gateway nao implementado.
+- ❌ Rate limiting global nao implementado.
+- ⚠️ Sem circuit breaker (apenas timeout e erro 502).
+
+## Nginx (infra/nginx)
+
+- ✅ `nginx` exposto ao exterior e a encaminhar trafego para o `gateway`.
+- ✅ Compressao `gzip` ativa para respostas textuais comuns.
+- ✅ Limite de upload (`client_max_body_size`) definido na borda.
+- ✅ Gateway deixou de estar publicado diretamente no host e ficou apenas acessivel na rede Docker.
+
+## Interface (services/interface)
+
+- ✅ App Express com Pug, sessao, flash messages e rotas montadas.
+- ✅ Login/registo/logout funcionais.
+- ✅ Home com noticias recentes.
+- ✅ Recursos: listagem, filtros (tipo/ano/tema/hashtag), detalhe, upload SIP, download DIP, ratings.
+- ✅ Posts: listar, criar, detalhe, editar, apagar, comentar e remover comentario.
+- ✅ Admin: utilizadores, noticias, export e import de dump.
+- ✅ Interceptor 401 com renovacao automatica via refresh-server.
+- ✅ Home mostra lista resumida de recursos recentes.
+- ✅ Pagina de detalhe de recurso apresenta posts associados por `resourceId`.
 
 ### Gateway (`services/gateway`)
 
