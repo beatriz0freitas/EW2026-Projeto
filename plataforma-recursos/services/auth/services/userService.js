@@ -137,3 +137,35 @@ module.exports.login = async (identifier, password) => {
 
 	return { token: signAccessToken(user), user: toPublicUser(user) }
 }
+
+module.exports.oauthLogin = async (provider, providerId, email, nome) => {
+	email = String(email).trim().toLowerCase()
+	if (!email) throw new Error('email é obrigatorio')
+
+	const searchField = provider === 'google' ? 'googleId' : 'facebookId'
+	let user = await User.findOne({
+		$or: [{ [searchField]: providerId }, { email: email }],
+	})
+
+	if (user) {
+		if (!user.ativo) throw new Error('conta desativada')
+		if (!user[searchField]) {
+			user[searchField] = providerId
+			await user.save()
+		}
+	} else {
+		const _id = await generateUserId(null, email)
+		user = new User({
+			_id,
+			nome,
+			email,
+			role: 'consumidor',
+			[searchField]: providerId,
+		})
+		await user.save()
+	}
+
+	await User.updateOne({ _id: user._id }, { ultimo_acesso: new Date() })
+
+	return { token: signAccessToken(user), user: toPublicUser(user) }
+}

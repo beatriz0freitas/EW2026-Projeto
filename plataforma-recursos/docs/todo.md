@@ -87,7 +87,7 @@ Validação desta atualização:
 - ✅ Perfis admin, produtor e consumidor implementados.
 - ✅ Refresh token implementado.
 - ✅ Registo público força `role=consumidor`.
-- ⚠️ Autenticações alternativas (chave API, Google, Facebook) não implementadas.
+- ✅Autenticações alternativas (Google, Facebook) implementadas.
 
 ### Metainformação de recursos
 
