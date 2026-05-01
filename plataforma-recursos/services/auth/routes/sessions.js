@@ -52,4 +52,6 @@ router.post(
 // ─────────────────────────────────────────────
 router.post('/logout', sessionsController.logout)
 
+router.post('/oauth', sessionsController.oauthLogin)
+
 module.exports = router

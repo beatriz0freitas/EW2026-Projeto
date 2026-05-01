@@ -1,6 +1,7 @@
 const path = require('path')
 const express = require('express')
 const session = require('express-session')
+const passport = require('passport')
 const swaggerUi = require('swagger-ui-express')
 const YAML = require('yamljs')
 const { config } = require('./lib/config')
@@ -35,6 +36,8 @@ app.use(
 		},
 	})
 )
+
+app.use(passport.initialize());
 
 app.use((req, res, next) => {
 	res.locals.user = req.session.user || null

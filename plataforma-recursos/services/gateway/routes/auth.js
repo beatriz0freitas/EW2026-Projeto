@@ -15,6 +15,8 @@ const interfaceAuthPagesProxy = serviceProxy(config.services.interfaceUrl, {
 router.use('/login', interfaceAuthPagesProxy)
 router.use('/register', interfaceAuthPagesProxy)
 router.use('/logout', interfaceAuthPagesProxy)
+router.use('/google', interfaceAuthPagesProxy)
+router.use('/facebook', interfaceAuthPagesProxy)
 
 // Tudo o resto em /auth/* é do serviço auth (API).
 router.use('/', authProxy)

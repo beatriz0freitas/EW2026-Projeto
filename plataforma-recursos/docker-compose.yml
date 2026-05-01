@@ -69,6 +69,10 @@ services:
       - AUTH_URL=http://auth:16027
       - SESSION_SECRET=${SESSION_SECRET}
       - SESSION_COOKIE_NAME=ew.sid
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - FACEBOOK_APP_ID=${FACEBOOK_APP_ID}
+      - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET}
     depends_on:
       - api
       - auth

@@ -93,3 +93,22 @@ module.exports.logout = (req, res) => {
 	})
 	res.json({ ok: true })
 }
+
+module.exports.oauthLogin = async (req, res) => {
+	const {provider , providerId, email, nome} = req.body;
+	if (!provider || !providerId || !email || !nome) {
+		return jsonError(res, 400, { code: 'MISSING_FIELDS', message: 'campos obrigatórios em falta' })
+	}
+	
+	try {
+		const dados = await UserService.oauthLogin(provider, providerId, email, nome)
+
+		const refreshToken = signRefreshToken(dados.user)
+		res.cookie(REFRESH_COOKIE, refreshToken, buildRefreshCookieOptions())
+
+		res.cookie(config.cookies.name, dados.token, buildAuthCookieOptions())
+		res.json({ ok: true, token: dados.token, refreshToken, user: dados.user })
+	} catch (err) {
+		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
+	}
+}
