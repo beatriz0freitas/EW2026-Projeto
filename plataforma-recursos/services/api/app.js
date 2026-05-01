@@ -1,6 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const { randomUUID } = require('crypto')
+const fsp = require('fs/promises')
 const swaggerUi = require('swagger-ui-express')
 const YAML = require('yamljs')
 const cookieParser = require('cookie-parser')
@@ -28,7 +29,7 @@ app.use(
 	})
 )
 
-app.use(express.json({ limit: '5mb' }))
+app.use(express.json({ limit: config.dataTransfer.jsonBodyLimitLegado }))
 app.use(cookieParser())
 
 app.use((req, res, next) => {
@@ -65,6 +66,7 @@ app.use((err, req, res, next) => {
 
 async function start() {
 	try {
+		await fsp.mkdir(config.storage.aipDir, { recursive: true })
 		await mongoose.connect(config.mongoUrl)
 		console.log('MongoDB: connected')
 
@@ -73,7 +75,7 @@ async function start() {
 			initSystemNewsTriggers()
 		})
 	} catch (err) {
-		console.error('MongoDB: connection error:', err)
+		console.error('API startup error:', err)
 		process.exit(1)
 	}
 }

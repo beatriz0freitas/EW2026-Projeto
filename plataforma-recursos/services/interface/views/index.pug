@@ -1,66 +1,90 @@
 extends layout
 
 block content
-	section.w3-card.w3-white.w3-padding.w3-margin-top
-		h1 Plataforma de Gestão e Disponibilização de Recursos Educativos
-		p Aceda rapidamente às principais áreas da plataforma.
+	section.pagina-inicial
+		section.painel-principal
+			h1 Plataforma de Recursos Educativos
+			p
+				| Encontra, partilha e acompanha recursos com metadados claros, posts associados, classificações e preservação em fluxo OAIS.
+			.painel-principal__acoes
+				a.w3-button.botao-claro(href='/resources') Explorar recursos
+				a.w3-button.botao-principal(href='/posts') Ver posts
+				if user && (user.role === 'produtor' || user.role === 'admin')
+					a.w3-button.botao-claro(href='/resources/new') Submeter recurso
+				else if !user
+					a.w3-button.botao-claro(href='/auth/login') Entrar
+			.etiquetas
+				if user
+					span.etiqueta Autenticado como #{user.role}
+				else
+					span.etiqueta Acesso público disponível
+				span.etiqueta.etiqueta--vermelha OAIS + SIP/DIP
 
-		ul.w3-ul
-			li
-				a(href='/resources') Ver recursos educativos
-			li
-				a(href='/posts') Ver posts e comentários
+		section.atalhos-grid
+			a.atalho-card(href='/resources')
+				strong Recursos
+				span Pesquisa por tipo, ano, tema e hashtag.
+			a.atalho-card(href='/posts')
+				strong Comunidade
+				span Lê posts, comentários e discussões sobre recursos.
 			if user && user.role === 'admin'
-				li
-					a(href='/admin/users') Menu administrador
+				a.atalho-card(href='/admin/users')
+					strong Administração
+					span Gere utilizadores, notícias, exportações e importações.
+			else
+				a.atalho-card(href='/auth/register')
+					strong Conta
+					span Cria sessão para comentar, classificar e guardar atividade.
 
-		if user
-			p.w3-text-grey Está autenticado como #{user.role}.
-		else
-			p.w3-text-grey Está em modo anónimo. Use Entrar ou Registar para continuar.
-
-	if news && news.length
-		section.w3-card.w3-white.w3-padding.w3-margin-top
-			h2 Últimas notícias
-			each item in news
-				- const eventLabel = item.eventType === 'system.new_submission' ? 'Nova submissão' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
-				- const top3Items = item.eventType === 'system.top3' && item.payload && Array.isArray(item.payload.items) ? item.payload.items : []
-				- const isTop3WithItems = item.eventType === 'system.top3' && top3Items.length
-
-				article.news-item
+		if news && news.length
+			section.w3-card.w3-white.secao-card
+				.cabecalho-secao
 					div
-						if item.tipo === 'system'
-							span.w3-tag.w3-blue-grey Sistema
-						else
-							span.w3-tag.w3-teal Manual
-						if eventLabel
-							span.w3-tag.w3-light-grey(style='margin-left:8px')= eventLabel
+						h2 Últimas notícias
+						p.w3-text-grey Atualizações recentes da plataforma.
+				each item in news
+					- const eventLabel = item.eventType === 'system.new_submission' ? 'Nova submissão' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
+					- const top3Items = item.eventType === 'system.top3' && item.payload && Array.isArray(item.payload.items) ? item.payload.items : []
+					- const isTop3WithItems = item.eventType === 'system.top3' && top3Items.length
 
-					h3(style='margin-top:8px')= item.titulo
+					article.news-item
+						.etiquetas
+							if item.tipo === 'system'
+								span.w3-tag.w3-blue-grey Sistema
+							else
+								span.w3-tag.w3-teal Manual
+							if eventLabel
+								span.w3-tag.w3-light-grey= eventLabel
 
-					if !isTop3WithItems
-						p= item.conteudo
+						h3= item.titulo
 
-					if top3Items.length
-						ol.w3-ul
-							each resource, idx in top3Items
-								li
-									strong #{idx + 1}. #{resource.titulo || 'Recurso'}
-									span.w3-text-grey  · downloads #{resource.downloads || 0}
-									if typeof resource.ratingMedia === 'number'
-										span.w3-text-grey  · rating #{resource.ratingMedia}
+						if !isTop3WithItems
+							p= item.conteudo
 
-					if item.publicadoEm
-						p.w3-text-grey.w3-small Publicado em #{new Date(item.publicadoEm).toLocaleString('pt-PT')}
+						if top3Items.length
+							ol.w3-ul
+								each resource, idx in top3Items
+									li
+										strong #{idx + 1}. #{resource.titulo || 'Recurso'}
+										span.w3-text-grey  · downloads #{resource.downloads || 0}
+										if typeof resource.ratingMedia === 'number'
+											span.w3-text-grey  · rating #{resource.ratingMedia}
 
-	if resources && resources.length
-		section.w3-card.w3-white.w3-padding.w3-margin-top
-			h2 Recursos recentes
-			ul.w3-ul.w3-hoverable
-				each item in resources
-					- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
-					li
-						a(href=`/resources/${item._id}`)= r.titulo || 'Sem título'
-						span.w3-text-grey.w3-small  · #{r.tipo || '-'}
-						if r.ano
-							span.w3-text-grey.w3-small  · #{r.ano}
+						if item.publicadoEm
+							p.w3-text-grey.w3-small Publicado em #{new Date(item.publicadoEm).toLocaleString('pt-PT')}
+
+		if resources && resources.length
+			section.w3-card.w3-white.secao-card
+				.cabecalho-secao
+					div
+						h2 Recursos recentes
+						p.w3-text-grey Materiais acabados de entrar no arquivo.
+					a.w3-button.w3-border(href='/resources') Ver todos
+				ul.lista-cards
+					each item in resources
+						- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
+						li
+							a(href=`/resources/${item._id}`)= r.titulo || 'Sem título'
+							span.w3-text-grey.w3-small  · #{r.tipo || '-'}
+							if r.ano
+								span.w3-text-grey.w3-small  · #{r.ano}

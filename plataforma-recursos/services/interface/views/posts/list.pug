@@ -1,19 +1,21 @@
 extends ../layout
 
 block content
-	section.w3-card.w3-white.w3-padding.w3-margin-top
-		h1 Posts
+	section.pagina-listagem
+		section.cabecalho-pagina
+			h1 Posts
+			p Conversas e notas ligadas aos recursos educativos.
+			.cabecalho-acoes
+				a.w3-button.botao-claro(href='/resources') Ver recursos
+				if user && (user.role === 'produtor' || user.role === 'admin')
+					a.w3-button.botao-principal(href='/posts/new') Criar novo post
 
-		if user && (user.role === 'produtor' || user.role === 'admin')
-			p
-				a.w3-button.w3-border(href='/posts/new') Criar novo post
-
-		if !items.length
-			p Ainda não existem posts.
-		else
-			ul.w3-ul.w3-hoverable
-				each post in items
-					li
-						a(href=`/posts/${post._id}`)= post.titulo
-						span.w3-text-grey.w3-small  · por #{post.autorNome || 'autor desconhecido'}
-
+		section.w3-card.w3-white.secao-card
+			if !items.length
+				p Ainda não existem posts.
+			else
+				ul.lista-cards
+					each post in items
+						li
+							a(href=`/posts/${post._id}`)= post.titulo
+							span.w3-text-grey.w3-small  · por #{post.autorNome || 'autor desconhecido'}

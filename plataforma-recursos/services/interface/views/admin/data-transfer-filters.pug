@@ -1,0 +1,129 @@
+.w3-section
+  label Escopo
+  p
+    label.w3-margin-right
+      input(type='radio' name='scope' value='all' checked=filterForm.scope === 'all')
+      |  Tudo
+    label.w3-margin-right
+      input(type='radio' name='scope' value='resources' checked=filterForm.scope === 'resources')
+      |  Só recursos
+    label
+      input(type='radio' name='scope' value='news' checked=filterForm.scope === 'news')
+      |  Só notícias
+
+.w3-section
+  h3 Recursos
+  label(for='resourceType') Tipo de recurso
+  input#resourceType.w3-input.w3-border(
+    type='text'
+    name='resourceType'
+    value=filterForm.resourceType
+    placeholder='Ex.: ficha'
+  )
+
+  label(for='resourceYear') Ano do recurso
+  input#resourceYear.w3-input.w3-border(
+    type='number'
+    name='resourceYear'
+    min='0'
+    max='3000'
+    step='1'
+    value=filterForm.resourceYear
+    placeholder='Ex.: 8'
+  )
+
+  label(for='resourceTheme') Tema do recurso
+  input#resourceTheme.w3-input.w3-border(
+    type='text'
+    name='resourceTheme'
+    value=filterForm.resourceTheme
+    placeholder='Ex.: algebra'
+  )
+
+  label(for='resourceHashtag') Hashtag do recurso
+  input#resourceHashtag.w3-input.w3-border(
+    type='text'
+    name='resourceHashtag'
+    value=filterForm.resourceHashtag
+    placeholder='Ex.: matematica'
+  )
+
+  label(for='resourceVisibility') Visibilidade do recurso
+  select#resourceVisibility.w3-select(name='resourceVisibility')
+    option(value='' selected=!filterForm.resourceVisibility) Todas
+    option(value='publico' selected=filterForm.resourceVisibility === 'publico') publico
+    option(value='privado' selected=filterForm.resourceVisibility === 'privado') privado
+
+  label(for='resourceProducer') Produtor do recurso
+  input#resourceProducer.w3-input.w3-border(
+    type='text'
+    name='resourceProducer'
+    value=filterForm.resourceProducer
+    placeholder='ID do produtor'
+  )
+
+  label(for='resourceCreatedFrom') Recurso criado desde
+  input#resourceCreatedFrom.w3-input.w3-border(
+    type='date'
+    name='resourceCreatedFrom'
+    value=filterForm.resourceCreatedFrom
+  )
+
+  label(for='resourceCreatedTo') Recurso criado até
+  input#resourceCreatedTo.w3-input.w3-border(
+    type='date'
+    name='resourceCreatedTo'
+    value=filterForm.resourceCreatedTo
+  )
+
+.w3-section
+  h3 Notícias
+  label(for='newsType') Tipo de notícia
+  select#newsType.w3-select(name='newsType')
+    option(value='' selected=!filterForm.newsType) Todas
+    option(value='manual' selected=filterForm.newsType === 'manual') manual
+    option(value='system' selected=filterForm.newsType === 'system') system
+
+  label(for='newsEventType') Evento da notícia
+  input#newsEventType.w3-input.w3-border(
+    type='text'
+    name='newsEventType'
+    value=filterForm.newsEventType
+    placeholder='Ex.: system.top3'
+  )
+
+  label(for='newsCreatedBy') Autor da notícia
+  input#newsCreatedBy.w3-input.w3-border(
+    type='text'
+    name='newsCreatedBy'
+    value=filterForm.newsCreatedBy
+    placeholder='Ex.: system'
+  )
+
+  label(for='newsPublishedFrom') Notícia publicada desde
+  input#newsPublishedFrom.w3-input.w3-border(
+    type='date'
+    name='newsPublishedFrom'
+    value=filterForm.newsPublishedFrom
+  )
+
+  label(for='newsPublishedTo') Notícia publicada até
+  input#newsPublishedTo.w3-input.w3-border(
+    type='date'
+    name='newsPublishedTo'
+    value=filterForm.newsPublishedTo
+  )
+
+.w3-section
+  h3 Ordenação e recência
+  label(for='recentLimit') Número de itens mais recentes
+  input#recentLimit.w3-input.w3-border(
+    type='number'
+    name='recentLimit'
+    min='1'
+    step='1'
+    value=filterForm.recentLimit
+    placeholder='Ex.: 10'
+  )
+  p.w3-small
+    | O limite de recência é aplicado às coleções base. Os dados dependentes acompanham os recursos selecionados.

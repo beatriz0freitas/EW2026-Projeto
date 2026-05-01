@@ -1,6 +1,4 @@
-# Plataforma de Gestao e Disponibilizacao de Recursos Educativos (EW2026)
-
-## TODO auditado e atualizado
+# Plataforma de Gestão e Disponibilização de Recursos Educativos (EW2026)
 
 Legenda:
 
@@ -8,108 +6,145 @@ Legenda:
 - ⚠️ Parcial / com ressalvas
 - ❌ Em falta
 
-Atualizado em: 2026-04-26
+Atualizado em: 2026-05-01
 
-Politica de configuracao (estado atual):
+Validação desta atualização:
 
-- nao sensiveis hardcoded no `docker-compose.yml`
-- segredos via interpolacao de ambiente (`JWT_SECRET`, `SESSION_SECRET`, `INTERNAL_SERVICE_TOKEN`)
-- `.env` e `.env.example` com foco em segredos
-
-Arquitetura de codigo (estado atual):
-
-- `nginx` exposto ao exterior e `gateway` apenas na rede Docker
-- API e Auth com separacao explicita de `routes` -> `controllers` -> `models`
-- logica de dominio no Auth extraida para `services/userService.js`
-- middleware de autenticacao consolidado em `services/auth/middleware/auth.js`
-- removido o modulo legado `services/auth/auth/auth.js`
+- ✅ Revisão do diff local e dos ficheiros novos/alterados.
+- ✅ Alterações agrupadas por categoria funcional.
+- ✅ Estado do backlog ajustado ao comportamento atualmente implementado.
+- ✅ Templates Pug compiladas sem erro.
+- ✅ JavaScript verificado com `node --check`.
+- ✅ `git diff --check` sem problemas de whitespace.
+- ✅ Docker Compose reconstruído e páginas `/`, `/resources` e CSS servidos com HTTP 200.
 
 ---
 
-## 1) Cobertura do enunciado (Proposta 1)
+## 1) Alterações efetuadas por categorias
+
+### Submissão e ingestão de recursos
+
+- ✅ Criado fluxo de submissão simples em `/resources/new/simple`.
+- ✅ Criado endpoint API `POST /api/oais/ingest/simples`.
+- ✅ A submissão simples recebe metadados e ficheiros soltos e gera automaticamente um SIP BagIt.
+- ✅ O SIP gerado contém `bagit.txt`, `manifest-sha256.txt`, `data/metadata.json` e os ficheiros do recurso.
+- ✅ O mesmo fluxo de ingestão OAIS é usado para SIP avançado e submissão simples.
+- ✅ Mantido o upload avançado de SIP ZIP para utilizadores que já têm um pacote preparado.
+
+### Validação, segurança e contratos
+
+- ✅ Validação reforçada de `metadata.resource` no ingest: `tipo`, `titulo`, `visibilidade`, `ano` e `hashtags`.
+- ✅ Normalização de caminhos no manifesto para impedir entradas fora de `data/`.
+- ✅ Mensagens de erro de SIP traduzidas para português.
+- ✅ Upload múltiplo em memória com limite de número de ficheiros e tamanho.
+- ✅ PATCH de recursos deixou de substituir cegamente a metadata completa e passa a atualizar campos controlados.
+- ✅ Interface mostra detalhes de erro vindos da API quando a submissão falha.
+- ⚠️ A validação de metadados ainda não é um schema completo por tipo de recurso.
+
+### Interface e experiência de utilização
+
+- ✅ Formulário guiado de submissão simples com campos de metadados, ficheiros e visibilidade.
+- ✅ Exemplos rápidos para dataset, artigo e slides.
+- ✅ Validação visual em tempo real no formulário de submissão.
+- ✅ Resumo lateral do estado dos metadados e dos ficheiros anexados.
+- ✅ Detalhe de recurso mostra subtítulo, descrição, hashtags, data de criação e ficheiros submetidos.
+- ✅ Listagem de recursos mantém filtros por tipo, ano, tema e hashtag.
+- ✅ Home, recursos, detalhe, posts e autenticação foram adaptados para uma UI mais apelativa.
+- ✅ Paleta visual revista para azul escuro, vermelho e branco, com maior contraste e hierarquia.
+
+### Documentação e apoio
+
+- ✅ Swagger da API atualizado com `/api/oais/ingest/simples`.
+- ✅ Swagger da interface atualizado com `/resources/new/simple`.
+- ✅ Criado `docs/submissao-recursos.md` com instruções de submissão.
+- ✅ Criado template `services/interface/public/templates/metadados.exemplo.json`.
+- ✅ Criado script/apoio de submissão em `scripts/submeter-recurso.js`.
+
+---
+
+## 2) Cobertura do enunciado (Proposta 1)
 
 ### Objetivos funcionais
 
-- ✅ Disponibilizar recursos educativos de varios tipos.
-- ✅ Permitir adicionar novos recursos (ingest SIP via API e UI).
-- ✅ Classificacao por tipo, ano, tema e hashtag (filtros e taxonomia).
+- ✅ Disponibilizar recursos educativos de vários tipos.
+- ✅ Permitir adicionar novos recursos por formulário simples ou SIP ZIP.
+- ✅ Classificação por tipo, ano, tema e hashtag.
 - ✅ Permitir posts sobre recursos, com associação por `resourceId`.
-- ✅ Permitir comentarios em posts.
-- ✅ Sistema de ranking por estrelas (1..5), com media e total.
+- ✅ Permitir comentários em posts.
+- ✅ Sistema de ranking por estrelas (1..5), com média e total.
 
 ### SIP / DIP (OAIS)
 
-- ✅ SIP em ZIP com validacao BagIt simplificada (bagit.txt, manifest-sha256.txt, data/, metadata.json).
-- ✅ Validacao de checksums SHA-256 e deteccao de zip-slip.
-- ✅ DIP disponivel por GET /api/oais/access/:id (na pratica, DIP = SIP, conforme enunciado inicial).
-- ✅ Controlo publico/privado no access (publico aberto; privado apenas admin ou produtor dono).
+- ✅ SIP em ZIP com validação BagIt simplificada.
+- ✅ Validação de checksums SHA-256 e deteção de zip-slip.
+- ✅ Geração automática de SIP a partir de metadados e ficheiros.
+- ✅ DIP disponível por GET `/api/oais/access/:id`.
+- ✅ Controlo público/privado no acesso ao DIP.
 
 ### Utilizadores e perfis
 
-- ✅ Autenticacao por username/email + password com JWT.
-- ✅ Perfis admin, produtor e consumidor implementados no backend.
-- ✅ Refresh token implementado (cookies no auth e renovacao server-side para a interface).
-- ✅ Registo publico força `role=consumidor` e ignora `role`/`nivel_acesso` enviados pelo cliente.
-- ⚠️ Autenticacoes alternativas (chave API, Google, Facebook) nao implementadas.
+- ✅ Autenticação por username/email + password com JWT.
+- ✅ Perfis admin, produtor e consumidor implementados.
+- ✅ Refresh token implementado.
+- ✅ Registo público força `role=consumidor`.
+- ⚠️ Autenticações alternativas (chave API, Google, Facebook) não implementadas.
 
-### Dados de utilizador
+### Metainformação de recursos
 
-- ✅ nome, email, filiacao, role, data_registo, ultimo_acesso, ativo, password (hash bcrypt).
-- ⚠️ Campo `nivel_acesso` existe, mas o controlo principal de permissao e por role.
+- ✅ `tipo`, `titulo`, `visibilidade`, produtor e data de registo existem no fluxo/modelo.
+- ✅ `subtitulo`, `descrição`, `tema`, `ano`, `hashtags` e `dataCriacao` são suportados na submissão simples.
+- ✅ `ano`, `visibilidade` e `hashtags` têm validação básica.
+- ⚠️ `subtitulo` e `dataCriacao` continuam opcionais.
+- ⚠️ Falta um contrato de metadados mais rigoroso por tipo de recurso.
 
-### Metainformacao de recursos
+### Notícias na página principal
 
-- ✅ tipo, titulo, visibilidade, produtor e data de registo no sistema existem no fluxo/modelo.
-- ⚠️ `subtitulo` e `dataCriacao` nao sao obrigatorios no ingest (ha recursos sem estes campos).
-- ⚠️ validacao de metadata ainda minima (obrigatorio apenas tipo, titulo, visibilidade).
+- ✅ Notícias manuais por admin.
+- ✅ Últimas notícias na home.
+- ✅ Notícias automáticas de nova submissão, top3 e total de utilizadores.
 
-### Noticias na pagina principal
+### Dataset para demonstração
 
-- ✅ Noticias manuais (admin) e listagem das ultimas 5 na home.
-- ✅ Noticias automaticas do sistema implementadas (nova submissao, top3 e total de utilizadores).
-
-### Dataset para demonstracao
-
-- ⚠️ Existem entradas reais no storage, mas ainda nao atinge "dezenas".
+- ⚠️ Existem entradas reais no storage, mas ainda não atinge "dezenas".
 
 ---
 
-## 2) Estado por servico
+## 3) Estado por serviço
 
-## API (services/api)
+### API (`services/api`)
 
 - ✅ Estrutura modular com `models`, `routes`, `controllers`, `middleware` e `lib`.
-- ✅ Swagger incorporado e disponivel em `/api/docs` (direto e via gateway).
+- ✅ Swagger disponível em `/api/docs`.
 - ✅ OAIS ingest e access operacionais.
+- ✅ Submissão simples em `/api/oais/ingest/simples`.
 - ✅ CRUD principal: resources, posts, comments, ratings e news.
-- ✅ Export/import de dados globais (GET `/api/export` e POST `/api/import`, admin).
-- ✅ Paginacao e respostas de erro utilitarias centralizadas em `lib/http.js`.
-- ✅ Endpoint `ratings/mine` implementado e montado.
-- ✅ Noticias de sistema com `tipo`, `eventType`, `dedupeKey`, `payload`.
-- ✅ Indice unico em `dedupeKey` para evitar duplicados em noticias de sistema.
-- ✅ Servico comum de publicacao de noticias com dedupe (`lib/newsPublisher.js`).
-- ✅ Endpoint interno POST `/api/news/system` com token interno de servico.
-- ✅ Evento automatico `system.new_submission` no fim do ingest com dedupe por `resourceId`.
-- ✅ Job diario para `system.top3` e `system.total_users`.
-- ✅ Contagem de downloads por recurso (`downloadCount`) no OAIS access para alimentar top3.
-- ✅ Config valida e exige `INTERNAL_SERVICE_TOKEN` no arranque.
-- ⚠️ PATCH de resources substitui metadata inteira; falta whitelist de campos permitidos.
+- ✅ Export/import de dados globais.
+- ✅ Paginação e respostas de erro centralizadas em `lib/http.js`.
+- ✅ Endpoint `ratings/mine` implementado.
+- ✅ Notícias de sistema com deduplicação.
+- ✅ Evento automático `system.new_submission` no fim do ingest.
+- ✅ Job para `system.top3` e `system.total_users`.
+- ✅ Contagem de downloads por recurso.
+- ✅ PATCH de resources atualiza campos permitidos da metadata.
 - ✅ GET `/api/posts` aceita filtro opcional `resourceId`.
-- ⚠️ Nao ha limite explicito em `express.json()` no API.
-- ⚠️ Falta hardening adicional (helmet/cors explicito no gateway/rate limit central).
+- ⚠️ Não há limite explícito em `express.json()` no API.
+- ⚠️ Falta hardening adicional (helmet/cors explícito no gateway/rate limit central).
 
-## Auth (services/auth)
+### Auth (`services/auth`)
 
-- ✅ Estrutura explicitamente separada: `routes` + `controllers` + `services` + `models` + `middleware` + `lib`.
-- ✅ Middleware de acesso consolidado em `middleware/auth.js`.
-- ✅ Removido modulo legado `auth/auth.js`.
-- ✅ JWT, refresh token, verify e gestao de utilizadores admin.
-- ✅ Swagger incorporado e disponivel em `/docs` (direto) e `/auth/docs` (via gateway).
-- ✅ Soft-delete de utilizador (`ativo=false`) em DELETE `/users/:id`.
-- ✅ Hash de password com bcrypt e ocultacao de password em `toJSON()`.
-- ✅ Validacao de body dedicada para login/campos obrigatorios.
-- ✅ app.js so faz `listen` apos conectar ao MongoDB.
+- ✅ Separação entre `routes`, `controllers`, `services`, `models`, `middleware` e `lib`.
+- ✅ Middleware de acesso consolidado.
+- ✅ JWT, refresh token, verify e gestão de utilizadores admin.
+- ✅ Swagger disponível em `/docs` e `/auth/docs`.
+- ✅ Soft-delete de utilizador (`ativo=false`).
+- ✅ Hash de password com bcrypt.
+- ✅ Validação dedicada para login/campos obrigatórios.
+- ✅ Arranque só após ligação ao MongoDB.
 - ✅ CORS configurado no auth.
+- ✅ Rate limiting no login.
+- ⚠️ Refresh token é devolvido também em JSON no login.
+- ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito.
+- ❌ Helmet não implementado.
 - ✅ Endpoints internos legados removidos para simplificar a API Auth.
 - ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
 - ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
@@ -154,58 +189,79 @@ Arquitetura de codigo (estado atual):
 - ✅ Home mostra lista resumida de recursos recentes.
 - ✅ Pagina de detalhe de recurso apresenta posts associados por `resourceId`.
 
+### Gateway (`services/gateway`)
+
+- ✅ Reverse proxy funcional: `/api`, `/auth` e interface.
+- ✅ Regras específicas para login, registo e logout da interface.
+- ✅ Handler central de 502.
+- ✅ `proxyTimeout` configurado.
+- ✅ Hub Swagger agregado em `/docs`.
+- ❌ CORS explícito no gateway não implementado.
+- ❌ Helmet no gateway não implementado.
+- ❌ Rate limiting global não implementado.
+- ⚠️ Sem circuit breaker.
+
+### Nginx (`infra/nginx`)
+
+- ✅ `nginx` exposto ao exterior e a encaminhar tráfego para o gateway.
+- ✅ Compressão `gzip` ativa.
+- ✅ Limite de upload definido na borda.
+- ✅ Gateway apenas acessível na rede Docker.
+
+### Interface (`services/interface`)
+
+- ✅ App Express com Pug, sessão, flash messages e rotas montadas.
+- ✅ Login/registo/logout funcionais.
+- ✅ Home com notícias recentes e recursos recentes.
+- ✅ Recursos: listagem, filtros, detalhe, submissão simples, upload SIP, download DIP e ratings.
+- ✅ Posts: listar, criar, detalhe, editar, apagar, comentar e remover comentário.
+- ✅ Admin: utilizadores, notícias, export e import de dump.
+- ✅ Interceptor 401 com renovação automática via refresh-server.
+- ✅ Detalhe de recurso apresenta posts associados por `resourceId`.
+- ✅ UI revista para uma experiência mais intuitiva, contrastante e consistente.
+
 ---
 
-## 3) Correcao explicita do checklist anterior
+## 4) Backlog prioritário para fecho
 
-Itens revistos e corrigidos no estado atual:
+### Hardening transversal
 
-- ✅ `ratings/mine` esta implementado e montado em `routes/ratings.js`.
-- ✅ Edicao de post na UI esta implementada (`/posts/:id/edit`).
-- ✅ Remocao de comentario na UI esta implementada.
-- ✅ Rotas duplicadas antigas `routes/oais/*` ja nao existem.
-- ✅ auth app.js nao arranca antes da BD; aguarda connect ao Mongo.
-- ✅ Separacao de responsabilidade no auth foi concluida (`services/userService.js` + `middleware/auth.js`).
-- ✅ `services/auth/auth/auth.js` foi removido.
-- ⚠️ CORS no auth ja existe, mas no gateway continua em falta.
-- ✅ Registo publico ja nao permite elevacao de privilegios via `role`/`nivel_acesso`.
+- ✅ Rate limit em POST `/auth/sessions`.
+- ❌ Adicionar helmet em auth/api/gateway.
+- ❌ Definir política CORS explícita no gateway.
+- ❌ Rever exposição de rotas internas no gateway.
 
----
+### Metadados e contratos
 
-## 4) Backlog prioritario para fecho
+- ✅ Validar `visibilidade`, `ano` e `hashtags`.
+- ✅ Evitar substituição total descontrolada de metadata no PATCH.
+- ⚠️ Criar schema completo de `metadata.json`.
+- ⚠️ Definir regras específicas por tipo de recurso.
 
-1. Hardening transversal:
-
-- ✅ Rate limit em POST /auth/sessions implementado.
-- Adicionar helmet em auth/api/gateway.
-- Definir politica CORS explicita no gateway.
-- Rever rotas internas para nao ficarem expostas no gateway (defesa em profundidade).
-
-2. Metadados e contratos:
-
-- Reforcar validacao do `metadata.json` (subtitulo opcional, dataCriacao/dataRegisto, enums visibilidade).
-- Limitar PATCH `/api/resources/:id` a campos permitidos.
-
-3. Experiencia funcional final:
+### Experiência funcional final
 
 - ✅ Mostrar recursos na home.
-- ✅ Mostrar posts associados no detalhe de recurso (`resourceId`).
+- ✅ Mostrar posts associados no detalhe de recurso.
 - ✅ Filtro GET `/api/posts?resourceId=...`.
+- ✅ Submissão simples para reduzir dependência de SIP manual.
+- ✅ Estilo visual mais apelativo e coerente.
 
-4. Qualidade de entrega:
+### Qualidade de entrega
 
-- Criar testes minimos (unitarios ingest + integracao auth/permissoes/OAIS).
-- Aumentar dataset para dezenas de entradas reais para demonstracao final.
+- ❌ Criar testes mínimos unitários para ingest e geração de SIP.
+- ❌ Criar testes de integração para auth/permissões/OAIS.
+- ⚠️ Aumentar dataset para dezenas de entradas reais.
 
 ---
 
 ## 5) Estado final resumido
 
-- Nucleo da Proposta 1: ✅ funcional.
+- Núcleo da Proposta 1: ✅ funcional.
 - OAIS ingest/access: ✅ funcional.
+- Submissão simples com SIP automático: ✅ funcional.
 - Auth com 3 perfis e controlo de acesso: ✅ funcional.
-- Noticias automaticas (nova submissao, top3, total utilizadores): ✅ funcional.
-- Interface end-to-end (auth, recursos, posts, admin): ✅ funcional.
-- Associacao de posts a recursos com navegacao por home/detalhe: ✅ funcional.
-- Seguranca de producao e testes automaticos: ❌ ainda em falta.
-- Dataset de demonstracao com dezenas de recursos: ⚠️ ainda insuficiente.
+- Notícias automáticas: ✅ funcional.
+- Interface end-to-end: ✅ funcional.
+- UI final com azul escuro, vermelho e branco: ✅ implementada.
+- Segurança de produção e testes automáticos: ❌ ainda em falta.
+- Dataset de demonstração com dezenas de recursos: ⚠️ ainda insuficiente.
