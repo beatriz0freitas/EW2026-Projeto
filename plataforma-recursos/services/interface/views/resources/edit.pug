@@ -3,11 +3,11 @@ extends ../layout
 block content
 	- const r = typeof form !== 'undefined' && form ? form : {}
 	- const t = typeof suggestions !== 'undefined' && suggestions ? suggestions : { tipos: [], anos: [], temas: [], hashtags: [] }
-	section.w3-card.w3-white.w3-padding.w3-margin-top
+	section.w3-card.w3-white.secao-card
 		h1 Editar recurso
 		p.w3-text-grey Atualiza a metainformação do recurso já armazenado na plataforma.
 
-		form(action=`/resources/${resource._id}/edit` method='post')
+		form.formulario-compacto(action=`/resources/${resource._id}/edit` method='post')
 			label(for='titulo') Título
 			input#titulo.w3-input(type='text' name='titulo' maxlength='200' required value=(r.titulo || ''))
 
@@ -43,6 +43,6 @@ block content
 				option(value='publico' selected=(r.visibilidade === 'publico')) publico
 				option(value='privado' selected=(r.visibilidade !== 'publico')) privado
 
-			p.w3-margin-top
-				button.w3-button.w3-teal(type='submit') Guardar alterações
+			.conteudo-acoes
+				button.w3-button.botao-principal(type='submit') Guardar alterações
 				a.w3-button.w3-border(href=`/resources/${resource._id}`) Cancelar

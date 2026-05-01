@@ -35,6 +35,9 @@ const config = {
 		authUrl: parseUrl(process.env.AUTH_URL || 'http://auth:16027', 'AUTH_URL'),
 		apiUrl: parseUrl(process.env.API_URL || 'http://api:16025', 'API_URL'),
 	},
+	dataTransfer: {
+		maxImportFileSizeBytes: 256 * 1024 * 1024,
+	},
 }
 
 module.exports = { config }

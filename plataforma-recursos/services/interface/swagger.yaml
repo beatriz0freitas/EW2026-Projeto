@@ -222,6 +222,48 @@ paths:
         '302':
           description: Redireciona para detalhe do recurso ou para o formulário em erro
 
+  /resources/new/simple:
+    post:
+      tags: [Resources]
+      summary: Submeter recurso por formulario simples
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [titulo, tipo, visibilidade, ficheiros]
+              properties:
+                titulo:
+                  type: string
+                subtitulo:
+                  type: string
+                tipo:
+                  type: string
+                ano:
+                  type: integer
+                tema:
+                  type: string
+                hashtags:
+                  type: string
+                dataCriacao:
+                  type: string
+                descricao:
+                  type: string
+                visibilidade:
+                  type: string
+                  enum: [publico, privado]
+                ficheiros:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '302':
+          description: Redireciona para detalhe do recurso ou para o formulario em erro
+
   /resources/{id}:
     get:
       tags: [Resources]
@@ -591,9 +633,81 @@ paths:
   /admin/export:
     get:
       tags: [Admin]
-      summary: Exportar dump de dados
+      summary: Exportar dump de dados com filtros opcionais
       security:
         - sessionCookie: []
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [all, resources, news]
+            default: all
+        - name: resourceType
+          in: query
+          schema:
+            type: string
+        - name: resourceYear
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 3000
+        - name: resourceTheme
+          in: query
+          schema:
+            type: string
+        - name: resourceHashtag
+          in: query
+          schema:
+            type: string
+        - name: resourceVisibility
+          in: query
+          schema:
+            type: string
+            enum: [publico, privado]
+        - name: resourceProducer
+          in: query
+          schema:
+            type: string
+        - name: resourceCreatedFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: resourceCreatedTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: newsType
+          in: query
+          schema:
+            type: string
+            enum: [manual, system]
+        - name: newsEventType
+          in: query
+          schema:
+            type: string
+        - name: newsCreatedBy
+          in: query
+          schema:
+            type: string
+        - name: newsPublishedFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: newsPublishedTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: recentLimit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
           description: Ficheiro JSON para download
@@ -608,7 +722,7 @@ paths:
   /admin/import:
     get:
       tags: [Admin]
-      summary: Formulário de importação de dump JSON
+      summary: Formulário de importação de dump com filtros
       security:
         - sessionCookie: []
       responses:
@@ -620,20 +734,63 @@ paths:
                 type: string
     post:
       tags: [Admin]
-      summary: Importar dump JSON
+      summary: Importar dump com filtros
       security:
         - sessionCookie: []
       requestBody:
         required: true
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
-              required: [dump]
               properties:
-                dump:
+                dumpFile:
                   type: string
-                  description: JSON completo no textarea
+                  format: binary
+                  description: Ficheiro JSON descarregado pela exportação, com recursos completos e ficheiros AIP.
+                dumpText:
+                  type: string
+                  description: Alternativa legada para colar manualmente o JSON do dump.
+                scope:
+                  type: string
+                  enum: [all, resources, news]
+                resourceType:
+                  type: string
+                resourceYear:
+                  type: integer
+                  minimum: 0
+                  maximum: 3000
+                resourceTheme:
+                  type: string
+                resourceHashtag:
+                  type: string
+                resourceVisibility:
+                  type: string
+                  enum: [publico, privado]
+                resourceProducer:
+                  type: string
+                resourceCreatedFrom:
+                  type: string
+                  format: date
+                resourceCreatedTo:
+                  type: string
+                  format: date
+                newsType:
+                  type: string
+                  enum: [manual, system]
+                newsEventType:
+                  type: string
+                newsCreatedBy:
+                  type: string
+                newsPublishedFrom:
+                  type: string
+                  format: date
+                newsPublishedTo:
+                  type: string
+                  format: date
+                recentLimit:
+                  type: integer
+                  minimum: 1
       responses:
         '200':
           description: HTML com relatório de importação

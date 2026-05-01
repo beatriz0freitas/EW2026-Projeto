@@ -5,7 +5,7 @@ block content
 	- const formAction = typeof action !== 'undefined' ? action : '/posts'
 	- const submitText = typeof submitLabel !== 'undefined' ? submitLabel : 'Publicar'
 	- const p = typeof post !== 'undefined' && post ? post : {}
-	section.w3-card.w3-white.w3-padding.w3-margin-top
+	section.w3-card.w3-white.secao-card.cartao-autenticacao
 		h1= headingText
 		form(action=formAction method='post')
 			label(for='titulo') Título
@@ -17,5 +17,4 @@ block content
 			label(for='resourceId') ID do recurso (opcional)
 			input#resourceId.w3-input(type='text' name='resourceId' value=(p.resourceId || ''))
 
-			button.w3-button.w3-teal(type='submit')= submitText
-
+			button.w3-button.botao-principal(type='submit')= submitText

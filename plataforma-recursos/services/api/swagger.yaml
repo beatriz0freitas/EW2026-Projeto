@@ -190,7 +190,7 @@ paths:
     post:
       tags: [OAIS]
       summary: Ingerir SIP (ZIP) e criar recurso
-      description: Requer autenticacao com role produtor ou admin.
+      description: Requer autenticacao com role produtor ou admin. Aceita apenas ficheiros .zip (ate 100 MB por omissao).
       security:
         - bearerAuth: []
       requestBody:
@@ -204,7 +204,14 @@ paths:
                 sip:
                   type: string
                   format: binary
+                  description: Ficheiro SIP em ZIP.
       responses:
+        '400':
+          description: Ficheiro em falta, demasiado grande ou com tipo invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '201':
           description: SIP ingerido com sucesso
           content:
@@ -226,6 +233,78 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: SIP invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/oais/ingest/simples:
+    post:
+      tags: [OAIS]
+      summary: Criar recurso por submissao simples
+      description: Recebe metadados e ficheiros soltos, gera automaticamente um SIP BagIt e executa o mesmo processo de ingestao.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [titulo, tipo, visibilidade, ficheiros]
+              properties:
+                titulo:
+                  type: string
+                subtitulo:
+                  type: string
+                tipo:
+                  type: string
+                ano:
+                  type: integer
+                tema:
+                  type: string
+                hashtags:
+                  type: string
+                  description: Lista separada por virgulas.
+                dataCriacao:
+                  type: string
+                descricao:
+                  type: string
+                visibilidade:
+                  type: string
+                  enum: [publico, privado]
+                ficheiros:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Recurso criado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  resourceId:
+                    type: string
+        '400':
+          description: Pedido invalido ou demasiado grande
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Nao autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Metadados ou SIP gerado invalidos
           content:
             application/json:
               schema:
@@ -755,9 +834,96 @@ paths:
   /api/export:
     get:
       tags: [Export]
-      summary: Exportar dados globais da plataforma (admin)
+      summary: Exportar dados da plataforma com filtros opcionais (admin)
       security:
         - bearerAuth: []
+      parameters:
+        - name: scope
+          in: query
+          description: Escopo a exportar.
+          schema:
+            type: string
+            enum: [all, resources, news]
+            default: all
+        - name: resourceType
+          in: query
+          description: Filtra recursos por metadata.resource.tipo quando o escopo inclui recursos.
+          schema:
+            type: string
+        - name: resourceYear
+          in: query
+          description: Filtra recursos por metadata.resource.ano.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 3000
+        - name: resourceTheme
+          in: query
+          description: Filtra recursos por metadata.resource.tema.
+          schema:
+            type: string
+        - name: resourceHashtag
+          in: query
+          description: Filtra recursos por hashtag.
+          schema:
+            type: string
+        - name: resourceVisibility
+          in: query
+          description: Filtra recursos por visibilidade.
+          schema:
+            type: string
+            enum: [publico, privado]
+        - name: resourceProducer
+          in: query
+          description: Filtra recursos pelo id do produtor.
+          schema:
+            type: string
+        - name: resourceCreatedFrom
+          in: query
+          description: Filtra recursos criados a partir desta data.
+          schema:
+            type: string
+            format: date
+        - name: resourceCreatedTo
+          in: query
+          description: Filtra recursos criados até esta data.
+          schema:
+            type: string
+            format: date
+        - name: newsType
+          in: query
+          description: Filtra noticias por tipo.
+          schema:
+            type: string
+            enum: [manual, system]
+        - name: newsEventType
+          in: query
+          description: Filtra noticias por eventType.
+          schema:
+            type: string
+        - name: newsCreatedBy
+          in: query
+          description: Filtra noticias por createdBy.
+          schema:
+            type: string
+        - name: newsPublishedFrom
+          in: query
+          description: Filtra noticias publicadas a partir desta data.
+          schema:
+            type: string
+            format: date
+        - name: newsPublishedTo
+          in: query
+          description: Filtra noticias publicadas até esta data.
+          schema:
+            type: string
+            format: date
+        - name: recentLimit
+          in: query
+          description: Limita recursos e noticias aos N registos mais recentes.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
           description: Dump JSON de dados da plataforma
@@ -770,7 +936,8 @@ paths:
   /api/import:
     post:
       tags: [Export]
-      summary: Importar dump JSON da plataforma (admin)
+      summary: Importar dump da plataforma com filtros opcionais (admin)
+      description: Aceita JSON no corpo ou multipart/form-data com dumpFile. Quando usado dumpFile, apenas ficheiros .json sao aceites (ate 256 MB por omissao).
       security:
         - bearerAuth: []
       requestBody:
@@ -780,7 +947,112 @@ paths:
             schema:
               type: object
               additionalProperties: true
+              properties:
+                dump:
+                  type: object
+                  additionalProperties: true
+                  description: Dump exportado previamente. O formato bruto legado tambem continua aceite.
+                filters:
+                  type: object
+                  properties:
+                    scope:
+                      type: string
+                      enum: [all, resources, news]
+                    resourceType:
+                      type: string
+                    resourceYear:
+                      type: integer
+                      minimum: 0
+                      maximum: 3000
+                    resourceTheme:
+                      type: string
+                    resourceHashtag:
+                      type: string
+                    resourceVisibility:
+                      type: string
+                      enum: [publico, privado]
+                    resourceProducer:
+                      type: string
+                    resourceCreatedFrom:
+                      type: string
+                      format: date
+                    resourceCreatedTo:
+                      type: string
+                      format: date
+                    newsType:
+                      type: string
+                      enum: [manual, system]
+                    newsEventType:
+                      type: string
+                    newsCreatedBy:
+                      type: string
+                    newsPublishedFrom:
+                      type: string
+                      format: date
+                    newsPublishedTo:
+                      type: string
+                      format: date
+                    recentLimit:
+                      type: integer
+                      minimum: 1
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                dumpFile:
+                  type: string
+                  format: binary
+                  description: Ficheiro JSON de dump exportado previamente, incluindo recursos completos e ficheiros AIP.
+                dump:
+                  type: string
+                  description: Alternativa legada para colar JSON em texto.
+                scope:
+                  type: string
+                  enum: [all, resources, news]
+                resourceType:
+                  type: string
+                resourceYear:
+                  type: integer
+                  minimum: 0
+                  maximum: 3000
+                resourceTheme:
+                  type: string
+                resourceHashtag:
+                  type: string
+                resourceVisibility:
+                  type: string
+                  enum: [publico, privado]
+                resourceProducer:
+                  type: string
+                resourceCreatedFrom:
+                  type: string
+                  format: date
+                resourceCreatedTo:
+                  type: string
+                  format: date
+                newsType:
+                  type: string
+                  enum: [manual, system]
+                newsEventType:
+                  type: string
+                newsCreatedBy:
+                  type: string
+                newsPublishedFrom:
+                  type: string
+                  format: date
+                newsPublishedTo:
+                  type: string
+                  format: date
+                recentLimit:
+                  type: integer
+                  minimum: 1
       responses:
+        '400':
+          description: Dump invalido, demasiado grande ou com tipo de ficheiro invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '200':
           description: Importacao concluida
         '207':

@@ -1,0 +1,34 @@
+{
+  "users": [
+    {
+      "_id": "admin.teste",
+      "nome": "Admin Teste",
+      "email": "admin@teste.com",
+      "password": "$2b$10$P5T/fhnC5/3kdboLcpqaZezLi9qH.qUTTbNWD2hUtBd.yuiG.7//O",
+      "role": "admin",
+      "filiacao": "Universidade do Minho",
+      "nivel_acesso": 10,
+      "ativo": true
+    },
+    {
+      "_id": "produtor.teste",
+      "nome": "Produtor Teste",
+      "email": "produtor@teste.com",
+      "password": "$2b$10$NfAlYRXjPY0HPHgdmnood.vHltuLf5m0mg9eoFX/eHbqoK3Aarufa",
+      "role": "produtor",
+      "filiacao": "Universidade do Minho",
+      "nivel_acesso": 6,
+      "ativo": true
+    },
+    {
+      "_id": "consumidor.teste",
+      "nome": "Consumidor Teste",
+      "email": "consumidor@teste.com",
+      "password": "$2b$10$Z4/Ue3/asrDb5tXkwWk4POkAZENmqonBteWmIKN/a4Xrp7UT0DLBu",
+      "role": "consumidor",
+      "filiacao": "Universidade do Minho",
+      "nivel_acesso": 1,
+      "ativo": true
+    }
+  ]
+}

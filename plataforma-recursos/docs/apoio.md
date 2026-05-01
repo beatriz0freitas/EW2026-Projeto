@@ -1,925 +1,813 @@
-# Apoio de Implementação e Decisão (guia prático)
+# Apoio de Implementação e Decisão
 
-> **Objetivo:** consulta direta para dúvidas de implementação, arquitetura e decisões.
+> Objetivo: resumo executivo de como a solução cumpre o enunciado.
 >
-> **Atualizado em:** 2026-04-25
+> Atualizado em: 2026-04-28
 
-## Decisões vigentes (resumo)
+## 1) O que o enunciado pede
 
-- Arquitetura: `nginx` (borda externa), `gateway` (routing de aplicação), `auth` (identidade), `api` (domínio), `interface` (UI).
-- Segurança: autorização sempre no backend; UI apenas apoia UX.
-- Padrão de código: rotas pequenas + helpers partilhados + validação precoce + erros consistentes.
-- Configuração: `docker-compose.yml` com variáveis não sensíveis hardcoded por serviço; segredos por interpolação (`${JWT_SECRET}`, `${SESSION_SECRET}`, `${INTERNAL_SERVICE_TOKEN}`).
-- Ficheiros de segredos: `.env` e `.env.example` mantêm apenas segredos necessários no estado atual.
-- Leitura de configuração centralizada por serviço em `lib/config.js` (API/Auth/Interface/Gateway).
-- Resiliência: `api` e `auth` arrancam apenas após ligação ao MongoDB; falha de ligação termina o processo.
-- Estado de autenticação: access token + refresh token, com renovação automática na interface em pedidos à API.
-- Integração interna entre serviços protegida por token interno (`INTERNAL_SERVICE_TOKEN`) para operações de sistema.
-- Documentação técnica incorporada por Swagger em `api` e `auth`, com visualização direta e também via gateway.
+Os pontos essenciais a cobrir são:
 
-## Pendentes prioritários (implementação)
+- fluxo OAIS: Producer → SIP → Ingest → AIP → Access → DIP → Consumer;
+- gestão de recursos educativos com pesquisa, detalhe e disponibilização;
+- autenticação e perfis `admin`, `produtor` e `consumidor`;
+- criação de posts, comentários e ratings sobre recursos;
+- controlo de acesso a recursos públicos e privados;
+- interface web para usar o sistema de ponta a ponta;
+- Swagger/documentação para facilitar teste e validação.
 
-- Hardening adicional: `helmet`, rate limit login e auditoria de CORS por ambiente.
-- Testes mínimos unitários e integração (API/Auth/Interface).
-- Cobertura adicional de validação/sanitização de inputs em rotas menos críticas.
+## 2) Estado atual da solução
 
-**Notas recentes (2026-04-25):**
+### Arquitetura
 
-- Fluxo OAIS fechado na UI: upload SIP (produtor/admin) e download DIP (público e privado com autorização).
-- Gateway encaminha páginas HTML de auth (`/auth/login`, `/auth/register`, `/auth/logout`) para a Interface; endpoints JSON continuam no serviço Auth.
-- `nginx` fica exposto ao exterior e reencaminha todo o tráfego para o `gateway`, mantendo o gateway apenas na rede Docker.
-- API aceita token por header, cookie e query string (compatibilidade).
-- Sessão web da interface implementada e configurável por `SESSION_COOKIE_NAME`.
-- API e Auth já publicam/consomem notícias de sistema (submissões, utilizadores e jobs diários) usando token interno.
-- Swagger disponível nos serviços e acessível pelo gateway para testes funcionais rápidos.
-
-## Swagger (estado atual)
-
-- Hub agregado (seleção API/Auth/Interface): `http://localhost:16020/docs`
+- A solução está dividida em `gateway`, `auth`, `api` e `interface`.
+- O `nginx` fica exposto ao exterior e encaminha para o `gateway`.
+- O `gateway` faz o routing funcional para API, Auth e Interface.
 
 ### API
 
-- Especificação: `services/api/swagger.yaml`
-- UI via gateway: `http://localhost:16020/api/docs`
+- O serviço API já cobre ingestão OAIS, acesso, recursos, posts, comentários, ratings e notícias.
+- O ingest aceita SIP em ZIP com validações básicas de estrutura e integridade.
+- O access devolve DIP e respeita visibilidade pública/privada.
+- A API expõe Swagger em `/api/docs`.
 
 ### Auth
 
-- Especificação: `services/auth/swagger.yaml`
-- UI via gateway: `http://localhost:16020/auth/docs`
+- O serviço Auth trata registo, login, refresh token, verificação de sessão e gestão de utilizadores.
+- Os perfis `admin`, `produtor` e `consumidor` já existem no backend.
+- A password é guardada com hash e não é devolvida nas respostas.
+- O Auth expõe Swagger em `/docs`.
 
 ### Interface
 
-- Especificação: `services/interface/swagger.yaml`
-- UI via gateway: `http://localhost:16020/interface/docs`
+- A Interface permite login, registo, consulta de recursos, upload SIP, download DIP, posts, comentários e administração básica.
+- A renovação de token é tratada de forma automática quando necessário.
+- A Interface expõe Swagger em `/interface/docs`.
 
-### Utilização prática
+### 3) Decisões tomadas e respetiva justificação
 
-- Para demo local com gateway, usar:
-  - `http://localhost:16020/docs`
-  - `http://localhost:16020/api/docs`
-  - `http://localhost:16020/auth/docs`
-  - `http://localhost:16020/interface/docs`
+### Separação por serviços
 
-Observação: os endpoints em Swagger que exigem autenticação devem receber token válido (`Bearer`) para testes em rotas protegidas.
+Escolhi separar a solução em serviços porque reduz acoplamento, facilita manutenção e torna o projeto mais claro para demonstrar. Em vez de um monólito grande, cada componente tem uma responsabilidade simples e bem definida.
 
-## Base detalhada (contexto, fundamentação e especificações)
+### `nginx` + `gateway`
 
-## 2) Princípios orientadores adotados
+Mantive o `nginx` como entrada externa e o `gateway` como ponto lógico da aplicação. Isto permite ter uma borda técnica mais limpa, sem perder o routing já implementado e sem espalhar regras por vários sítios.
 
-### P1. Alinhamento explícito com OAIS
+### MongoDB + storage em disco
 
-- O enunciado define o fluxo `Producer -> SIP -> Ingest -> AIP -> Access -> DIP -> Consumer`.
-- Decisão: mapear módulos OAIS no serviço API e manter o fluxo observável no código.
-- Evidência: [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js), [services/api/oais/ingest/sip.js](../services/api/oais/ingest/sip.js), [services/api/oais/access/index.js](../services/api/oais/access/index.js), [services/api/oais/access/dip.js](../services/api/oais/access/dip.js)
+Usei MongoDB para metadados e entidades do domínio, e disco para os ficheiros AIP. Esta divisão é mais natural para OAIS: os dados descritivos ficam pesquisáveis e o conteúdo arquivístico fica guardado como ficheiro.
 
-### P2. Separação de responsabilidades por serviço
+### DIP inicial igual ao SIP
 
-- Decisão: separar `gateway`, `auth`, `api` e `interface`.
-- Fundamentação: reduz acoplamento, facilita manutenção e teste isolado.
-- Evidência: [services/gateway/app.js](../services/gateway/app.js), [services/auth/app.js](../services/auth/app.js), [services/api/app.js](../services/api/app.js), [services/interface/app.js](../services/interface/app.js)
+Na fase atual, o DIP é devolvido sem transformação complexa. Foi a opção mais simples e alinhada com o enunciado, que permite começar com `DIP = SIP`. Assim cumpro o requisito sem introduzir complexidade desnecessária.
 
-### P3. Segurança por defeito
+### Segurança no backend
 
-- Decisão: aplicar autenticação/autorização no backend para operações críticas.
-- Fundamentação: regras de acesso do enunciado (admin/produtor/consumidor) + princípio do menor privilégio.
-- Evidência: [services/auth/auth/auth.js](../services/auth/auth/auth.js), [services/api/middleware/auth.js](../services/api/middleware/auth.js)
+As decisões de acesso são validadas no backend e não apenas na interface. Isto evita depender da UI para segurança e garante que o sistema continua protegido mesmo com pedidos diretos à API.
 
-### P4. Soluções simples primeiro (MVP sólido)
+### JWT + refresh token
 
-- Decisão: implementar primeiro o essencial funcional (auth, ingest, access, CRUD principal), deixando otimizações para fases seguintes.
-- Fundamentação: cumprir requisitos nucleares com menor risco.
-- Evidência: [services/api/routes/index.js](../services/api/routes/index.js), [services/auth/routes/index.js](../services/auth/routes/index.js)
+Optei por JWT com refresh token porque funciona bem numa arquitetura distribuída e evita sessão pesada no servidor. A interface consegue renovar automaticamente o acesso sem obrigar o utilizador a voltar a autenticar-se a cada expiração.
 
-### P5. Evolução incremental e rastreável
+## 4) O que não foi escolhido e porquê
 
-- Decisão: manter estado no `todo.md` e documentação de decisões.
-- Fundamentação: facilita auditoria técnica, apresentação e defesa do projeto.
-- Evidência: [docs/todo.md](todo.md), [docs/apoio.md](apoio.md)
+- Não foi escolhida uma arquitetura monolítica porque dificultaria evolução e depuração.
+- Não foi colocada toda a lógica de segurança na interface porque isso seria frágil e facilmente contornável.
+- Não foi feita uma transformação complexa do DIP nesta fase porque aumentaria o custo sem trazer valor imediato ao núcleo funcional.
+- Não foram introduzidos provedores externos de autenticação porque o enunciado pode ser cumprido com autenticação local simples e direta.
+- Não foram adicionadas otimizações prematuras ou padrões excessivos porque o foco foi cumprir o essencial com estabilidade.
+
+## 5) Limitações atuais
+
+- faltam testes mínimos de unidade e integração;
+- faltam algumas medidas de hardening transversal;
+- a validação de metadados ainda pode ser reforçada;
+- o dataset de demonstração ainda pode crescer.
 
 ---
 
-## 3) Decisões já efetuadas (com fundamentação)
+# Guia Detalhado de Implementação e Decisões
 
-## 3.1 Arquitetura e infraestrutura
+## 1) Upload/Download de Pacotes (SIP/DIP)
 
-### D-01 — Arquitetura por microserviços (`gateway`, `auth`, `api`, `interface`)
+### Upload (SIP)
 
-**Estado:** Aprovada e implementada.
+**Fluxo:**
 
-**Decisão:** isolar funções por serviço.
+1. O cliente faz POST `/api/oais/ingest` com um ficheiro ZIP.
+2. O serviço API valida se é um ZIP válido.
+3. O ZIP é descompactado para uma pasta temporária em memória.
+4. O SIP é validado (estrutura BagIt simplificada, checksums).
+5. Se válido, todo o conteúdo é guardado em disco em `data/aip/<resourceId>/`.
+6. Um registo é criado em MongoDB com referência ao caminho AIP e metadados.
 
-**Fundamentação:**
+**Validações de SIP:**
 
-- O enunciado exige autenticação, operações de domínio e interface web; separar responsabilidades torna o sistema mais claro.
-- O README já formaliza este fluxo: cliente passa pelo gateway para interface/api/auth.
+- Ficheiro tem de ser um ZIP.
+- Estrutura obrigatória: `bagit.txt`, `manifest-sha256.txt`, `data/`, `metadata.json`.
+- `metadata.json` tem de conter `resource.tipo`, `resource.titulo`, `resource.visibilidade`.
+- Os checksums em `manifest-sha256.txt` são verificados contra os ficheiros em `data/`.
+- Proteção contra "zip-slip" (caminhos maliciosos dentro do ZIP).
 
-**Impacto positivo:**
+**Permissões:**
 
-- Deploy e debug por serviço;
-- Limites claros de domínio;
-- Menor risco de regressões cruzadas.
+- Apenas utilizadores com role `produtor` ou `admin` podem fazer upload.
+- O ID do produtor fica registado no campo `produtor` do recurso.
 
-**Evidência no código:** [docker-compose.yml](../docker-compose.yml), [services/](../services)
+**Código relevante:**
 
----
+- [services/api/oais/ingest/sip.js](../services/api/oais/ingest/sip.js): validação estrutural
+- [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js): rota POST
 
-### D-02 — `nginx` como borda externa e `gateway` como entrada lógica
+### Download (DIP)
 
-**Estado:** Aprovada e implementada.
+**Fluxo:**
 
-**Decisão:** expor externamente só o `nginx`; manter o `gateway` como ponto de entrada lógico para Interface/API/Auth.
+1. Cliente faz GET `/api/oais/access/<resourceId>`.
+2. O serviço verifica se o recurso existe.
+3. Verifica visibilidade:
+   - Se `publico`: qualquer pessoa pode descarregar.
+   - Se `privado`: só o produtor que submeteu ou um admin.
+4. Devolve o ficheiro ZIP guardado em disco.
+5. Incrementa o contador `downloadCount` no MongoDB.
 
-**Fundamentação:**
+**Dados devolvidos:**
 
-- Preserva a lógica de routing já implementada no `gateway`, incluindo o conflito `/auth/*`;
-- Coloca uma borda HTTP própria para HTTPS, compressão, limites de upload e futuras políticas transversais.
+- O `Content-Disposition` define o nome do ficheiro.
+- O `Content-Type` é `application/zip`.
+- Na fase atual, DIP = SIP (sem transformação).
 
-**Impacto positivo:**
+**Código relevante:**
 
-- Menor superfície de ataque externa;
-- Configuração de cliente simplificada;
-- Menor custo de mudança do que mover todo o routing para `nginx`.
-
-**Evidência no código:** [docker-compose.yml](../docker-compose.yml), [infra/nginx/default.conf](../infra/nginx/default.conf), [services/gateway/app.js](../services/gateway/app.js)
-
----
-
-### D-03 — Persistência híbrida para OAIS (MongoDB + storage em disco)
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:**
-
-- metadados e entidades de negócio em MongoDB;
-- binários AIP em `data/aip/`.
-
-**Fundamentação:**
-
-- OAIS separa claramente dados descritivos de conteúdo arquivístico;
-- simplifica pesquisas (DB) e gestão de ficheiros (storage).
-
-**Impacto positivo:**
-
-- consultas rápidas por metadados;
-- extração e entrega de DIP sem sobrecarga da DB.
-
-**Evidência no código:** [services/api/models/Resource.js](../services/api/models/Resource.js), [data/aip/](../data/aip/), [services/api/oais/access/dip.js](../services/api/oais/access/dip.js)
+- [services/api/oais/access/dip.js](../services/api/oais/access/dip.js): busca o ficheiro
+- [services/api/oais/access/index.js](../services/api/oais/access/index.js): rota GET
 
 ---
 
-## 3.2 Autenticação e autorização
+## 2) Operações CRUD de Recursos
 
-### D-04 — Modelo de utilizador com perfis `admin`, `produtor`, `consumidor`
+### CREATE (via Upload SIP)
 
-**Estado:** Aprovada e implementada.
+O recurso é criado automaticamente durante o ingest do SIP
 
-**Decisão:** seguir os três níveis mínimos do enunciado.
+### READ
 
-**Fundamentação:**
+**GET /api/resources**
 
-- Requisito explícito da Proposta 1.
-- Permite traduzir regras de negócio para permissões técnicas.
+- Lista recursos com paginação.
+- Suporta filtros opcionais:
+  - `ano`: ano de produção do recurso.
+  - `page` / `limit`: paginação.
+- Apenas mostra recursos públicos ou recursos privados do utilizador autenticado.
+- Responde com `{ ok: true, data: [...], total, page, limit }`.
 
-**Impacto positivo:**
+**GET /api/resources/:id**
 
-- política de acesso explícita;
-- controlo fino de operações de gestão.
+- Devolve um recurso completo (metadados, referências AIP).
+- Valida visibilidade antes de devolver.
 
-**Evidência no código:** [services/auth/models/User.js](../services/auth/models/User.js)
+### UPDATE (PATCH)
 
----
+**PATCH /api/resources/:id**
 
-### D-05 — Password com hash e não exposição em respostas
+- Permite editar metadados de um recurso.
+- Requer role `produtor` ou `admin`.
+- Só o produtor que criou ou um admin podem editar.
+- Atualiza o campo `updatedAt`.
 
-**Estado:** Aprovada e implementada.
+### DELETE
 
-**Decisão:** hash automático (`bcrypt`) e remoção da password em serialização.
+**DELETE /api/resources/:id**
 
-**Fundamentação:**
+- Remove o registo de MongoDB.
+- Remove a pasta AIP em disco (`data/aip/<resourceId>/`).
+- Requer role `produtor` ou `admin`.
+- Só o produtor ou admin podem apagar.
 
-- Boa prática fundamental: nunca guardar nem devolver password em texto plano.
+**Permissões gerais (CRUD):**
 
-**Impacto positivo:**
-
-- proteção de credenciais;
-- redução do impacto de fuga de dados.
-
-**Evidência no código:** [services/auth/models/User.js](../services/auth/models/User.js)
-
----
-
-### D-06 — JWT para sessão de API
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:**
-
-- login gera JWT;
-- endpoint de verificação usado por outros serviços;
-- endpoints de sessão (`/auth/sessions/*`) para verificação e renovação de token.
-
-**Fundamentação:**
-
-- Compatível com arquitetura distribuída;
-- simplifica autenticação entre serviços.
-
-**Impacto positivo:**
-
-- integra facilmente com gateway/interface/api;
-- baixa dependência de sessão stateful central.
-
-**Evidência no código:** [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/routes/index.js](../services/auth/routes/index.js), [services/api/middleware/auth.js](../services/api/middleware/auth.js)
+```
+consumidor   → ler públicos
+produtor    → ler públicos + ler/criar próprios privados, editar próprios, apagar próprios
+admin       → ler tudo, editar tudo, apagar tudo
+```
 
 ---
 
-### D-07 — `JWT_SECRET` obrigatório (sem fallback inseguro)
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:** impedir arranque do `auth` sem `JWT_SECRET` configurado.
-
-**Fundamentação:**
-
-- Segurança por defeito: fallback hardcoded fragiliza todo o sistema.
-
-**Impacto positivo:**
-
-- evita configuração insegura em produção/demonstração.
-
-**Evidência no código:** [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/routes/index.js](../services/auth/routes/index.js), [services/auth/auth/auth.js](../services/auth/auth/auth.js)
-
----
-
-### D-08 — Rotas admin protegidas com middleware dedicado
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:** usar `requireAuth` + `requireAdmin` para operações administrativas.
-
-**Fundamentação:**
-
-- requisito de perfis do enunciado;
-- menor privilégio por endpoint.
-
-**Impacto positivo:**
-
-- garante enforcement de regras de acesso no backend (não só na UI).
-
-**Evidência no código:** [services/auth/routes/users.js](../services/auth/routes/users.js), [services/auth/auth/auth.js](../services/auth/auth/auth.js)
-
----
-
-## 3.3 OAIS (Ingest, Access, DIP)
-
-### D-09 — Ingest SIP com validações estruturais e de integridade
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:** validar ZIP, estrutura BagIt simplificada, metadata e checksums.
-
-**Fundamentação:**
-
-- Enunciado exige verificação contra manifesto e validações adicionais;
-- base BagIt indicada no PDF.
-
-**Impacto positivo:**
-
-- evita entrada de pacotes corrompidos ou malformados;
-- melhora confiança do repositório.
-
-**Evidência no código:** [services/api/oais/ingest/sip.js](../services/api/oais/ingest/sip.js), [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js)
-
----
-
-### D-10 — DIP inicial igual ao SIP (DIP = SIP)
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:** no access, devolver pacote equivalente ao armazenado, sem transformação complexa inicial.
-
-**Fundamentação:**
-
-- Enunciado permite explicitamente “numa fase inicial, DIP = SIP”.
-
-**Impacto positivo:**
-
-- reduz complexidade;
-- entrega valor cedo com conformidade ao enunciado.
-
-**Evidência no código:** [services/api/oais/access/dip.js](../services/api/oais/access/dip.js), [services/api/oais/access/index.js](../services/api/oais/access/index.js)
-
----
-
-### D-11 — Controlo de visibilidade no acesso a recursos
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:**
-
-- recurso público: download aberto;
-- recurso privado: apenas admin ou produtor dono.
-
-**Fundamentação:**
-
-- requisito de visibilidade da Proposta 1;
-- coerência com perfis de utilizador.
-
-**Impacto positivo:**
-
-- proteção efetiva de recursos privados;
-- comportamento previsível para utilizadores.
-
-**Evidência no código:** [services/api/oais/access/index.js](../services/api/oais/access/index.js), [services/api/models/Resource.js](../services/api/models/Resource.js)
-
----
-
-## 3.4 Modelo de domínio e API de negócio
-
-### D-12 — Entidades de domínio mínimas da Proposta 1
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:** modelos para `Resource`, `Post`, `Comment`, `Rating` e `NewsItem`.
-
-**Fundamentação:**
-
-- cobre integralmente os objetivos funcionais descritos no enunciado.
-
-**Impacto positivo:**
-
-- base estável para interface e testes;
-- sem overengineering.
-
-**Evidência no código:** [services/api/models/Resource.js](../services/api/models/Resource.js), [services/api/models/Post.js](../services/api/models/Post.js), [services/api/models/Comment.js](../services/api/models/Comment.js), [services/api/models/Rating.js](../services/api/models/Rating.js), [services/api/models/NewsItem.js](../services/api/models/NewsItem.js)
-
----
-
-### D-13 — Ratings com 1 voto por utilizador/recurso
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:** índice único `(resourceId, userId)` e atualização do voto existente.
-
-**Fundamentação:**
-
-- boa prática para evitar inflação artificial de rankings;
-- mantém ranking justo e simples de explicar.
-
-**Impacto positivo:**
-
-- dados consistentes;
-- cálculo de média fiável.
-
-**Evidência no código:** [services/api/models/Rating.js](../services/api/models/Rating.js), [services/api/routes/ratings.js](../services/api/routes/ratings.js)
-
----
-
-### D-14 — CRUD principal com regras de posse e perfil
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:**
-
-- edição/remoção de recursos e posts restrita a admin ou dono;
-- comentários removíveis por dono ou admin.
-
-**Fundamentação:**
-
-- princípio de autorização contextual (perfil + propriedade do recurso).
-
-**Impacto positivo:**
-
-- reduz ações indevidas;
-- corresponde ao comportamento esperado em plataformas colaborativas.
-
-**Evidência no código:** [services/api/routes/resources.js](../services/api/routes/resources.js), [services/api/routes/posts.js](../services/api/routes/posts.js), [services/api/routes/comments.js](../services/api/routes/comments.js)
-
----
-
-### D-15 — Paginação nas listagens principais
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:** `page` + `limit` em listagens de recursos/posts/comentários/notícias.
-
-**Fundamentação:**
-
-- boa prática de performance e previsibilidade da API.
-
-**Impacto positivo:**
-
-- evita respostas excessivas;
-- UX melhor na interface.
-
-**Evidência no código:** [services/api/routes/resources.js](../services/api/routes/resources.js), [services/api/routes/posts.js](../services/api/routes/posts.js), [services/api/routes/comments.js](../services/api/routes/comments.js), [services/api/routes/news.js](../services/api/routes/news.js)
-
----
-
-## 3.5 Qualidade técnica e governança do código
-
-### D-16 — Atualização contínua do backlog (`todo.md`)
-
-**Estado:** Aprovada e implementada.
-
-**Decisão:** manter rastreio de concluído/parcial/pendente.
-
-**Fundamentação:**
-
-- prática de gestão incremental e transparência de estado.
-
-**Impacto positivo:**
-
-- facilita coordenação e priorização.
-
-**Evidência no código:** [todo.md](../../todo.md)
-
----
-
-## 4) Decisões pendentes (ainda por fechar)
-
-## 4.1 Interface
-
-### PEND-01 — Sessão web na interface
-
-**Estado:** Por implementar.
-
-**Decidir entre:**
-
-- sessão com cookie HTTP-only;
-- ou armazenamento de JWT em cookie de sessão da interface.
-
-**Recomendação:** cookie HTTP-only + proteção CSRF nas rotas de escrita da interface.
-
-**Ficheiros-alvo:** [services/interface/app.js](../services/interface/app.js), [services/interface/routes/auth.js](../services/interface/routes/auth.js)
-
----
-
-### PEND-02 — Layout e experiência de utilização
-
-**Estado:** Por implementar.
-
-**Recomendação:**
-
-- layout base único;
-- mensagens de feedback (erro/sucesso);
-- guardas visuais por perfil sem depender apenas do frontend.
-
-**Ficheiros-alvo:** [services/interface/views/layout.pug](../services/interface/views/layout.pug), [services/interface/routes/index.js](../services/interface/routes/index.js)
-
----
-
-## 4.2 Segurança
-
-### PEND-03 — Rate limiting em login
-
-**Estado:** Por implementar.
-
-**Justificação:** mitigar brute force.
-
-**Ficheiro-alvo:** [services/auth/routes/sessions.js](../services/auth/routes/sessions.js)
-
-### PEND-04 — Validação e sanitização transversal
-
-**Estado:** Por implementar.
-
-**Justificação:** evitar payloads inválidos e reduzir risco de injeções/XSS persistente.
-
-**Ficheiros-alvo:** [services/api/routes/](../services/api/routes), [services/auth/routes/](../services/auth/routes)
-
-### PEND-05 — Headers de segurança e CORS no gateway
-
-**Estado:** Por implementar.
-
-**Justificação:** baseline de hardening para ambiente web.
-
-**Ficheiro-alvo:** [services/gateway/app.js](../services/gateway/app.js)
-
----
-
-## 4.3 Testes
-
-### PEND-06 — Testes unitários do ingest
-
-**Estado:** Por implementar.
-
-### PEND-07 — Testes de integração de permissões
-
-**Estado:** Por implementar.
-
-**Justificação comum:** garantir que regras de acesso e OAIS não regressam com alterações futuras.
-
-**Ficheiros-alvo:** [services/api/oais/ingest/sip.js](../services/api/oais/ingest/sip.js), [services/api/oais/access/index.js](../services/api/oais/access/index.js), [services/auth/routes/users.js](../services/auth/routes/users.js)
-
----
-
-## 5) Rastreabilidade requisito -> decisão
-
-| Requisito do enunciado                               | Decisão associada            | Estado |
-| ---------------------------------------------------- | ----------------------------- | ------ |
-| OAIS com SIP/AIP/DIP                                 | D-09, D-10, D-11              | ✅     |
-| Importação e exportação do pacote                | D-09, D-10                    | ✅     |
-| Perfis Admin/Produtor/Consumidor                     | D-04, D-08, D-14              | ✅     |
-| Recursos classificados por taxonomia/hashtags        | D-12                          | ✅     |
-| Posts e comentários                                 | D-12, D-14                    | ✅     |
-| Ranking por estrelas                                 | D-13                          | ✅     |
-| Notícias na página principal                       | D-12 (API) / PEND-02 (UI)     | ⚠️   |
-| Plataforma completa utilizável por utilizador final | PEND-01, PEND-02, PEND-03..07 | ❌     |
-
----
-
-## 7) Especificação detalhada das rotas implementadas
-
-Esta secção descreve as rotas **efetivamente disponíveis** no estado atual do código.
-
-## 7.1 Gateway (entrada única)
-
-Base pública: `/*`
-
-**Evidência:** [services/gateway/app.js](../services/gateway/app.js), [services/gateway/routes/index.js](../services/gateway/routes/index.js)
-
-- `GET /health` → health do gateway (`{ status: 'ok' }`).
-- `/*` encaminhado por proxy:
-  - `/api/*` → serviço API;
-  - `/auth/*` → serviço Auth;
-  - restantes caminhos → serviço Interface.
-
-## 7.2 Serviço Auth
-
-Base no gateway: `/auth/*`
-
-**Evidência:** [services/auth/routes/index.js](../services/auth/routes/index.js), [services/auth/routes/users.js](../services/auth/routes/users.js), [services/auth/routes/sessions.js](../services/auth/routes/sessions.js), [services/auth/auth/auth.js](../services/auth/auth/auth.js)
-
-### 7.2.1 `POST /auth/register`
-
-- **Descrição:** registo público de utilizador.
-- **Auth:** não.
-- **Body mínimo:** `nome`, `email`, `password` (mínimo 6).
-- **Body opcional:** `filiacao`.
-- **Regra:** nível inicial sempre `consumidor`.
-- **Resposta:** `201 { ok: true, user }`.
-- **Erros típicos:** `400`, `409`, `500`.
-
-### 7.2.2 `POST /auth/sessions`
-
-- **Descrição:** login e emissão de JWT.
-- **Auth:** não.
-- **Body mínimo:** `email`, `password`.
-- **Resposta:** `200 { ok: true, token, user }`.
-- **Erros típicos:** `400`, `401`, `500`.
-
-### 7.2.3 `GET /auth/sessions/verify`
-
-- **Descrição:** valida token e devolve payload.
-- **Auth:** Bearer token obrigatório **ou** cookie httpOnly (`AUTH_COOKIE_NAME`).
-- **Resposta:** `200 { ok: true, payload }`.
-- **Erros típicos:** `401` (ausente, inválido ou expirado).
-
-### 7.2.3.1 `POST /auth/sessions/logout`
-
-- **Descrição:** limpa cookie de autenticação (modo browser).
-- **Auth:** não.
-- **Resposta:** `200 { ok: true }`.
-
-### 7.2.8 CORS no serviço Auth
-
-- **Descrição:** o serviço Auth permite origem configurável para uso com JWT em cookie.
-- **Configuração:** `AUTH_CORS_ORIGIN` (ex.: `http://localhost:16020`).
-- **Headers/métodos:** `Content-Type`, `Authorization`, `X-Request-Id`; métodos `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
-
-### 7.2.5 `GET /auth/users`
-
-- **Descrição:** listagem de utilizadores.
-- **Auth:** admin (`requireAuth` + `requireAdmin`).
-- **Resposta:** `200 { ok: true, users }`.
-
-### 7.2.6 `PATCH /auth/users/:id`
-
-- **Descrição:** atualização parcial de utilizador.
-- **Auth:** admin.
-- **Campos permitidos:** `nome`, `nivel`, `filiacao`.
-- **Validação:** `nivel` em `{admin, produtor, consumidor}`.
-- **Respostas típicas:** `200`, `400`, `404`, `500`.
-
-### 7.2.7 `DELETE /auth/users/:id`
-
-- **Descrição:** remoção de utilizador.
-- **Auth:** admin.
-- **Regra extra:** não permite auto-remoção do admin autenticado.
-- **Respostas típicas:** `200`, `400`, `404`, `500`.
-
-## 7.3 Serviço API
-
-Base no gateway: `/api/*`
-
-**Evidência:** [services/api/routes/index.js](../services/api/routes/index.js), [services/api/middleware/auth.js](../services/api/middleware/auth.js)
-
-### 7.3.1 Saúde
-
-#### `GET /api/health`
-
-- **Descrição:** healthcheck da API.
-- **Auth:** não.
-- **Resposta:** `{ status: 'ok' }`.
-
-### 7.3.2 OAIS
-
-**Evidência:** [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js), [services/api/oais/ingest/sip.js](../services/api/oais/ingest/sip.js), [services/api/oais/access/index.js](../services/api/oais/access/index.js), [services/api/oais/access/dip.js](../services/api/oais/access/dip.js)
-
-#### `POST /api/oais/ingest`
-
-- **Descrição:** ingestão SIP para AIP.
-- **Auth:** `produtor` ou `admin`.
-- **Content-Type:** `multipart/form-data`.
-- **Campo obrigatório:** `sip` (ZIP).
-- **Limite:** 100MB.
-- **Resposta de sucesso:** `201 { ok: true, resourceId }`.
-- **Erros típicos:** `400` (sem ficheiro), `422` (SIP inválido).
-
-#### `GET /api/oais/access/:id`
-
-- **Descrição:** devolve ZIP DIP (atualmente DIP=SIP).
-- **Auth:** opcional, com controlo por visibilidade.
-- **Regras:**
-  - público: acesso aberto;
-  - privado: apenas admin ou produtor dono.
-- **Resposta:** download `application/zip`.
-- **Erros típicos:** `400`, `401`, `403`, `404`.
-
-### 7.3.3 Recursos
-
-**Evidência:** [services/api/routes/resources.js](../services/api/routes/resources.js)
-
-#### `GET /api/resources`
-
-- **Auth:** opcional.
-- **Query:** filtros `tipo`, `ano`, `tema`, `hashtag`; paginação `page`, `limit`.
-- **Resposta:** `{ ok, page, limit, total, totalPages, items }`.
-
-#### `GET /api/resources/:id`
-
-- **Auth:** opcional.
-- **Validação:** `id` Mongo válido.
-
-#### `PATCH /api/resources/:id`
-
-- **Auth:** `produtor`/`admin` + regra de posse.
-- **Body suportado:** `metadata`.
-- **Validação:** `id` Mongo válido.
-
-#### `DELETE /api/resources/:id`
-
-- **Auth:** `produtor`/`admin` + regra de posse.
-- **Validação:** `id` Mongo válido.
-
-### 7.3.4 Posts
-
-**Evidência:** [services/api/routes/posts.js](../services/api/routes/posts.js)
-
-#### `GET /api/posts`
-
-- **Auth:** não.
-- **Query:** `page`, `limit`.
-
-#### `POST /api/posts`
-
-- **Auth:** `produtor`/`admin`.
-- **Body mínimo:** `titulo`, `conteudo`.
-- **Body opcional:** `resourceId` (se enviado, é validado).
-
-#### `GET /api/posts/:id`
-
-- **Auth:** não.
-- **Validação:** `id` Mongo válido.
-
-#### `PATCH /api/posts/:id`
-
-- **Auth:** `produtor`/`admin` + dono/admin.
-- **Body suportado:** `titulo`, `conteudo`.
-- **Validação:** `id` Mongo válido.
-
-#### `DELETE /api/posts/:id`
-
-- **Auth:** `produtor`/`admin` + dono/admin.
-- **Validação:** `id` Mongo válido.
-
-### 7.3.5 Comentários
-
-**Evidência:** [services/api/routes/comments.js](../services/api/routes/comments.js)
-
-#### `GET /api/posts/:id/comments`
-
-- **Auth:** não.
-- **Query:** `page`, `limit` (default 20).
-- **Validação:** `id` Mongo válido.
-
-#### `POST /api/posts/:id/comments`
-
-- **Auth:** utilizador autenticado.
-- **Body mínimo:** `texto`.
-- **Validação:** `id` Mongo válido.
-
-#### `DELETE /api/posts/:id/comments/:cid`
-
-- **Auth:** autenticado + dono/admin.
-- **Validação:** `id` e `cid` Mongo válidos.
-
-### 7.3.6 Ratings
-
-**Evidência:** [services/api/routes/ratings.js](../services/api/routes/ratings.js)
-
-#### `POST /api/resources/:id/ratings`
-
-- **Auth:** autenticado.
-- **Body:** `stars` inteiro entre 1 e 5.
-- **Regra:** um rating por `(resourceId, userId)`.
-
-#### `GET /api/resources/:id/ratings`
-
-- **Auth:** não.
-- **Resposta:** `{ ok, media, total }`.
-
-### 7.3.7 Notícias
-
-**Evidência:** [services/api/routes/news.js](../services/api/routes/news.js)
-
-#### `GET /api/news`
-
-- **Auth:** não.
-- **Query:** `page`, `limit`.
-
-#### `POST /api/news`
-
-- **Auth:** admin.
-- **Body mínimo:** `titulo`, `conteudo`.
-
-#### `DELETE /api/news/:id`
-
-- **Auth:** admin.
-- **Validação:** `id` Mongo válido.
-
-### 7.3.8 Taxonomia
-
-- Endpoint removido do serviço API para simplificação.
-
-## 7.4 Serviço Interface (rotas web)
-
-Base no gateway: `/` (renderização Pug)
-
-**Evidência:** [services/interface/app.js](../services/interface/app.js), [services/interface/routes/index.js](../services/interface/routes/index.js), [services/interface/routes/auth.js](../services/interface/routes/auth.js), [services/interface/routes/resources.js](../services/interface/routes/resources.js), [services/interface/routes/posts.js](../services/interface/routes/posts.js), [services/interface/routes/admin.js](../services/interface/routes/admin.js)
-
-### 7.4.1 Gerais
-
-- `GET /health` → health da interface (`{ status: 'ok' }`).
-- `GET /` → homepage com notícias recentes.
-
-### 7.4.2 Autenticação UI
-
-- `GET /auth/login` / `POST /auth/login`
-- `GET /auth/register` / `POST /auth/register`
-- `GET /auth/logout` e `POST /auth/logout`
-
-### 7.4.3 Recursos UI
-
-- `GET /resources` → listagem.
-- `GET /resources/:id` → detalhe + rating agregado.
-- `POST /resources/:id/ratings` → classificar (sessão obrigatória).
-
-### 7.4.4 Posts UI
-
-- `GET /posts` → listagem.
-- `GET /posts/new` e `POST /posts` → criar (produtor/admin).
-- `GET /posts/:id` → detalhe + comentários.
-- `POST /posts/:id/comments` → comentar (sessão obrigatória).
-- `POST /posts/:id/delete` → apagar post (produtor/admin, validado no backend).
-
-### 7.4.5 Administração UI
-
-Todas as rotas abaixo exigem sessão + perfil `admin`:
-
-- `GET /admin/users`
-- `POST /admin/users/:id/level`
-- `POST /admin/users/:id/delete`
-- `GET /admin/news`
-- `POST /admin/news`
-- `POST /admin/news/:id/delete`
-
----
-
-## 8) Especificação detalhada de objetos e atributos
-
-## 8.1 Objeto `User` (serviço auth)
-
-**Evidência de implementação:** [services/auth/models/User.js](../services/auth/models/User.js)
-
-- `nome` (String, obrigatório, trim)
-- `email` (String, obrigatório, único, lowercase, trim)
-- `password` (String, obrigatório, hash bcrypt em pre-save)
-- `nivel` (Enum: `admin | produtor | consumidor`, default `consumidor`)
-- `filiacao` (Objeto)
-  - `tipo` (Enum: `estudante | docente | outro`, default `estudante`)
-  - `curso` (String)
-  - `departamento` (String)
-- `dataRegisto` (Date)
-- `dataUltimoAcesso` (Date)
-
-**Métodos relevantes:**
-
-- `checkPassword(plain)`
-- `toJSON()` sem `password`
-
----
-
-## 8.2 Objeto `Resource`
-
-**Evidência de implementação:** [services/api/models/Resource.js](../services/api/models/Resource.js)
-
-- `metadata` (Object, obrigatório)
-- `aipPath` (String, obrigatório)
-- `produtor` (String, id lógico do utilizador no auth)
-- `createdAt` (Date)
-
-**Nota:** filtros da API assumem campos em `metadata.resource.*` (`tipo`, `ano`, `tema`, `hashtags`, `visibilidade`).
-
----
-
-## 8.3 Objeto `Post`
-
-**Evidência de implementação:** [services/api/models/Post.js](../services/api/models/Post.js)
-
-- `titulo` (String, obrigatório, max 160)
-- `conteudo` (String, obrigatório, max 20000)
-- `resourceId` (ObjectId `Resource`, opcional)
-- `autorId` (String, obrigatório)
-- `autorNome` (String)
-- `createdAt` (Date)
-- `updatedAt` (Date, atualizado em pre-save)
-
----
-
-## 8.4 Objeto `Comment`
-
-**Evidência de implementação:** [services/api/models/Comment.js](../services/api/models/Comment.js)
-
-- `postId` (ObjectId `Post`, obrigatório, indexado)
-- `autorId` (String, obrigatório)
-- `autorNome` (String)
-- `texto` (String, obrigatório, max 5000)
-- `createdAt` (Date)
-
----
-
-## 8.5 Objeto `Rating`
-
-**Evidência de implementação:** [services/api/models/Rating.js](../services/api/models/Rating.js)
-
-- `resourceId` (ObjectId `Resource`, obrigatório, indexado)
-- `userId` (String, obrigatório, indexado)
-- `stars` (Number, obrigatório, min 1, max 5)
-- `createdAt` (Date)
-- `updatedAt` (Date)
-
-**Índice composto único:** `(resourceId, userId)`.
-
----
-
-## 8.6 Objeto `NewsItem`
-
-**Evidência de implementação:** [services/api/models/NewsItem.js](../services/api/models/NewsItem.js)
-
-- `titulo` (String, obrigatório, max 160)
-- `conteudo` (String, obrigatório, max 10000)
-- `publicadoEm` (Date, indexado)
-- `createdBy` (String, obrigatório)
-
----
-
-## 8.7 Modelo de taxonomia (removido)
-
-- Modelo removido do serviço API para simplificação.
-
----
-
-## 9) Convenções de resposta e erros (estado atual)
-
-- **Sucesso:** mantém-se o padrão `{ ok: true, ... }`.
-- **Erro (API/Auth):**  uniformizado para:
-
-  ```json
-  {
-    "ok": false,
-    "code": "...",
-    "message": "...",
-    "details": null,
-    "requestId": "...",
-    "error": "..."
+## 3) Conversão SIP → AIP → DIP (OAIS)
+
+### SIP (Submission Information Package)
+
+**O que é:**
+Um ficheiro ZIP que o produtor envia contendo o recurso a ser arquivado.
+
+**Estrutura esperada:**
+
+```
+recurso.zip
+├── bagit.txt                 (marcador BagIt)
+├── manifest-sha256.txt       (checksums de cada ficheiro)
+├── data/                     (conteúdo do recurso)
+│   ├── ficheiro1.pdf
+│   ├── imagem.jpg
+│   └── ...
+└── metadata.json             (metadados estruturados)
+```
+
+**metadata.json obrigatório:**
+
+```json
+{
+  "resource": {
+    "tipo": "livro|documento|imagem|video",
+    "titulo": "...",
+    "visibilidade": "publico|privado",
+    "ano": 2023,
+    "tema": "...",
+    "hashtags": ["tag1", "tag2"]
   }
-  ```
+}
+```
 
-  Notas:
+### AIP (Archival Information Package)
 
-  - `error` é mantido por compatibilidade com clientes antigos;
-  - `requestId` é propagado também no header `X-Request-Id`.
-- **Ingest OAIS:** quando há erro de validação SIP, os detalhes vêm em `details` (lista de `{ code, message }`).
-- **Interface Web:** já lê `message` primeiro e usa `error` como fallback.
+**O que é:**
+O SIP é armazenado na sua forma original em disco. Serve de "arquivo autêntico".
 
-**Evidência de implementação atual:** [services/api/lib/http.js](../services/api/lib/http.js), [services/auth/lib/http.js](../services/auth/lib/http.js), [services/api/app.js](../services/api/app.js), [services/auth/app.js](../services/auth/app.js), [services/api/oais/ingest/index.js](../services/api/oais/ingest/index.js), [services/interface/lib/web.js](../services/interface/lib/web.js)
+**Localização em disco:**
+
+```
+data/aip/<resourceId>/
+├── bagit.txt
+├── manifest-sha256.txt
+├── data/
+│   └── ...
+├── metadata.json
+└── recurso.zip (ficheiro original comprimido novamente)
+```
+
+**Por que em disco e não só em MongoDB:**
+
+- OAIS separa dados descritivos (metadados em DB) de conteúdo (ficheiros em storage).
+- Ficheiros binários grandes são ineficientes em MongoDB.
+- Permite backup e recuperação independente.
+
+**Decisão de design:**
+
+- Metadados ficam em MongoDB (searchable, rápido).
+- Conteúdo fica em disco (escalável, durável).
+
+### DIP (Dissemination Information Package)
+
+**O que é:**
+O pacote enviado ao utilizador quando descarrega.
+
+**Implementação atual:**
+Na fase inicial, `DIP = SIP`. Sem transformações complexas.
+
+**Por que esta opção:**
+
+- O enunciado permite explicitamente `DIP = SIP` numa fase inicial.
+- Reduz complexidade de transformação.
+- Cumpre requisito de forma simples.
+- Futuro: permitir re-codificação, normalização, etc.
+
+---
+
+## 4) Autenticação
+
+### Modelo de Autenticação
+
+**Tipo:** JWT (JSON Web Token) + refresh token
+
+### Fluxo de Login
+
+1. Cliente faz POST `/auth/sessions` com `username` / `email` e `password`.
+2. O serviço Auth:
+   - Busca o utilizador em MongoDB.
+   - Valida a password com bcrypt.
+   - Gera um JWT curta vida (access token) e um refresh token de vida longa.
+   - Guarda o refresh token na sessão server-side (para revogação).
+3. Devolve:
+   ```json
+   {
+     "ok": true,
+     "token": "<jwt-access-token>",
+     "refreshToken": "<refresh-token>",
+     "user": { "sub": "userId", "nome": "...", "role": "produtor", ... }
+   }
+   ```
+
+### Verificação de Token
+
+**POST /sessions/verify (no Auth):**
+
+- O cliente envia o JWT no header `Authorization: Bearer <token>`.
+- O serviço Auth descodifica e valida a assinatura.
+- Se válido, devolve o payload do JWT.
+
+### Renovação de Token
+
+**POST /sessions/refresh-server (no Auth):**
+
+- A Interface guarda o refresh token na sessão server-side.
+- Quando o access token expira (HTTP 401), a Interface chama este endpoint com o refresh token.
+- Se válido, devolve um novo access token.
+
+### Extração de Token (API)
+
+O middleware da API extrai o token por ordem de precedência:
+
+1. Header `Authorization: Bearer <token>`.
+2. Cookie `ew.auth` (definido pelo gateway).
+3. Query string `?token=...` (para compatibilidade).
+
+**Código:**
+
+- [services/api/middleware/auth.js](../services/api/middleware/auth.js): extração e verificação
+- [services/auth/routes/sessions.js](../services/auth/routes/sessions.js): geração de tokens
+
+### Modelo de Roles e Permissões
+
+**Hierarquia:**
+
+```
+admin (3)     → permissões máximas
+  ↓
+produtor (2)  → pode criar/editar próprios recursos
+  ↓
+consumidor (1) → apenas leitura de públicos
+```
+
+**Middleware `requireLevel(minLevel)`:**
+
+- Verifica se `userRank >= minRank`.
+- Exemplos:
+  - `requireLevel('produtor')` aceita produtor e admin.
+  - `requireLevel('admin')` aceita só admin.
+
+---
+
+## 5) Exportação e Importação
+
+### Export (GET /api/export)
+
+**Permissão:** Apenas admin.
+
+**O que exporta:**
+
+- Todos os recursos (metadados + ficheiros AIP em base64).
+- Todos os posts.
+- Todos os comentários.
+- Todos os ratings.
+- Todas as notícias.
+
+**Formato:**
+
+```json
+{
+  "ok": true,
+  "timestamp": "2026-04-28T...",
+  "entities": {
+    "resources": [
+      {
+        "_id": "...",
+        "metadata": {...},
+        "produtor": "...",
+        "aipContent": { ... base64 ficheiros ... }
+      },
+      ...
+    ],
+    "posts": [...],
+    "comments": [...],
+    "ratings": [...],
+    "news": [...]
+  }
+}
+```
+
+**Por que base64:**
+
+- Permite guardar ficheiros binários em JSON.
+- Facilita transferência de dados.
+- Permite restore completo fora de MongoDB.
+
+### Import (POST /api/import)
+
+**Permissão:** Apenas admin.
+
+**Entrada:**
+
+- JSON direto no body, ou
+- Ficheiro `dumpFile` em multipart/form-data.
+
+**Estratégia:**
+
+- Upsert por `_id`: se já existe, atualiza; se não, insere.
+- Idempotente: pode ser chamado várias vezes.
+- Restaura ficheiros AIP do base64 para disco.
+
+**Por que export/import:**
+
+- Backup e restauro total da plataforma.
+- Migração entre ambientes.
+- Auditoria de dados.
+- Recuperação de desastres.
+
+**Código:**
+
+- [services/api/routes/export.js](../services/api/routes/export.js): rotas
+- [services/api/controllers/exportController.js](../services/api/controllers/exportController.js): lógica
+
+---
+
+## 6) Classificação de Recursos
+
+### Esquema de Taxonomia
+
+Os recursos são classificados através de campos no `metadata.json`:
+
+```json
+{
+  "resource": {
+    "tipo": "livro",
+    "ano": 2023,
+    "tema": "história",
+    "hashtags": ["#história", "#século-XX"]
+  }
+}
+```
+
+### Dimensões de Classificação
+
+| Dimensão          | Tipo   | Obrigatório | Exemplos                          |
+| ------------------ | ------ | ------------ | --------------------------------- |
+| **tipo**     | string | Sim          | livro, documento, imagem, video   |
+| **ano**      | number | Não         | 2023, 1945                        |
+| **tema**     | string | Não         | história, tecnologia, educação |
+| **hashtags** | array  | Não         | ["#história", "#XX"]             |
+
+### Filtros Suportados
+
+**GET /api/resources** aceita:
+
+- `ano=2023`: recursos daquele ano.
+- `page=1&limit=10`: paginação.
+
+**Em futuro:**
+
+- Filtros por `tipo`, `tema`, `hashtags` via query.
+
+### Por que esta abordagem
+
+- **Flexibilidade:** campos em metadata.json permitem adicionar novos sem migrar schema.
+- **Simplicidade:** não precisa de tabela de referência separada.
+- **Compatibilidade OAIS:** metadados descritivos ficam no SIP.
+
+**Código:**
+
+- [services/api/models/Resource.js](../services/api/models/Resource.js): modelo
+- [services/api/lib/dataTransferFilters.js](../services/api/lib/dataTransferFilters.js): filtros em export/import
+
+---
+
+## 7) Posts e Comentários
+
+### Post (Comentário sobre um Recurso)
+
+**Modelo:**
+
+```javascript
+{
+  _id: ObjectId,
+  titulo: string,          // max 160 chars
+  conteudo: string,        // max 20000 chars
+  resourceId: ObjectId,    // referência ao recurso (opcional)
+  autorId: string,         // ID do utilizador (do Auth)
+  autorNome: string,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+**CRUD:**
+
+- **CREATE:** POST `/api/posts`, requer `produtor`.
+- **READ:** GET `/api/posts` (lista) / GET `/api/posts/:id` (detalhe).
+- **UPDATE:** PATCH `/api/posts/:id`, só autor ou admin.
+- **DELETE:** DELETE `/api/posts/:id`, só autor ou admin.
+
+**Regras:**
+
+- Um post pode estar associado a um `resourceId`.
+- Permite comentários sobre um recurso específico.
+- A interface mostra posts associados na página de detalhe do recurso.
+
+### Comment (Comentário sobre um Post)
+
+**Modelo:**
+
+```javascript
+{
+  _id: ObjectId,
+  postId: ObjectId,        // referência ao post
+  autorId: string,
+  autorNome: string,
+  texto: string,           // max 5000 chars
+  createdAt: Date
+}
+```
+
+**CRUD:**
+
+- **CREATE:** POST `/api/posts/:postId/comments`.
+- **READ:** GETs implícitos via posts.
+- **DELETE:** DELETE `/api/comments/:id`, só autor ou admin.
+
+**Permissões:**
+
+- Apenas `produtor` e `admin` podem comentar.
+- `consumidor` pode ler mas não comentar.
+
+**Código:**
+
+- [services/api/models/Post.js](../services/api/models/Post.js)
+- [services/api/models/Comment.js](../services/api/models/Comment.js)
+- [services/api/routes/posts.js](../services/api/routes/posts.js)
+- [services/api/routes/comments.js](../services/api/routes/comments.js)
+
+---
+
+## 8) Utilizadores
+
+### Modelo
+
+```javascript
+{
+  _id: string,                    // gerado pelo Auth
+  nome: string,                   // obrigatório
+  email: string,                  // único, obrigatório
+  password: string,               // hash bcrypt, obrigatório
+  role: enum["admin"|"produtor"|"consumidor"],  // obrigatório
+  filiacao: string,               // opcional
+  nivel_acesso: number (1-10),    // para uso futuro
+  data_registo: Date,             // automático
+  ultimo_acesso: Date,            // atualizado em login
+  ativo: boolean                  // soft-delete
+}
+```
+
+### Dados Guardados
+
+**Em MongoDB (Auth):**
+
+- ID único (string).
+- Nome, email, role, filiação.
+- Password com hash bcrypt (nunca em texto plano).
+- Data de registo, último acesso.
+- Flag `ativo` (soft-delete).
+
+**Nunca é devolvido:**
+
+- Password (removida em `toJSON()`).
+
+### Acesso Baseado em Role
+
+| Operação             | Admin | Produtor | Consumidor |
+| ---------------------- | ----- | -------- | ---------- |
+| Ler públicos          | ✓    | ✓       | ✓         |
+| Ler privados próprios | ✓    | ✓       | —         |
+| Criar recursos         | ✓    | ✓       | —         |
+| Editar próprios       | ✓    | ✓       | —         |
+| Editar alheios         | ✓    | —       | —         |
+| Apagar                 | ✓    | ✓*      | —         |
+| Comentar               | ✓    | ✓       | —         |
+| Votar                  | ✓    | ✓       | ✓         |
+| Gerir utilizadores     | ✓    | —       | —         |
+| Export/import          | ✓    | —       | —         |
+
+*Produtor pode apagar apenas os seus.
+
+**Código:**
+
+- [services/auth/models/User.js](../services/auth/models/User.js)
+- [services/api/middleware/auth.js](../services/api/middleware/auth.js): verificação de permissões
+
+---
+
+## 9) Recursos (Modelo e Persistência)
+
+### Modelo em MongoDB
+
+```javascript
+{
+  _id: ObjectId,
+  metadata: Object,                // JSON completo de metadata.json
+  aipPath: string,                 // caminho em disco: data/aip/<resourceId>
+  aipFile: {
+    originalName: string,          // nome do ZIP original
+    storageName: string,           // nome guardado em disco
+    path: string,                  // caminho completo
+    mimeType: string,              // application/zip
+    size: number                   // tamanho em bytes
+  },
+  produtor: string,                // ID do utilizador que submeteu
+  downloadCount: number,           // contador para top3
+  createdAt: Date,
+  updatedAt: Date (opcional)       // apenas em PATCH
+}
+```
+
+### Persistência
+
+**Metadados:**
+
+- Guardados em MongoDB (`resources` collection).
+- Pesquisável por filtros (ano, tipo, etc.).
+- Rápido para queries.
+
+**Conteúdo (ficheiros):**
+
+- Guardado em disco em `data/aip/<resourceId>/`.
+- Estrutura BagIt simplificada.
+- Permite backup independente do DB.
+
+### Validações na Criação (Ingest)
+
+| Campo                         | Validação                      | Erro                  |
+| ----------------------------- | -------------------------------- | --------------------- |
+| **tipo**                | Obrigatório                     | BAD_METADATA          |
+| **titulo**              | Obrigatório                     | BAD_METADATA          |
+| **visibilidade**        | `publico` ou `privado`       | BAD_METADATA          |
+| **ano** (opcional)      | Número válido                  | —                    |
+| **tema** (opcional)     | String                           | —                    |
+| **hashtags** (opcional) | Array de strings                 | —                    |
+| **Checksums**           | Devem corresponder aos ficheiros | CHECKSUM_MISMATCH     |
+| **Estrutura ZIP**       | BagIt simplificada               | INVALID_BAG_STRUCTURE |
+
+### Decisões de Design
+
+1. **Metadados em DB:** permite queries rápidas e filtros.
+2. **Ficheiros em disco:** scalable, durável, separado do DB.
+3. **Soft-delete opcional:** pode implementar-se com `ativo: false` sem apagar dados.
+
+**Código:**
+
+- [services/api/models/Resource.js](../services/api/models/Resource.js)
+- [services/api/oais/ingest/sip.js](../services/api/oais/ingest/sip.js): validações
+
+---
+
+## 10) Notícias
+
+### Modelo
+
+```javascript
+{
+  _id: ObjectId,
+  titulo: string,                 // max 160 chars
+  conteudo: string,               // max 10000 chars
+  tipo: enum["manual"|"system"],  // manual = admin, system = automática
+  eventType: string,              // ex: "system.new_submission"
+  dedupeKey: string,              // único, para evitar duplicados
+  payload: Object,                // dados estruturados
+  publicadoEm: Date,
+  createdBy: string               // ID do criador ou "system"
+}
+```
+
+### Tipos de Notícias
+
+#### Manual
+
+- Criadas pelo admin via POST `/api/news`.
+- Exemplo: "Plataforma em manutenção".
+
+#### System (Automáticas)
+
+- `system.new_submission`: quando um novo recurso é submetido.
+- `system.top3`: top 3 recursos mais descarregados (atualizado diariamente).
+- `system.total_users`: total de utilizadores registados (atualizado diariamente).
+
+### Estratégia de Deduplicação
+
+**Campo `dedupeKey`:** único, evita duplicados.
+
+Exemplos:
+
+```
+"system.new_submission:resourceId-123" → notícia upsertada por resourceId
+"system.top3:day-2026-04-28"           → notícia diária
+"system.total_users:day-2026-04-28"    → notícia diária
+```
+
+**Por que é importante:**
+
+- Jobs diários não criam duplicados.
+- Reutiliza a mesma notícia ao atualizar dados.
+- Reduz "ruído" na home.
+
+### Home da Interface
+
+Mostra as últimas 5 notícias (ordenadas por `publicadoEm` descendente).
+
+**Código:**
+
+- [services/api/models/NewsItem.js](../services/api/models/NewsItem.js)
+- [services/api/lib/newsPublisher.js](../services/api/lib/newsPublisher.js): publicação
+- [services/api/lib/systemNewsJob.js](../services/api/lib/systemNewsJob.js): jobs automáticas
+- [services/api/routes/news.js](../services/api/routes/news.js): CRUD manual
+
+---
+
+## 11) Tratamento do Dataset
+
+### Estado Inicial
+
+A plataforma começa com dataset vazio. Dados são preenchidos via:
+
+1. **Upload manual de SIPs** (interface ou API).
+2. **Import de dump** (POST `/api/import` com dados já estruturados).
+3. **Seed automático** (futura: script que carrega dataset padrão).
+
+### Dataset Mínimo para Demonstração
+
+Para uma apresentação funcional, recomenda-se:
+
+- **5-10 recursos** em tipos variados (livro, documento, imagem).
+- **2-3 utilizadores** em roles diferentes (admin, produtor, consumidor).
+- **3-5 posts** com comentários associados.
+- **Alguns ratings** para mostrar o ranking.
+
+### Como Carregar Dataset
+
+**Opção 1: Upload manual**
+
+```bash
+# Criar um SIP em ZIP (com bagit.txt, manifest, data/, metadata.json)
+# POST /api/oais/ingest -F "sip=@recurso.zip"
+```
+
+**Opção 2: Import de dump**
+
+```bash
+# Gerar dump da plataforma
+# GET /api/export → guardar em dump.json
+
+# Importar noutro ambiente
+# POST /api/import -F "dumpFile=@dump.json"
+```
+
+**Opção 3: Script de seed (futura)**
+
+```bash
+# Carregar automaticamente recursos pré-compilados
+```
+
+### Estrutura de SIP Exemplo
+
+```
+exemplo.zip
+├── bagit.txt
+│   Text-Encoding: UTF-8
+│   BagIt-Version: 1.0
+├── manifest-sha256.txt
+│   abc123... data/livro.pdf
+│   def456... data/capa.jpg
+├── data/
+│   ├── livro.pdf
+│   └── capa.jpg
+└── metadata.json
+    {
+      "resource": {
+        "tipo": "livro",
+        "titulo": "Uma História de Portugal",
+        "visibilidade": "publico",
+        "ano": 2022,
+        "tema": "história",
+        "hashtags": ["#história", "#portugal"]
+      }
+    }
+```
+
+### Considerações para Produção
+
+1. **Backup regularmente:** export total via `/api/export`.
+2. **Validar checksums:** sempre antes de importar SIPs.
+3. **Monitorar disco:** `data/aip/` pode crescer muito.
+4. **Limpar temporários:** `tmp/` durante ingest.
+
+---
+
+## Conclusão
+
+Esta arquitetura implementa todos os requisitos do enunciado com foco em:
+
+- **OAIS:** separação clara entre SIP/AIP/DIP e metadados.
+- **Segurança:** autenticação JWT, autorização por role, validação de entrada.
+- **Escalabilidade:** metadados em DB, ficheiros em disco.
+- **Flexibilidade:** taxonomy em JSON, fácil de estender.
+- **Recuperação:** export/import para backup e migração.
+
+As decisões de design priorizaram **simplicidade** e **conformidade** ao enunciado, deixando espaço para otimizações futuras.
