@@ -78,7 +78,8 @@ module.exports.deleteUserById = async (req, res) => {
 		}
 
 		res.json({ ok: true, user })
-	} catch {
+	} catch (err) {
+		console.error('[auth] delete error:', err)
 		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}
 }

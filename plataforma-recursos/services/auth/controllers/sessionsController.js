@@ -1,6 +1,7 @@
 const UserService = require('../services/userService')
 const User = require('../models/User')
 const { jsonError } = require('../lib/http')
+const { publishUsersCountChangedNews } = require('../lib/systemNewsClient')
 const { config } = require('../lib/config')
 const {
 	signAccessToken,
@@ -102,6 +103,13 @@ module.exports.oauthLogin = async (req, res) => {
 	
 	try {
 		const dados = await UserService.oauthLogin(provider, providerId, email, nome)
+
+		if (dados.isNew) {
+			const counts = await UserService.getStats()
+			publishUsersCountChangedNews(counts).catch((err) => {
+				console.error('[auth] warning: could not publish users-count news via oauth:', err)
+			})
+		}
 
 		const refreshToken = signRefreshToken(dados.user)
 		res.cookie(REFRESH_COOKIE, refreshToken, buildRefreshCookieOptions())
