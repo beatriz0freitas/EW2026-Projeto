@@ -45,7 +45,7 @@ async function generateUserId(rawInputId, email) {
 }
 
 module.exports.list = () =>
-	User.find({}, { password: 0 }).sort({ nome: 1 }).exec()
+	User.find({ ativo: true }, { password: 0 }).sort({ nome: 1 }).exec()
 
 module.exports.findById = (id) =>
 	User.findOne({ _id: id, ativo: true }, { password: 0 }).exec()
@@ -97,19 +97,31 @@ module.exports.update = async (id, input) => {
 
 	const user = await User.findByIdAndUpdate(id, update, {
 		new: true,
-		runValidators: true,
+		runValidators: false,
 		projection: { password: 0 },
 	})
 	return toPublicUser(user)
 }
 
 module.exports.remove = async (id) => {
-	const user = await User.findByIdAndUpdate(
+	const user = await User.findById(id)
+	if (!user) return null
+
+	const ts = Date.now()
+	const update = { 
+		ativo: false,
+		email: `del_${ts}_${user.email}` 
+	}
+	
+	if (user.googleId) update.googleId = `del_${ts}_${user.googleId}`
+	if (user.facebookId) update.facebookId = `del_${ts}_${user.facebookId}`
+
+	const updatedUser = await User.findByIdAndUpdate(
 		id,
-		{ ativo: false },
-		{ new: true, runValidators: true, projection: { password: 0 } }
+		update,
+		{ new: true, runValidators: false, projection: { password: 0 } }
 	)
-	return toPublicUser(user)
+	return toPublicUser(updatedUser)
 }
 
 module.exports.getStats = async () => {
@@ -146,6 +158,8 @@ module.exports.oauthLogin = async (provider, providerId, email, nome) => {
 	let user = await User.findOne({
 		$or: [{ [searchField]: providerId }, { email: email }],
 	})
+	
+	let isNew = false
 
 	if (user) {
 		if (!user.ativo) throw new Error('conta desativada')
@@ -163,9 +177,10 @@ module.exports.oauthLogin = async (provider, providerId, email, nome) => {
 			[searchField]: providerId,
 		})
 		await user.save()
+		isNew = true
 	}
 
 	await User.updateOne({ _id: user._id }, { ultimo_acesso: new Date() })
 
-	return { token: signAccessToken(user), user: toPublicUser(user) }
+	return { token: signAccessToken(user), user: toPublicUser(user), isNew }
 }
