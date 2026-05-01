@@ -1,16 +1,183 @@
 extends ../layout
 
 block content
-	section.w3-card.w3-white.w3-padding.w3-margin-top
-		h1 Submeter recurso
-		p
-			| A criação de recursos é feita através do fluxo OAIS (SIP → AIP).
-			|  Submeta aqui um ficheiro ZIP (SIP) válido.
+	section.resource-form-page
+		section.resource-form-hero
+			p.resource-form-hero__eyebrow Fluxo guiado
+			h1 Submeter recurso
+			p.resource-form-hero__lead
+				| A submissão simples cobre a maioria dos casos: preenches os metadados, anexas os ficheiros e a plataforma gera o SIP BagIt automaticamente.
+			.resource-form-hero__meta
+				span.resource-chip SIP gerado automaticamente
+				span.resource-chip Validação visual em tempo real
+				a.resource-chip.resource-chip--link(href='/templates/metadados.exemplo.json' download='metadados.json') Template de metadados
 
-		form(action='/resources/new' method='post' enctype='multipart/form-data')
-			label(for='sip') Ficheiro SIP (ZIP)
-			input#sip.w3-input(type='file' name='sip' accept='.zip,application/zip' required)
-			button.w3-button.w3-teal(type='submit') Submeter
-		p
-			a.w3-button.w3-border(href='/resources') Voltar aos recursos
+		section.resource-form-layout
+			section.w3-card.w3-white.form-card
+				.form-card__top
+					div
+						h2 Submissão simples
+						p.form-card__lead
+							| Usa um exemplo rápido se quiseres perceber a estrutura ideal antes de preencher tudo manualmente.
+					.example-toolbar(role='group' aria-label='Exemplos de preenchimento')
+						span.example-toolbar__label Exemplo rápido
+						button.w3-button.w3-border(type='button' data-example='dataset') Dataset
+						button.w3-button.w3-border(type='button' data-example='artigo') Artigo
+						button.w3-button.w3-border(type='button' data-example='slides') Slides
+						button.w3-button.w3-border(type='button' data-example='clear') Limpar
 
+				form#form-simples.resource-form(action='/resources/new/simple' method='post' enctype='multipart/form-data')
+					.resource-form-grid.resource-form-grid--two
+						.form-field(data-field='titulo')
+							.field-label-row
+								label(for='titulo') Título
+								span.field-badge.field-badge--required Obrigatório
+							input#titulo.w3-input(type='text' name='titulo' maxlength='200' required placeholder='Ex: Uma História de Portugal')
+							p.field-feedback(data-default-text='Nome com que o recurso vai aparecer na plataforma.') Nome com que o recurso vai aparecer na plataforma.
+
+						.form-field(data-field='subtitulo')
+							.field-label-row
+								label(for='subtitulo') Subtítulo
+								span.field-badge Opcional
+							input#subtitulo.w3-input(type='text' name='subtitulo' maxlength='200' placeholder='Ex: Volume I ou versão resumida')
+							p.field-feedback(data-default-text='Útil para distinguir versões, volumes ou contextos.') Útil para distinguir versões, volumes ou contextos.
+
+						.form-field(data-field='tipo')
+							.field-label-row
+								label(for='tipo') Tipo
+								span.field-badge.field-badge--required Obrigatório
+							input#tipo.w3-input(type='text' name='tipo' list='tipos-recurso' required placeholder='Ex: livro, artigo, slides')
+							datalist#tipos-recurso
+								option(value='artigo')
+								option(value='livro')
+								option(value='relatorio')
+								option(value='tese')
+								option(value='slides')
+								option(value='dataset')
+								option(value='aplicacao')
+								option(value='trabalho')
+								option(value='teste')
+								option(value='problema resolvido')
+							p.field-feedback(data-default-text='Escolhe um tipo simples e reconhecível para facilitar a pesquisa.') Escolhe um tipo simples e reconhecível para facilitar a pesquisa.
+
+						.form-field(data-field='ano')
+							.field-label-row
+								label(for='ano') Ano
+								span.field-badge Opcional
+							input#ano.w3-input(type='number' name='ano' min='0' max='3000' placeholder='Ex: 2022')
+							p.field-feedback(data-default-text='Aceita valores entre 0 e 3000.') Aceita valores entre 0 e 3000.
+
+						.form-field(data-field='tema')
+							.field-label-row
+								label(for='tema') Tema
+								span.field-badge Opcional
+							input#tema.w3-input(type='text' name='tema' maxlength='120' placeholder='Ex: história, programação')
+							p.field-feedback(data-default-text='Usa um tema curto para ajudar na descoberta do recurso.') Usa um tema curto para ajudar na descoberta do recurso.
+
+						.form-field(data-field='dataCriacao')
+							.field-label-row
+								label(for='dataCriacao') Data de criação
+								span.field-badge Opcional
+							input#dataCriacao.w3-input(type='text' name='dataCriacao' maxlength='80' placeholder='Ex: 2024-10-12')
+							p.field-feedback(data-default-text='Formato sugerido: AAAA ou AAAA-MM-DD.') Formato sugerido: AAAA ou AAAA-MM-DD.
+
+						.form-field.resource-form-grid__full(data-field='hashtags')
+							.field-label-row
+								label(for='hashtags') Hashtags
+								span.field-badge Opcional
+							input#hashtags.w3-input(type='text' name='hashtags' maxlength='300' placeholder='Ex: #historia, #portugal')
+							p.field-feedback(data-default-text='Separa por vírgulas; podes usar com ou sem #.') Separa por vírgulas; podes usar com ou sem #.
+
+						.form-field.resource-form-grid__full(data-field='descricao')
+							.field-label-row
+								label(for='descricao') Descrição
+								span.field-badge Opcional
+							textarea#descricao.w3-input(name='descricao' rows='5' maxlength='2000' placeholder='Breve descrição do recurso, do contexto e do conteúdo')
+							.field-meta
+								p.field-feedback(data-default-text='Uma descrição curta já ajuda bastante quem vai reutilizar o recurso.') Uma descrição curta já ajuda bastante quem vai reutilizar o recurso.
+								p.field-counter
+									span#contador-descricao 0
+									|  / 2000
+
+						.form-field.resource-form-grid__full(data-field='visibilidade')
+							.field-label-row
+								label(for='visibilidade') Visibilidade
+								span.field-badge.field-badge--required Obrigatório
+							select#visibilidade.w3-select(name='visibilidade' required)
+								option(value='publico') publico
+								option(value='privado' selected) privado
+							p.field-feedback(data-default-text='Público: visível a todos. Privado: apenas ao produtor e ao administrador.') Público: visível a todos. Privado: apenas ao produtor e ao administrador.
+
+					.form-upload-panel(data-field='ficheiros')
+						.field-label-row
+							label(for='ficheiros') Ficheiros
+							span.field-badge.field-badge--required Obrigatório
+						.file-stats
+							span.stat-pill
+								span.stat-pill__label Ficheiros
+								strong#ficheiros-total 0
+							span.stat-pill
+								span.stat-pill__label Tamanho total
+								strong#ficheiros-tamanho 0 B
+							span.stat-pill
+								span.stat-pill__label Limite
+								strong 20
+						input#ficheiros.w3-input(type='file' name='ficheiros' multiple required)
+						p#info-ficheiros.field-feedback(data-default-text='Podes anexar até 20 ficheiros; o SIP será montado automaticamente.') Podes anexar até 20 ficheiros; o SIP será montado automaticamente.
+						ul#ficheiros-lista.file-list
+
+					.form-actions
+						button.w3-button.botao-principal(type='submit') Submeter recurso
+						a.w3-button.w3-border(href='/resources') Voltar aos recursos
+
+				hr.form-divider
+				details.form-advanced
+					summary Submissão avançada (SIP)
+					p.w3-text-grey.w3-small
+						| Usa esta opção apenas se já tiveres um SIP BagIt em ZIP preparado.
+					form#form-sip(action='/resources/new' method='post' enctype='multipart/form-data')
+						.form-field(data-field='sip')
+							.field-label-row
+								label(for='sip') Ficheiro SIP (ZIP)
+								span.field-badge.field-badge--required Obrigatório
+							input#sip.w3-input(type='file' name='sip' accept='.zip,application/zip' required)
+							p.field-feedback(data-default-text='Aceita ficheiros .zip com bagit.txt, manifest-sha256.txt e data/metadata.json.') Aceita ficheiros .zip com bagit.txt, manifest-sha256.txt e data/metadata.json.
+						p.w3-margin-top
+							button.w3-button.w3-border(type='submit') Submeter SIP
+
+			aside.resource-sidebar
+				section.w3-card.w3-white.side-card
+					h3 Estado dos metadados
+					p#estado-geral.sidebar-summary(aria-live='polite') Preenche os campos obrigatórios para ficares pronto a submeter.
+					.progress-track
+						span#estado-progresso.progress-track__value
+					ul.validation-list
+						li.validation-item(data-status='titulo')
+							span.validation-item__label Título
+							span.validation-item__value Por preencher
+						li.validation-item(data-status='tipo')
+							span.validation-item__label Tipo
+							span.validation-item__value Por preencher
+						li.validation-item(data-status='visibilidade')
+							span.validation-item__label Visibilidade
+							span.validation-item__value Por preencher
+						li.validation-item(data-status='datas')
+							span.validation-item__label Ano e data
+							span.validation-item__value Opcional
+						li.validation-item(data-status='hashtags')
+							span.validation-item__label Hashtags
+							span.validation-item__value Opcional
+						li.validation-item(data-status='ficheiros')
+							span.validation-item__label Ficheiros
+							span.validation-item__value Por anexar
+
+				section.w3-card.w3-white.side-card
+					h3 Guia rápido
+					ul.quick-guide
+						li Se quiseres, começa com um exemplo e ajusta só o que interessa.
+						li O mínimo recomendado é título, tipo, visibilidade e pelo menos um ficheiro.
+						li Hashtags e descrição melhoram bastante a descoberta do recurso.
+					p
+						a.resource-inline-link(href='/templates/metadados.exemplo.json' download='metadados.json') Transferir template de metadados
+
+	script(src='/javascripts/resources-form.js')
