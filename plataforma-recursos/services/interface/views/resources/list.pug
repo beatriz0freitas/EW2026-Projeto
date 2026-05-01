@@ -1,62 +1,77 @@
 extends ../layout
 
 block content
-	section.w3-card.w3-white.w3-padding.w3-margin-top
-		h1 Recursos educativos
-		p.w3-text-grey Total: #{pagination.total}
+	section.pagina-listagem
+		section.cabecalho-pagina
+			h1 Recursos educativos
+			p Pesquisa e reutiliza materiais preservados na plataforma.
+			.cabecalho-acoes
+				if user && (user.role === 'produtor' || user.role === 'admin')
+					a.w3-button.botao-claro(href='/resources/new') Submeter recurso
+				a.w3-button.botao-principal(href='/posts') Ver posts
+			.etiquetas
+				span.etiqueta Total: #{pagination.total}
+				span.etiqueta.etiqueta--vermelha Página #{pagination.page} de #{pagination.totalPages}
 
-		- const f = filters || {}
-		- const options = filterOptions || { tipos: [], anos: [], temas: [], hashtags: [] }
-		form(action='/resources' method='get')
-			label(for='tipo') Tipo
-			select#tipo.w3-select(name='tipo')
-				option(value='') Todos
-				each tipo in options.tipos
-					option(value=tipo selected=(f.tipo === tipo))= tipo
+		section.w3-card.w3-white.secao-card
+			- const f = filters || {}
+			- const options = filterOptions || { tipos: [], anos: [], temas: [], hashtags: [] }
+			h2 Filtrar recursos
+			form.filtros-recursos(action='/resources' method='get')
+				div
+					label(for='tipo') Tipo
+					select#tipo.w3-select(name='tipo')
+						option(value='') Todos
+						each tipo in options.tipos
+							option(value=tipo selected=(f.tipo === tipo))= tipo
 
-			label(for='ano') Ano
-			select#ano.w3-select(name='ano')
-				option(value='') Todos
-				each ano in options.anos
-					option(value=ano selected=(String(f.ano || '') === String(ano)))= ano
+				div
+					label(for='ano') Ano
+					select#ano.w3-select(name='ano')
+						option(value='') Todos
+						each ano in options.anos
+							option(value=ano selected=(String(f.ano || '') === String(ano)))= ano
 
-			label(for='tema') Tema
-			select#tema.w3-select(name='tema')
-				option(value='') Todos
-				each tema in options.temas
-					option(value=tema selected=(f.tema === tema))= tema
+				div
+					label(for='tema') Tema
+					select#tema.w3-select(name='tema')
+						option(value='') Todos
+						each tema in options.temas
+							option(value=tema selected=(f.tema === tema))= tema
 
-			label(for='hashtag') Hashtag
-			select#hashtag.w3-select(name='hashtag')
-				option(value='') Todas
-				each hashtag in options.hashtags
-					option(value=hashtag selected=(f.hashtag === hashtag))= hashtag
+				div
+					label(for='hashtag') Hashtag
+					select#hashtag.w3-select(name='hashtag')
+						option(value='') Todas
+						each hashtag in options.hashtags
+							option(value=hashtag selected=(f.hashtag === hashtag))= hashtag
 
-			button.w3-button.w3-teal(type='submit') Filtrar
-			a.w3-button.w3-border(href='/resources') Limpar
+				.filtros-acoes
+					button.w3-button.botao-principal(type='submit') Filtrar
+					a.w3-button.w3-border(href='/resources') Limpar
 
-		if user && (user.role === 'produtor' || user.role === 'admin')
-			p
-				a.w3-button.w3-border(href='/resources/new') Submeter recurso (SIP)
+		section.w3-card.w3-white.secao-card
+			.cabecalho-secao
+				div
+					h2 Resultados
+					p.w3-text-grey Recursos encontrados para os filtros atuais.
 
-		if !items.length
+			if !items.length
 				p Não existem recursos disponíveis.
-		else
-			table.w3-table-all.w3-hoverable.w3-striped
-				thead
-					tr.w3-teal
-						th Título
-						th Tipo
-						th Ano
-						th Ação
-				tbody
-					each item in items
-						- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
-						tr
-							td= r.titulo || 'Sem título'
-							td= r.tipo || '-'
-							td= r.ano || '-'
-							td
-								a(href=`/resources/${item._id}`) Ver detalhe
-
-		p.w3-text-grey Página #{pagination.page} de #{pagination.totalPages}
+			else
+				table.w3-table-all.w3-hoverable.w3-striped
+					thead
+						tr.w3-teal
+							th Título
+							th Tipo
+							th Ano
+							th Ação
+					tbody
+						each item in items
+							- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
+							tr
+								td= r.titulo || 'Sem título'
+								td= r.tipo || '-'
+								td= r.ano || '-'
+								td.tabela-acoes
+									a(href=`/resources/${item._id}`) Ver detalhe

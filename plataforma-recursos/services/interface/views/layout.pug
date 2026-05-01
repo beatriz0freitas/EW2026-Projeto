@@ -5,8 +5,8 @@ html(lang='pt')
 		meta(name='viewport' content='width=device-width, initial-scale=1')
 		title #{title || 'Plataforma de Recursos'}
 		link(rel='stylesheet' href='/stylesheets/style.css')
-	body
-		header.w3-bar.w3-teal
+	body.app-body
+		header.w3-bar.w3-teal.app-header
 			a.w3-bar-item.w3-button.w3-xlarge(href='/') EW2026
 			a.w3-bar-item.w3-button(href='/resources') Recursos
 			a.w3-bar-item.w3-button(href='/posts') Posts
@@ -20,7 +20,7 @@ html(lang='pt')
 				a.w3-bar-item.w3-button.w3-right(href='/auth/register') Registar
 				a.w3-bar-item.w3-button.w3-right(href='/auth/login') Entrar
 
-		main.w3-container.w3-padding
+		main.w3-container.w3-padding.app-main
 			if success
 				div.w3-panel.w3-pale-green.w3-leftbar.w3-border-green
 					p= success

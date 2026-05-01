@@ -1,7 +1,7 @@
 extends ../layout
 
 block content
-	section.w3-card.w3-white.w3-padding.w3-margin-top
+	section.w3-card.w3-white.cartao-autenticacao
 		h1 Entrar
 		form(action='/auth/login' method='post')
 			label(for='email') Email
@@ -10,9 +10,8 @@ block content
 			label(for='password') Password
 			input#password.w3-input(type='password' name='password' required)
 
-			button.w3-button.w3-teal(type='submit') Iniciar sessão
+			button.w3-button.botao-principal(type='submit') Iniciar sessão
 
 		p.w3-small
 			| Ainda não tem conta?
 			a(href='/auth/register') Registe-se aqui.
-
