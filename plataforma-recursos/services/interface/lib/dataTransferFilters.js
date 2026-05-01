@@ -4,7 +4,7 @@ const VISIBILIDADES_RECURSO_VALIDAS = new Set(['publico', 'privado'])
 
 const DEFINICOES_FILTROS_DADOS = {
 	scope: {
-		label: 'Escopo',
+		label: 'Incluído',
 		normalizar: (valor) => {
 			const scope = String(valor || 'all').trim().toLowerCase()
 			return ESCOPOS_DADOS_VALIDOS.has(scope) ? scope : 'all'
@@ -39,7 +39,7 @@ const DEFINICOES_FILTROS_DADOS = {
 		omitirNaQuery: (valor) => !valor,
 	},
 	resourceHashtag: {
-		label: 'Hashtag do recurso',
+		label: 'Etiqueta do recurso',
 		normalizar: (valor) => String(valor || '').trim(),
 		estaAtivo: (valor) => Boolean(valor),
 		formatarResumo: (valor) => valor,
@@ -52,7 +52,7 @@ const DEFINICOES_FILTROS_DADOS = {
 			return VISIBILIDADES_RECURSO_VALIDAS.has(visibility) ? visibility : ''
 		},
 		estaAtivo: (valor) => Boolean(valor),
-		formatarResumo: (valor) => valor,
+		formatarResumo: (valor) => valor === 'publico' ? 'Público' : valor === 'privado' ? 'Privado' : valor,
 		omitirNaQuery: (valor) => !valor,
 	},
 	resourceProducer: {
@@ -77,17 +77,18 @@ const DEFINICOES_FILTROS_DADOS = {
 		omitirNaQuery: (valor) => !valor,
 	},
 	newsType: {
-		label: 'Tipo de notícia',
+		label: 'Origem da notícia',
 		normalizar: (valor) => {
 			const newsType = String(valor || '').trim().toLowerCase()
 			return TIPOS_NOTICIA_VALIDOS.has(newsType) ? newsType : ''
 		},
 		estaAtivo: (valor) => Boolean(valor),
-		formatarResumo: (valor) => valor,
+		formatarResumo: (valor) =>
+			valor === 'manual' ? 'Criadas no painel' : valor === 'system' ? 'Automáticas' : valor,
 		omitirNaQuery: (valor) => !valor,
 	},
 	newsEventType: {
-		label: 'Evento da notícia',
+		label: 'Assunto da notícia',
 		normalizar: (valor) => String(valor || '').trim(),
 		estaAtivo: (valor) => Boolean(valor),
 		formatarResumo: (valor) => valor,

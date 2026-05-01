@@ -329,7 +329,7 @@ footer.w3-container{
 }
 
 .w3-teal,.w3-hover-teal:hover{
-	background-color:var(--accent)!important;
+	background-color:var(--navy)!important;
 	color:#fff!important;
 }
 
@@ -385,8 +385,8 @@ footer.w3-container{
 .app-main .w3-select:focus,
 .app-main textarea:focus{
 	outline:none;
-	border-color:var(--accent)!important;
-	box-shadow:0 0 0 4px rgba(215,38,61,0.12);
+	border-color:var(--navy-soft)!important;
+	box-shadow:0 0 0 4px rgba(16,42,82,0.13);
 	background:#fff;
 }
 
@@ -749,7 +749,7 @@ footer.w3-container{
 	height:100%;
 	width:0;
 	border-radius:999px;
-	background:linear-gradient(90deg, var(--accent), var(--navy-soft));
+	background:linear-gradient(90deg, var(--navy), var(--accent));
 	transition:width .2s ease;
 }
 
@@ -868,14 +868,14 @@ footer.w3-container{
 }
 
 .botao-principal{
-	background:var(--accent)!important;
+	background:var(--navy)!important;
 	color:#fff!important;
-	border:1px solid var(--accent)!important;
+	border:1px solid var(--navy)!important;
 }
 
 .botao-principal:hover,
 .botao-principal:focus{
-	background:var(--accent-strong)!important;
+	background:var(--navy-soft)!important;
 	color:#fff!important;
 }
 

@@ -15,14 +15,14 @@ block content
 				p.w3-large= r.subtitulo
 			.conteudo-acoes
 				if vis === 'publico' || user
-					a.w3-button.botao-claro(href=`/resources/${resource._id}/dip`) Descarregar DIP
+					a.w3-button.botao-claro(href=`/resources/${resource._id}/dip`) Descarregar recurso
 				else
 					a.w3-button.botao-claro(href='/auth/login') Entrar para descarregar
 				a.w3-button.botao-principal(href='/resources') Voltar à lista
 
 		section.detalhe-conteudo
 			article.w3-card.w3-white.secao-card
-				h2 Metadados
+				h2 Informação do recurso
 				if r.descricao
 					p= r.descricao
 				.meta-grelha
@@ -43,7 +43,7 @@ block content
 							span Data de criação
 							strong= r.dataCriacao
 				if r.hashtags && r.hashtags.length
-					h3 Hashtags
+					h3 Etiquetas
 					.chips-linha
 						each hashtag in r.hashtags
 							span.etiqueta.etiqueta--vermelha= hashtag
@@ -62,11 +62,11 @@ block content
 						form(action=`/resources/${resource._id}/delete` method='post')
 							button.w3-button.w3-red(type='submit' onclick="return confirm('Tem a certeza que pretende eliminar este recurso? Esta ação não pode ser revertida.');") Eliminar recurso
 					if user && (user.role === 'produtor' || user.role === 'admin')
-						a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar post sobre este recurso
+						a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar publicação sobre este recurso
 
 			aside.w3-card.w3-white.secao-card.classificacao
 				h2 Classificação
-				p.w3-text-grey Média: #{rating.media} (#{rating.total} votos)
+				p.w3-text-grey Avaliação média: #{rating.media} (#{rating.total} votos)
 
 				if user
 					form.formulario-compacto(action=`/resources/${resource._id}/ratings` method='post')
@@ -77,17 +77,17 @@ block content
 								option(value=i selected=(myRating === i))= i
 						button.w3-button.botao-principal(type='submit') Guardar classificação
 				else
-					p.w3-text-grey Inicie sessão para classificar este recurso.
+					p.w3-text-grey Inicia sessão para classificar este recurso.
 
 		section.w3-card.w3-white.secao-card
 			.cabecalho-secao
 				div
-					h2 Posts sobre este recurso
-					p.w3-text-grey Discussões ligadas diretamente a este material.
+					h2 Publicações sobre este recurso
+					p.w3-text-grey Conversas ligadas diretamente a este material.
 				if user && (user.role === 'produtor' || user.role === 'admin')
-					a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar post
+					a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar publicação
 			if !posts || !posts.length
-				p Ainda não existem posts associados a este recurso.
+				p Ainda não existem publicações associadas a este recurso.
 			else
 				ul.lista-cards
 					each post in posts

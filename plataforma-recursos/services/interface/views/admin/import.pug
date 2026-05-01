@@ -10,20 +10,20 @@ block content
 
   section.w3-card.w3-white.w3-padding.w3-margin-top
     p.w3-small
-      | Os filtros abaixo são aplicados sobre o dump importado. Sem filtros, a importação continua a repor a totalidade dos dados do ficheiro.
+      | Os filtros abaixo escolhem que dados entram na plataforma. Sem filtros, o ficheiro é importado por inteiro.
     p.w3-small
-      | Se o escopo incluir recursos, os posts, ratings, comentários e ficheiros AIP ligados a esses recursos acompanham a importação.
+      | Ao importar recursos, as publicações, classificações, comentários e ficheiros associados também são incluídos.
     p.w3-small
-      | O caminho recomendado é carregar o ficheiro descarregado na exportação. O campo de JSON colado fica disponível apenas como alternativa para dumps pequenos ou em modo legado.
+      | O caminho recomendado é carregar o ficheiro descarregado na exportação. O campo de texto é apenas uma alternativa para ficheiros pequenos.
 
     if importError
       p.w3-text-red= importError
 
     if importResults
       if importOk
-        p.w3-text-green Importacao concluida com sucesso.
+        p.w3-text-green Importação concluída com sucesso.
       else
-        p.w3-text-orange Importacao concluida com erros parciais.
+        p.w3-text-orange Importação concluída com alguns avisos.
 
       if filterSummary && filterSummary.length
         h3 Filtros aplicados
@@ -36,15 +36,16 @@ block content
       table.w3-table-all.w3-striped
         thead
           tr.w3-teal
-            th Colecao
+            th Área
             th Processados
             th Erros
         tbody
+          - var labels = { resources: 'Recursos', news: 'Notícias', posts: 'Publicações', ratings: 'Classificações', comments: 'Comentários', aip: 'Ficheiros' }
           each key in ['resources', 'news', 'posts', 'ratings', 'comments', 'aip']
             - var r = importResults[key] || { upserted: 0, restored: 0, errors: [] }
             - var total = key === 'aip' ? r.restored : r.upserted
             tr
-              td= key
+              td= labels[key] || key
               td= total
               td
                 = r.errors.length
@@ -55,15 +56,15 @@ block content
 
     form(method='POST' action='/admin/import' enctype='multipart/form-data')
       include data-transfer-filters.pug
-      label(for='dumpFile') Ficheiro do dump
+      label(for='dumpFile') Ficheiro exportado
       input#dumpFile.w3-input.w3-border(
         type='file'
         name='dumpFile'
         accept='.json,application/json'
       )
       p.w3-small
-        | Usa preferencialmente o ficheiro descarregado pela exportação, incluindo o conteúdo completo do recurso e respetivos ficheiros AIP.
-      label(for='dumpText') JSON do dump (alternativa)
+        | Usa preferencialmente o ficheiro descarregado pela exportação.
+      label(for='dumpText') Conteúdo do ficheiro (alternativa)
       textarea#dumpText.w3-input(
         name='dumpText'
         rows='20'

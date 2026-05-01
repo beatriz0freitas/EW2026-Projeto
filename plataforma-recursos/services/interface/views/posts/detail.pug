@@ -6,20 +6,20 @@ block content
 	section.pagina-detalhe
 		section.detalhe-topo
 			.etiquetas
-				span.etiqueta Post
+				span.etiqueta Publicação
 				span.etiqueta.etiqueta--vermelha por #{post.autorNome || 'desconhecido'}
 			h1= post.titulo
 			.conteudo-acoes
-				a.w3-button.botao-claro(href='/posts') Voltar aos posts
+				a.w3-button.botao-claro(href='/posts') Voltar às publicações
 				if canManagePost
-					a.w3-button.botao-principal(href=`/posts/${post._id}/edit`) Editar post
+					a.w3-button.botao-principal(href=`/posts/${post._id}/edit`) Editar publicação
 
 		section.w3-card.w3-white.secao-card
 			p= post.conteudo
 			if canManagePost
 				.conteudo-acoes
 					form(action=`/posts/${post._id}/delete` method='post')
-						button.w3-button.w3-red(type='submit') Remover post
+						button.w3-button.w3-red(type='submit') Remover publicação
 
 		section.w3-card.w3-white.secao-card
 			h2 Comentários
@@ -42,4 +42,4 @@ block content
 					textarea#texto.w3-input(name='texto' rows='4' required)
 					button.w3-button.botao-principal(type='submit') Comentar
 			else
-				p.w3-text-grey Inicie sessão para comentar.
+				p.w3-text-grey Inicia sessão para comentar.

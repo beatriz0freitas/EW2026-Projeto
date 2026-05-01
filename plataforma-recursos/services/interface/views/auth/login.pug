@@ -7,20 +7,19 @@ block content
 			label(for='email') Email
 			input#email.w3-input(type='email' name='email' required)
 
-			label(for='password') Password
+			label(for='password') Palavra-passe
 			input#password.w3-input(type='password' name='password' required)
 
 			button.w3-button.botao-principal(type='submit') Iniciar sessão
 
 		p.w3-small
-			| Ainda não tem conta?
-			a(href='/auth/register') Registe-se aqui.
+			| Ainda não tem conta? #[a(href='/auth/register') Crie uma conta.]
 
 		div.w3-margin-top.w3-center
 			p Ou entrar com:
-			a.w3-button.w3-blue.w3-margin-right(href='/auth/facebook')
+			a.w3-button.w3-border.w3-margin-right(href='/auth/facebook')
 				i.fa.fa-facebook.w3-margin-right
 				| Facebook
-			a.w3-button.w3-red(href='/auth/google')
+			a.w3-button.w3-border(href='/auth/google')
 				i.fa.fa-google.w3-margin-right
 				| Google

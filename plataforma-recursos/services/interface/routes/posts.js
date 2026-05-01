@@ -28,13 +28,13 @@ router.get(
 
 		if (!list.ok) {
 			return res.status(list.status || 500).render('error', {
-				title: 'Posts indisponíveis',
-				message: apiErrorMessage(list.data, 'Não foi possível obter os posts.'),
+				title: 'Publicações indisponíveis',
+				message: apiErrorMessage(list.data, 'Não foi possível obter as publicações.'),
 			})
 		}
 
 		res.render('posts/list', {
-			title: 'Posts',
+			title: 'Publicações',
 			items: list.data?.items || [],
 		})
 	})
@@ -42,8 +42,8 @@ router.get(
 
 router.get('/new', requireSession, requireLevel('produtor'), (req, res) => {
 	res.render('posts/form', {
-		title: 'Novo post',
-		heading: 'Criar post',
+		title: 'Nova publicação',
+		heading: 'Criar publicação',
 		action: '/posts',
 		submitLabel: 'Publicar',
 		post: { titulo: '', conteudo: '', resourceId: req.query.resourceId || '' },
@@ -65,11 +65,11 @@ router.post(
 		})
 
 		if (!created.ok) {
-			req.flashError(apiErrorMessage(created.data, 'Não foi possível criar o post.'))
+			req.flashError(apiErrorMessage(created.data, 'Não foi possível criar a publicação.'))
 			return res.redirect('/posts/new')
 		}
 
-		req.flashSuccess('Post criado com sucesso.')
+		req.flashSuccess('Publicação criada com sucesso.')
 		res.redirect(`/posts/${created.data.post._id}`)
 	})
 )
@@ -84,13 +84,13 @@ router.get(
 
 		if (!postRes.ok) {
 			return res.status(postRes.status || 500).render('error', {
-				title: 'Post não encontrado',
-				message: apiErrorMessage(postRes.data, 'Não foi possível carregar o post.'),
+				title: 'Publicação não encontrada',
+				message: apiErrorMessage(postRes.data, 'Não foi possível carregar a publicação.'),
 			})
 		}
 
 		res.render('posts/detail', {
-			title: postRes.data?.post?.titulo || 'Detalhe do Post',
+			title: postRes.data?.post?.titulo || 'Detalhe da publicação',
 			post: postRes.data.post,
 			comments: commentsRes.ok ? commentsRes.data?.items || [] : [],
 		})
@@ -105,20 +105,20 @@ router.get(
 		const postRes = await apiRequest(`/posts/${req.params.id}`, { token: req.session.token, req })
 		if (!postRes.ok) {
 			return res.status(postRes.status || 500).render('error', {
-				title: 'Post não encontrado',
-				message: apiErrorMessage(postRes.data, 'Não foi possível carregar o post.'),
+				title: 'Publicação não encontrada',
+				message: apiErrorMessage(postRes.data, 'Não foi possível carregar a publicação.'),
 			})
 		}
 
 		const post = postRes.data.post
 		if (!canManagePost(req, post)) {
-			req.flashError('Não tem permissões para editar este post.')
+			req.flashError('Não tem permissões para editar esta publicação.')
 			return res.redirect(`/posts/${req.params.id}`)
 		}
 
 		res.render('posts/form', {
-			title: 'Editar post',
-			heading: 'Editar post',
+			title: 'Editar publicação',
+			heading: 'Editar publicação',
 			action: `/posts/${req.params.id}/edit`,
 			submitLabel: 'Guardar alterações',
 			post: {
@@ -152,7 +152,7 @@ router.post(
 			return res.redirect(`/posts/${req.params.id}/edit`)
 		}
 
-		req.flashSuccess('Post atualizado com sucesso.')
+		req.flashSuccess('Publicação atualizada com sucesso.')
 		res.redirect(`/posts/${req.params.id}`)
 	})
 )
@@ -211,11 +211,11 @@ router.post(
 		})
 
 		if (!response.ok) {
-			req.flashError(apiErrorMessage(response.data, 'Não foi possível remover o post.'))
+			req.flashError(apiErrorMessage(response.data, 'Não foi possível remover a publicação.'))
 			return res.redirect(`/posts/${req.params.id}`)
 		}
 
-		req.flashSuccess('Post removido com sucesso.')
+		req.flashSuccess('Publicação removida com sucesso.')
 		res.redirect('/posts')
 	})
 )
