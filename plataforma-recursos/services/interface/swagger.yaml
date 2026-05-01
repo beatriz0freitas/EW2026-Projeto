@@ -222,6 +222,48 @@ paths:
         '302':
           description: Redireciona para detalhe do recurso ou para o formulário em erro
 
+  /resources/new/simple:
+    post:
+      tags: [Resources]
+      summary: Submeter recurso por formulario simples
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [titulo, tipo, visibilidade, ficheiros]
+              properties:
+                titulo:
+                  type: string
+                subtitulo:
+                  type: string
+                tipo:
+                  type: string
+                ano:
+                  type: integer
+                tema:
+                  type: string
+                hashtags:
+                  type: string
+                dataCriacao:
+                  type: string
+                descricao:
+                  type: string
+                visibilidade:
+                  type: string
+                  enum: [publico, privado]
+                ficheiros:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '302':
+          description: Redireciona para detalhe do recurso ou para o formulario em erro
+
   /resources/{id}:
     get:
       tags: [Resources]

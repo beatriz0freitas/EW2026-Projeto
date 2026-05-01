@@ -86,6 +86,23 @@ function normalizeHashtags(input) {
 		.filter(Boolean)
 }
 
+function appendFormFields(form, fields) {
+	for (const [key, value] of Object.entries(fields)) {
+		if (value !== undefined && value !== null && String(value).trim() !== '') {
+			form.append(key, String(value))
+		}
+	}
+}
+
+function apiErrorMessageWithDetails(payload, fallback) {
+	const base = apiErrorMessage(payload, fallback)
+	const details = Array.isArray(payload?.details)
+		? payload.details.map((detail) => detail?.message).filter(Boolean)
+		: []
+	if (!details.length) return base
+	return `${base}: ${details.join(' ')}`
+}
+
 function canManageResource(user, resource) {
 	if (!user || !resource) return false
 	if (user.role === 'admin') return true
@@ -97,6 +114,65 @@ function canManageResource(user, resource) {
 router.get('/new', requireSession, requireLevel('produtor'), (req, res) => {
 	res.render('resources/form', { title: 'Submeter recurso' })
 })
+
+// POST /resources/new/simple — a API gera automaticamente o SIP BagIt.
+router.post(
+	'/new/simple',
+	requireSession,
+	requireLevel('produtor'),
+	upload.array('ficheiros', 20),
+	routeAsync(async (req, res) => {
+		if (!req.files || req.files.length === 0) {
+			req.flashError('Submeta pelo menos um ficheiro do recurso.')
+			return res.redirect('/resources/new')
+		}
+
+		const form = new FormData()
+		appendFormFields(form, {
+			titulo: req.body.titulo,
+			subtitulo: req.body.subtitulo,
+			tipo: req.body.tipo,
+			ano: req.body.ano,
+			tema: req.body.tema,
+			hashtags: req.body.hashtags,
+			visibilidade: req.body.visibilidade,
+			dataCriacao: req.body.dataCriacao,
+			descricao: req.body.descricao,
+		})
+
+		for (const ficheiro of req.files) {
+			form.append(
+				'ficheiros',
+				new Blob([ficheiro.buffer], { type: ficheiro.mimetype || 'application/octet-stream' }),
+				ficheiro.originalname || 'ficheiro'
+			)
+		}
+
+		const response = await apiFetch('/oais/ingest/simples', {
+			method: 'POST',
+			token: req.session.token,
+			body: form,
+			req,
+		})
+
+		let payload = null
+		try { payload = await response.json() } catch { payload = null }
+
+		if (!response.ok) {
+			req.flashError(apiErrorMessageWithDetails(payload, 'Não foi possível submeter o recurso.'))
+			return res.redirect('/resources/new')
+		}
+
+		const resourceId = payload?.resourceId
+		if (!resourceId) {
+			req.flashError('Submissão concluída, mas não foi possível obter o id do recurso.')
+			return res.redirect('/resources')
+		}
+
+		req.flashSuccess('Recurso submetido com sucesso.')
+		res.redirect(`/resources/${resourceId}`)
+	})
+)
 
 // POST /resources/new  — ingestão SIP
 router.post(
@@ -128,7 +204,7 @@ router.post(
 		try { payload = await response.json() } catch { payload = null }
 
 		if (!response.ok) {
-			req.flashError(apiErrorMessage(payload, 'Não foi possível submeter o recurso.'))
+			req.flashError(apiErrorMessageWithDetails(payload, 'Não foi possível submeter o recurso.'))
 			return res.redirect('/resources/new')
 		}
 
@@ -341,7 +417,7 @@ router.post('/:id/edit', requireSession, requireLevel('produtor'), routeAsync(as
 	})
 
 	if (!response.ok) {
-		req.flashError(apiErrorMessage(response.data, 'Não foi possível guardar o recurso.'))
+		req.flashError(apiErrorMessageWithDetails(response.data, 'Não foi possível guardar o recurso.'))
 		return res.redirect(`/resources/${req.params.id}/edit`)
 	}
 
