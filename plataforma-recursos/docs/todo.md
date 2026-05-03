@@ -228,9 +228,8 @@ Validação desta atualização:
 ### Hardening transversal
 
 - ❌ Adicionar Helmet na interface.
-- ✅ Adicionar CORS explícito na API.
 - ❌ Rate limiting global no gateway.
-- ❌ Rever exposição de rotas internas no gateway. 
+ 
 
 ### Auth — melhorias de segurança
 
