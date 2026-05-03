@@ -11,6 +11,7 @@ const express = require('express')
 
 const sessionsController = require('../controllers/sessionsController')
 const { verificaAcesso } = require('../middleware/auth')
+const { requireInternalService } = require('../middleware/internal')
 const { rateLimitLogin } = require('../middleware/rateLimit')
 const { validarCampoObrigatorioNoBody, validarPedidoLoginNoBody } = require('../middleware/validate')
 
@@ -36,9 +37,11 @@ router.post('/refresh', sessionsController.refresh)
 // ─────────────────────────────────────────────
 // POST /sessions/refresh-server  →  emite novo access token com refresh token no body
 // Usado pelo serviço interface para renovação automática em server-side.
+// Exige token interno entre serviços.
 // ─────────────────────────────────────────────
 router.post(
 	'/refresh-server',
+	requireInternalService,
 	validarCampoObrigatorioNoBody('refreshToken', {
 		status: 401,
 		code: 'REFRESH_TOKEN_MISSING',

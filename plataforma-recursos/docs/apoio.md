@@ -288,13 +288,12 @@ Na fase inicial, `DIP = SIP`. Sem transformações complexas.
    - Busca o utilizador em MongoDB.
    - Valida a password com bcrypt.
    - Gera um JWT curta vida (access token) e um refresh token de vida longa.
-   - Guarda o refresh token na sessão server-side (para revogação).
+   - Envia o refresh token em cookie HttpOnly.
 3. Devolve:
    ```json
    {
      "ok": true,
      "token": "<jwt-access-token>",
-     "refreshToken": "<refresh-token>",
      "user": { "sub": "userId", "nome": "...", "role": "produtor", ... }
    }
    ```
@@ -311,8 +310,9 @@ Na fase inicial, `DIP = SIP`. Sem transformações complexas.
 
 **POST /sessions/refresh-server (no Auth):**
 
-- A Interface guarda o refresh token na sessão server-side.
+- A Interface guarda na sessão server-side o refresh token recebido via `Set-Cookie` do Auth.
 - Quando o access token expira (HTTP 401), a Interface chama este endpoint com o refresh token.
+- O endpoint exige `X-Internal-Token`, por isso fica reservado a chamadas internas entre serviços.
 - Se válido, devolve um novo access token.
 
 ### Extração de Token (API)

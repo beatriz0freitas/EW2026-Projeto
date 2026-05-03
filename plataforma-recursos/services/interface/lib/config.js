@@ -22,6 +22,14 @@ function getSessionSecret(nodeEnv) {
 	return value || 'dev-session-secret-change-me'
 }
 
+function requiredEnv(name) {
+	const value = process.env[name]
+	if (!value) {
+		throw new Error(`${name} em falta. Define ${name} no ambiente para arrancar o serviço interface.`)
+	}
+	return value
+}
+
 const nodeEnv = process.env.NODE_ENV || 'development'
 
 const config = {
@@ -34,6 +42,12 @@ const config = {
 	services: {
 		authUrl: parseUrl(process.env.AUTH_URL || 'http://auth:16027', 'AUTH_URL'),
 		apiUrl: parseUrl(process.env.API_URL || 'http://api:16025', 'API_URL'),
+	},
+	auth: {
+		refreshCookieName: process.env.AUTH_REFRESH_COOKIE_NAME || 'ew2026_refresh',
+	},
+	internal: {
+		serviceToken: requiredEnv('INTERNAL_SERVICE_TOKEN'),
 	},
 	dataTransfer: {
 		maxImportFileSizeBytes: 256 * 1024 * 1024,

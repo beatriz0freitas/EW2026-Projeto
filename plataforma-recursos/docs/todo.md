@@ -147,8 +147,8 @@ Validação desta atualização:
 - ✅ Endpoints internos legados removidos para simplificar a API Auth.
 - ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
 - ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
-- ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
-- ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito; ideal exigir segredo forte por ambiente.
+- ✅ Refresh token deixou de ser devolvido em JSON no login.
+- ✅ `JWT_REFRESH_SECRET` exigido no arranque do auth.
 - ✅ Rate limiting no login implementado em POST `/auth/sessions` (in-memory por janela temporal).
 - ✅ Helmet implementado.
 
@@ -234,8 +234,8 @@ Validação desta atualização:
 
 ### Auth — melhorias de segurança
 
-- ⚠️ Remover refreshToken do corpo JSON do login (manter apenas em cookie HttpOnly).
-- ⚠️ Exigir JWT_REFRESH_SECRET no arranque em vez de ter fallback por defeito.
+- ✅ Remover refreshToken do corpo JSON do login (manter apenas em cookie HttpOnly).
+- ✅ Exigir JWT_REFRESH_SECRET no arranque em vez de ter fallback por defeito.
 
 ### Metadados e contratos
 
