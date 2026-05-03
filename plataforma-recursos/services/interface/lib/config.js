@@ -31,10 +31,12 @@ function requiredEnv(name) {
 }
 
 const nodeEnv = process.env.NODE_ENV || 'development'
+const publicBaseUrl = parseUrl(process.env.PUBLIC_BASE_URL || process.env.CORS_ORIGIN || 'http://localhost:16020', 'PUBLIC_BASE_URL')
 
 const config = {
 	port: parsePort(process.env.PORT, 16026, 'PORT'),
 	nodeEnv,
+	publicBaseUrl,
 	session: {
 		secret: getSessionSecret(nodeEnv),
 		cookieName: process.env.SESSION_COOKIE_NAME || 'ew.sid',
@@ -45,6 +47,20 @@ const config = {
 	},
 	auth: {
 		refreshCookieName: process.env.AUTH_REFRESH_COOKIE_NAME || 'ew2026_refresh',
+	},
+	oauth: {
+		google: {
+			enabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+			clientId: process.env.GOOGLE_CLIENT_ID,
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+			callbackUrl: `${publicBaseUrl}/auth/google/callback`,
+		},
+		facebook: {
+			enabled: Boolean(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
+			appId: process.env.FACEBOOK_APP_ID,
+			appSecret: process.env.FACEBOOK_APP_SECRET,
+			callbackUrl: `${publicBaseUrl}/auth/facebook/callback`,
+		},
 	},
 	internal: {
 		serviceToken: requiredEnv('INTERNAL_SERVICE_TOKEN'),
