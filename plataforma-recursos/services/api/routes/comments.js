@@ -1,7 +1,7 @@
 const express = require('express')
 
 const commentsController = require('../controllers/commentsController')
-const { requireAuth } = require('../middleware/auth')
+const { optionalAuth, requireAuth } = require('../middleware/auth')
 const {
 	validarCamposTextoObrigatoriosNoBody,
 	validarPaginacaoNaQuery,
@@ -10,7 +10,7 @@ const {
 const router = express.Router()
 
 // GET /api/posts/:id/comments
-router.get('/posts/:id/comments', validarPaginacaoNaQuery(), commentsController.listByPost)
+router.get('/posts/:id/comments', optionalAuth, validarPaginacaoNaQuery(), commentsController.listByPost)
 
 // POST /api/posts/:id/comments
 router.post('/posts/:id/comments', requireAuth, validarCamposTextoObrigatoriosNoBody(['texto']), commentsController.createByPost)
@@ -19,4 +19,3 @@ router.post('/posts/:id/comments', requireAuth, validarCamposTextoObrigatoriosNo
 router.delete('/posts/:id/comments/:cid', requireAuth, commentsController.deleteByPost)
 
 module.exports = router
-

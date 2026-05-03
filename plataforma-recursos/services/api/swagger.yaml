@@ -485,7 +485,8 @@ paths:
 
     post:
       tags: [Posts]
-      summary: Criar post (produtor/admin)
+      summary: Criar post sobre um recurso
+      description: Requer utilizador autenticado. O recurso associado tem de ser visível para o utilizador.
       security:
         - bearerAuth: []
       requestBody:
@@ -494,7 +495,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [titulo, conteudo]
+              required: [titulo, conteudo, resourceId]
               properties:
                 titulo:
                   type: string
@@ -502,7 +503,6 @@ paths:
                   type: string
                 resourceId:
                   type: string
-                  nullable: true
             example:
               titulo: Novo recurso de algebra
               conteudo: Publiquei um novo recurso para treino.

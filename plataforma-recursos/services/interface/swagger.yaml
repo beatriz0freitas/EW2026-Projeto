@@ -364,7 +364,7 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required: [titulo, conteudo]
+              required: [titulo, conteudo, resourceId]
               properties:
                 titulo:
                   type: string
@@ -390,7 +390,7 @@ paths:
               schema:
                 type: string
         '302':
-          description: Redirecionamento caso sem permissões
+          description: Redirecionamento caso não tenha sessão iniciada
 
   /posts/{id}:
     get:
@@ -448,7 +448,7 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required: [titulo, conteudo]
+              required: [titulo, conteudo, resourceId]
               properties:
                 titulo:
                   type: string
