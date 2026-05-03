@@ -195,8 +195,8 @@ Validação desta atualização:
 - ✅ Handler central de 502.
 - ✅ `proxyTimeout` configurado.
 - ✅ Hub Swagger agregado em `/docs`.
-- ❌ CORS explícito no gateway não implementado.
-- ❌ Helmet no gateway não implementado.
+- ✅ CORS explícito no gateway implementado.
+- ✅ Helmet no gateway implementado.
 - ❌ Rate limiting global não implementado.
 - ⚠️ Sem circuit breaker.
 
