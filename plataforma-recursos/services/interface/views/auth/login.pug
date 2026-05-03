@@ -16,11 +16,14 @@ block content
 			| Ainda não tem conta?
 			a(href='/auth/register') Registe-se aqui.
 
-		div.w3-margin-top.w3-center
-			p Ou entrar com:
-			a.w3-button.w3-blue.w3-margin-right(href='/auth/facebook')
-				i.fa.fa-facebook.w3-margin-right
-				| Facebook
-			a.w3-button.w3-red(href='/auth/google')
-				i.fa.fa-google.w3-margin-right
-				| Google
+		if oauthProviders && (oauthProviders.facebook || oauthProviders.google)
+			div.w3-margin-top.w3-center
+				p Ou entrar com:
+				if oauthProviders.facebook
+					a.w3-button.w3-blue.w3-margin-right(href='/auth/facebook')
+						i.fa.fa-facebook.w3-margin-right
+						| Facebook
+				if oauthProviders.google
+					a.w3-button.w3-red(href='/auth/google')
+						i.fa.fa-google.w3-margin-right
+						| Google

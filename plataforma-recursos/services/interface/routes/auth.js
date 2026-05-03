@@ -35,11 +35,16 @@ function extractRefreshTokenFromAuthCookies(headers) {
 	return match ? decodeURIComponent(match[1]) : null
 }
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+const oauthProviders = {
+	google: config.oauth.google.enabled,
+	facebook: config.oauth.facebook.enabled,
+}
+
+if (config.oauth.google.enabled) {
         passport.use(new GoogleStrategy({
-                clientID: process.env.GOOGLE_CLIENT_ID,
-                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-                callbackURL: 'http://localhost:16020/auth/google/callback'
+                clientID: config.oauth.google.clientId,
+                clientSecret: config.oauth.google.clientSecret,
+                callbackURL: config.oauth.google.callbackUrl
         }, async (accessToken, refreshToken, profile, done) => {
                 const email = profile.emails && profile.emails[0] ? profile.emails[0].value : ''
                 const nome = profile.displayName || email.split('@')[0]
@@ -54,11 +59,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         })
 }
 
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+if (config.oauth.facebook.enabled) {
         passport.use(new FacebookStrategy({
-                clientID: process.env.FACEBOOK_APP_ID,
-                clientSecret: process.env.FACEBOOK_APP_SECRET,
-                callbackURL: 'http://localhost:16020/auth/facebook/callback',
+                clientID: config.oauth.facebook.appId,
+                clientSecret: config.oauth.facebook.appSecret,
+                callbackURL: config.oauth.facebook.callbackUrl,
                 profileFields: ['id', 'displayName', 'emails']
         }, async (accessToken, refreshToken, profile, done) => {
                 const email = profile.emails && profile.emails[0] ? profile.emails[0].value : `${profile.id}@facebook.com`
@@ -98,7 +103,7 @@ async function handleOAuthCallback(req, res, provider, providerId, email, nome) 
 
 router.get('/login', (req, res) => {
 	if (req.session.token) return res.redirect('/')
-	res.render('auth/login', { title: 'Entrar' })
+	res.render('auth/login', { title: 'Entrar', oauthProviders })
 })
 
 router.post('/login', async (req, res) => {
