@@ -19,15 +19,15 @@ const uploadSip = createSingleMemoryUpload({
 	errors: {
 		fileTooLarge: {
 			code: 'SIP_FILE_TOO_LARGE',
-			message: 'ficheiro SIP excede o tamanho máximo suportado pela API',
+			message: 'o ficheiro preparado é demasiado grande',
 		},
 		fieldTooLarge: {
 			code: 'SIP_FIELDS_TOO_LARGE',
-			message: 'campos do pedido excedem o tamanho suportado pela API',
+			message: 'a informação enviada é demasiado grande',
 		},
 		invalidType: {
 			code: 'INVALID_SIP_FILE',
-			message: 'o ficheiro SIP tem de ser um ZIP',
+			message: 'o ficheiro preparado tem de ser um ZIP',
 		},
 	},
 })
@@ -41,15 +41,15 @@ const uploadSubmissaoSimples = createMultipleMemoryUpload({
 	errors: {
 		fileTooLarge: {
 			code: 'FICHEIRO_RECURSO_DEMASIADO_GRANDE',
-			message: 'um dos ficheiros do recurso excede o tamanho máximo suportado pela API',
+			message: 'um dos ficheiros do recurso é demasiado grande',
 		},
 		fieldTooLarge: {
 			code: 'METADADOS_DEMASIADO_GRANDES',
-			message: 'os metadados do recurso excedem o tamanho suportado pela API',
+			message: 'a informação do recurso é demasiado grande',
 		},
 		tooManyFiles: {
 			code: 'FICHEIROS_DEMAIS',
-			message: 'a submissão simples aceita no máximo 20 ficheiros',
+			message: 'podes enviar no máximo 20 ficheiros de cada vez',
 		},
 		invalidType: {
 			code: 'TIPO_FICHEIRO_INVALIDO',
@@ -68,8 +68,8 @@ async function publicarNoticiasDepoisDaSubmissao(req, resourceId) {
 			tipo: 'system',
 			eventType: 'system.new_submission',
 			dedupeKey: `system.new_submission:${resourceId}`,
-			titulo: 'Nova submissao de recurso',
-			conteudo: `${producerName} submeteu o recurso \"${titulo}\".`,
+			titulo: 'Novo recurso publicado',
+			conteudo: `${producerName} publicou o recurso \"${titulo}\".`,
 			createdBy: 'system',
 			payload: {
 				resourceId,
@@ -98,8 +98,8 @@ router.post(
 		if (!req.file) {
 			return jsonError(res, 400, {
 				code: 'MISSING_FILE',
-				message: 'Ficheiro SIP (ZIP) em falta',
-				details: [{ code: 'MISSING_FILE', message: 'Ficheiro SIP (ZIP) em falta' }],
+				message: 'Ficheiro ZIP preparado em falta',
+				details: [{ code: 'MISSING_FILE', message: 'Ficheiro ZIP preparado em falta' }],
 			})
 		}
 
@@ -120,7 +120,7 @@ router.post(
 		if (!result.ok) {
 			return jsonError(res, 422, {
 				code: 'INVALID_SIP',
-				message: 'SIP inválido',
+				message: 'Não foi possível ler o ficheiro preparado',
 				details: result.errors,
 			})
 		}
@@ -136,7 +136,7 @@ async function receberSubmissaoSimples(req, res) {
 	if (tamanhoTotal > config.oais.maxSipFileSizeBytes) {
 		return jsonError(res, 400, {
 			code: 'SUBMISSAO_SIMPLES_DEMASIADO_GRANDE',
-			message: 'o conjunto de ficheiros excede o tamanho máximo suportado pela API',
+			message: 'o conjunto de ficheiros é demasiado grande',
 		})
 	}
 
@@ -148,7 +148,7 @@ async function receberSubmissaoSimples(req, res) {
 	if (!pacote.ok) {
 		return jsonError(res, 422, {
 			code: 'SUBMISSAO_SIMPLES_INVALIDA',
-			message: 'submissão simples inválida',
+			message: 'revê a informação do recurso',
 			details: pacote.errors,
 		})
 	}
@@ -167,7 +167,7 @@ async function receberSubmissaoSimples(req, res) {
 	if (!result.ok) {
 		return jsonError(res, 422, {
 			code: 'INVALID_SIP_GENERATED',
-			message: 'o SIP gerado automaticamente não passou na validação',
+			message: 'não foi possível preparar os ficheiros automaticamente',
 			details: result.errors,
 		})
 	}

@@ -1,7 +1,7 @@
 extends ../layout
 
 block content
-	- const headingText = typeof heading !== 'undefined' ? heading : 'Criar post'
+	- const headingText = typeof heading !== 'undefined' ? heading : 'Criar publicação'
 	- const formAction = typeof action !== 'undefined' ? action : '/posts'
 	- const submitText = typeof submitLabel !== 'undefined' ? submitLabel : 'Publicar'
 	- const p = typeof post !== 'undefined' && post ? post : {}

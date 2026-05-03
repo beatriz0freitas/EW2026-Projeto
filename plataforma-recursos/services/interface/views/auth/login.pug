@@ -5,16 +5,15 @@ block content
 		h1 Entrar
 		form(action='/auth/login' method='post')
 			label(for='email') Email
-			input#email.w3-input(type='email' name='email' required)
+			input#email.w3-input(type='email' name='email' autocomplete='email' required)
 
-			label(for='password') Password
-			input#password.w3-input(type='password' name='password' required)
+			label(for='password') Palavra-passe
+			input#password.w3-input(type='password' name='password' autocomplete='current-password' required)
 
 			button.w3-button.botao-principal(type='submit') Iniciar sessão
 
 		p.w3-small
-			| Ainda não tem conta?
-			a(href='/auth/register') Registe-se aqui.
+			| Ainda não tem conta? #[a(href='/auth/register') Crie uma conta.]
 
 		if oauthProviders && (oauthProviders.facebook || oauthProviders.google)
 			div.w3-margin-top.w3-center
