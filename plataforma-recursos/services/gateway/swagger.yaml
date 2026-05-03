@@ -54,7 +54,7 @@ paths:
     get:
       tags: [Proxy]
       summary: Proxy para servico API
-      description: Encaminha pedidos /api/* para o servico API.
+      description: Encaminha pedidos /api/* para o servico API, exceto rotas internas bloqueadas na fronteira pública como /api/news/system.
       responses:
         '200':
           description: Resposta proxied do servico API
@@ -93,6 +93,7 @@ paths:
     get:
       tags: [Proxy]
       summary: Proxy para servico Auth ou paginas de auth da Interface
+      description: Encaminha pedidos /auth/* para Auth ou Interface, exceto rotas internas bloqueadas na fronteira pública como /auth/sessions/verify e /auth/sessions/refresh-server.
       responses:
         '200':
           description: Resposta proxied
