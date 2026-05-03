@@ -129,8 +129,8 @@ Validação desta atualização:
 - ✅ PATCH de resources atualiza campos permitidos da metadata.
 - ✅ GET `/api/posts` aceita filtro opcional `resourceId`.
 - ✅ Helmet implementado
-- ❌ CORS explícito não implementado na API.
-- ❌ Rate limiting não implementado na API.
+- ✅ CORS explícito implementado na API.
+- ✅ Rate limiting implementado na API.
 
 ### Auth (`services/auth`)
 
@@ -228,7 +228,7 @@ Validação desta atualização:
 ### Hardening transversal
 
 - ❌ Adicionar Helmet na interface.
-- ❌ Adicionar CORS explícito na API.
+- ✅ Adicionar CORS explícito na API.
 - ❌ Rate limiting global no gateway.
 - ❌ Rever exposição de rotas internas no gateway. 
 
