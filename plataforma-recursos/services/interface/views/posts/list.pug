@@ -7,7 +7,7 @@ block content
 			p Conversas e notas ligadas aos recursos educativos.
 			.cabecalho-acoes
 				a.w3-button.botao-claro(href='/resources') Ver recursos
-				if user && (user.role === 'produtor' || user.role === 'admin')
+				if user
 					a.w3-button.botao-principal(href='/posts/new') Criar novo post
 
 		section.w3-card.w3-white.secao-card
@@ -19,3 +19,10 @@ block content
 						li
 							a(href=`/posts/${post._id}`)= post.titulo
 							span.w3-text-grey.w3-small  · por #{post.autorNome || 'autor desconhecido'}
+							if post.resource
+								br
+								span.w3-small
+									| Recurso: 
+									a(href=`/resources/${post.resource._id}`)= post.resource.titulo
+									if post.resource.tipo
+										span.w3-text-grey  · #{post.resource.tipo}

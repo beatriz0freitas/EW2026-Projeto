@@ -7,6 +7,7 @@ const { config } = require('../lib/config')
 const { validateMetadataResource } = require('../lib/metadataValidator')
 const { resolveResourceAipPath } = require('../lib/aipStorage')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
+const { canViewResource, visibilityQuery } = require('../lib/resourceAccess')
 
 function buildFilters(query) {
 	const filters = {}
@@ -21,22 +22,6 @@ function canManageResource(resource, user) {
 	if (!user) return false
 	if (user.role === 'admin') return true
 	return String(resource.produtor) === String(user.sub)
-}
-
-function canViewResource(resource, user) {
-	const visibilidade = resource?.metadata?.resource?.visibilidade || 'privado'
-	if (visibilidade !== 'privado') return true
-	if (!user) return false
-	if (user.role === 'admin') return true
-	return String(resource.produtor) === String(user.sub)
-}
-
-function visibilityQuery(user) {
-	if (!user) return { 'metadata.resource.visibilidade': 'publico' }
-	if (user.role === 'admin') return {}
-	return {
-		$or: [{ 'metadata.resource.visibilidade': 'publico' }, { produtor: String(user.sub) }],
-	}
 }
 
 function limparTexto(valor) {

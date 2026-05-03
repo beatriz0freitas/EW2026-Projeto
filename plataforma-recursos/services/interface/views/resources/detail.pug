@@ -61,7 +61,7 @@ block content
 						a.w3-button.w3-border(href=`/resources/${resource._id}/edit`) Editar recurso
 						form(action=`/resources/${resource._id}/delete` method='post')
 							button.w3-button.w3-red(type='submit' onclick="return confirm('Tem a certeza que pretende eliminar este recurso? Esta ação não pode ser revertida.');") Eliminar recurso
-					if user && (user.role === 'produtor' || user.role === 'admin')
+					if user
 						a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar post sobre este recurso
 
 			aside.w3-card.w3-white.secao-card.classificacao
@@ -84,7 +84,7 @@ block content
 				div
 					h2 Posts sobre este recurso
 					p.w3-text-grey Discussões ligadas diretamente a este material.
-				if user && (user.role === 'produtor' || user.role === 'admin')
+				if user
 					a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar post
 			if !posts || !posts.length
 				p Ainda não existem posts associados a este recurso.
