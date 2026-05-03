@@ -618,6 +618,18 @@ Os recursos são classificados através de campos no `metadata.json`:
   updatedAt: Date (opcional)       // apenas em PATCH
 }
 ```
+## Contrato de metadados:
+
+    tipo          string  obrigatório   1–80 caracteres
+    titulo        string  obrigatório   1–200 caracteres
+    visibilidade  enum    obrigatório   'publico' | 'privado'
+    subtitulo     string  opcional      máx 200 caracteres
+    descricao     string  opcional      máx 2000 caracteres
+    tema          string  opcional      máx 120 caracteres
+    ano           inteiro opcional      0–3000
+    dataCriacao   string  opcional      formato YYYY, YYYY-MM ou YYYY-MM-DD
+    hashtags      array   opcional      máx 20 entradas, cada uma máx 80 caracteres,
+                                        sem espaços, sem entradas vazias
 
 ### Persistência
 
