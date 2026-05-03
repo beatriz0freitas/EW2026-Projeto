@@ -204,5 +204,4 @@ function validateMetadata(metadata) {
 module.exports = {
 	validateMetadata,
 	validateMetadataResource,
-	LIMITES,
 }

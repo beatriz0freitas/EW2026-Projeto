@@ -1,7 +1,7 @@
 const crypto = require('crypto')
 const path = require('path')
 
-const { validateMetadataResource, LIMITES } = require('../../lib/metadataValidator')
+const { validateMetadataResource } = require('../../lib/metadataValidator')
 
 function limparTexto(valor) {
 	return String(valor || '').trim()
