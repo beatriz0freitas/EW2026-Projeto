@@ -8,6 +8,7 @@ const unzipper = require('unzipper')
 
 const Resource = require('../../models/Resource')
 const { buildResourceAipPath, buildStoredAipFile } = require('../../lib/aipStorage')
+const { validateMetadata } = require('../../lib/metadataValidator')
 
 // Calcula o SHA-256 de um ficheiro para comparar com o manifest.
 function sha256File(filePath) {
@@ -38,7 +39,7 @@ async function listFilesRecursively(rootDir) {
 	return files
 }
 
-// Faz parse de um manifest estilo “sha256  caminho”, ignorando comentários/linhas vazias.
+// Faz parse de um manifest estilo "sha256  caminho", ignorando comentários/linhas vazias.
 function parseManifest(text) {
 	const lines = text.split(/\r?\n/)
 	const entries = []
@@ -123,37 +124,6 @@ async function safeUnzipToDir(zipBuffer, outDir) {
 	}
 }
 
-// Validação mínima do metadata.json (campos obrigatórios para o MVP).
-function validateMetadata(metadata) {
-	const errors = []
-	if (!metadata || typeof metadata !== 'object') {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.json deve ser um objeto JSON' })
-		return errors
-	}
-	if (!metadata.resource || typeof metadata.resource !== 'object') {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource é obrigatório' })
-		return errors
-	}
-
-	const resource = metadata.resource
-	if (!resource.tipo || typeof resource.tipo !== 'string') {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.tipo é obrigatório' })
-	}
-	if (!resource.titulo || typeof resource.titulo !== 'string') {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.titulo é obrigatório' })
-	}
-	if (!['publico', 'privado'].includes(resource.visibilidade)) {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.visibilidade deve ser publico ou privado' })
-	}
-	if (resource.ano !== undefined && (!Number.isInteger(Number(resource.ano)) || Number(resource.ano) < 0 || Number(resource.ano) > 3000)) {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.ano deve ser um inteiro entre 0 e 3000' })
-	}
-	if (resource.hashtags !== undefined && !Array.isArray(resource.hashtags)) {
-		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.hashtags deve ser uma lista' })
-	}
-	return errors
-}
-
 // Ingest (SIP ZIP -> validação -> guardar AIP em disco -> registo no Mongo).
 async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 	const errors = []
@@ -178,7 +148,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 
 		if (errors.length) return { ok: false, errors }
 
-		// 3) Ler e validar metadata.
+		// 3) Ler e validar metadata com o validador central.
 		let metadata
 		try {
 			metadata = JSON.parse(await fsp.readFile(metadataPath, 'utf-8'))
@@ -186,8 +156,8 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 			return { ok: false, errors: [{ code: 'BAD_METADATA', message: `JSON inválido em metadata.json: ${err.message}` }] }
 		}
 
-		errors.push(...validateMetadata(metadata))
-		if (errors.length) return { ok: false, errors }
+		const validacao = validateMetadata(metadata)
+		if (!validacao.ok) return { ok: false, errors: validacao.errors }
 
 		// 4) Ler manifest e verificar checksums dos ficheiros referenciados.
 		const manifestText = await fsp.readFile(manifestPath, 'utf-8')
