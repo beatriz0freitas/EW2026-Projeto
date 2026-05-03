@@ -61,6 +61,7 @@ const uploadSubmissaoSimples = createMultipleMemoryUpload({
 async function publicarNoticiasDepoisDaSubmissao(req, resourceId) {
 	try {
 		const resource = await Resource.findById(resourceId).lean()
+		if (resource?.metadata?.resource?.visibilidade === 'privado') return
 		const titulo = resource?.metadata?.resource?.titulo || 'recurso sem titulo'
 		const producerName = req.user?.nome || req.user?.sub || 'produtor'
 

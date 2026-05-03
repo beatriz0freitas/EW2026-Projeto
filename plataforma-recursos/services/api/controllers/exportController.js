@@ -32,16 +32,31 @@ function extrairDumpDoPedido(req) {
 	return req.body
 }
 
+function filtrarNoticiasDerivadasInvalidas(news, resources) {
+	const recursosPublicos = new Set(
+		resources
+			.filter((resource) => resource?.metadata?.resource?.visibilidade === 'publico')
+			.map((resource) => String(resource._id))
+	)
+
+	return news.filter((item) => {
+		if (item?.eventType !== 'system.top3') return true
+		const entries = Array.isArray(item?.payload?.items) ? item.payload.items : []
+		return entries.length > 0 && entries.every((entry) => recursosPublicos.has(String(entry.id)))
+	})
+}
+
 module.exports.exportAll = async (req, res) => {
 	try {
 		const filtros = construirFiltrosTransferencia(req.query)
-		const [resources, news, posts, ratings, comments] = await Promise.all([
+		const [resources, newsRaw, posts, ratings, comments] = await Promise.all([
 			Resource.find().lean(),
 			NewsItem.find().lean(),
 			Post.find().lean(),
 			Rating.find().lean(),
 			Comment.find().lean(),
 		])
+		const news = filtrarNoticiasDerivadasInvalidas(newsRaw, resources)
 
 		const dumpFiltrado = construirDumpFiltrado({ resources, news, posts, ratings, comments }, filtros)
 		const aip = []

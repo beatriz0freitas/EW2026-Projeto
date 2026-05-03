@@ -41,7 +41,7 @@ async function buildRatingMap() {
 
 async function computeTop3() {
 	const resources = await Resource.find(
-		{},
+		{ 'metadata.resource.visibilidade': 'publico' },
 		{
 			'metadata.resource.titulo': 1,
 			'metadata.resource.tipo': 1,
