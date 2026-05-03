@@ -54,6 +54,7 @@ services:
       - PORT=16027
       - MONGO_URL=mongodb://mongodb:27017/ew2026
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - API_URL=http://api:16025
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
     depends_on:
@@ -70,6 +71,8 @@ services:
       - PORT=16026
       - API_URL=http://api:16025
       - AUTH_URL=http://auth:16027
+      - AUTH_REFRESH_COOKIE_NAME=ew2026_refresh
+      - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - SESSION_SECRET=${SESSION_SECRET}
       - SESSION_COOKIE_NAME=ew.sid
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}

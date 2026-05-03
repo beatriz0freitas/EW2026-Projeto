@@ -129,9 +129,6 @@ components:
         token:
           type: string
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refreshToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         user:
           $ref: '#/components/schemas/UserPublic'
     RefreshResponse:
@@ -307,7 +304,9 @@ paths:
     post:
       tags: [Auth]
       summary: Renovar access token com refresh token enviado no body
-      description: Endpoint usado pela interface em chamadas server-side.
+      description: Endpoint interno usado pela interface em chamadas server-side. Requer `X-Internal-Token` ou bearer token interno.
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:

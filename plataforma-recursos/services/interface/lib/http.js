@@ -3,7 +3,7 @@
  *
  * Camada de comunicação HTTP para os serviços auth e API.
  *
- * NOVO: interceptor de 401
+ * Interceptor de 401
  *   Se um pedido ao auth ou a API devolver 401, tenta renovar o access token chamando
  *   POST /sessions/refresh-server no auth com o refresh token guardado na sessao.
  *   Se a renovação for bem-sucedida, actualiza req.session.token e repete
@@ -26,21 +26,21 @@ const API_URL = config.services.apiUrl
 
 // ─── Função base ─────────────────────────────────────────────────────────────
 
-async function requestJson(baseUrl, endpoint, { method = 'GET', token, body } = {}) {
-	const headers = { Accept: 'application/json' }
-	if (body !== undefined) headers['Content-Type'] = 'application/json'
-	if (token) headers.Authorization = `Bearer ${token}`
+async function requestJson(baseUrl, endpoint, { method = 'GET', token, headers = {}, body } = {}) {
+	const requestHeaders = { Accept: 'application/json', ...headers }
+	if (body !== undefined) requestHeaders['Content-Type'] = 'application/json'
+	if (token) requestHeaders.Authorization = `Bearer ${token}`
 
 	const response = await fetch(`${baseUrl}${endpoint}`, {
 		method,
-		headers,
+		headers: requestHeaders,
 		body: body !== undefined ? JSON.stringify(body) : undefined,
 	})
 
 	let payload = null
 	try { payload = await response.json() } catch { payload = null }
 
-	return { ok: response.ok, status: response.status, data: payload }
+	return { ok: response.ok, status: response.status, data: payload, headers: response.headers }
 }
 
 async function requestRaw(baseUrl, endpoint, { method = 'GET', token, headers = {}, body } = {}) {
@@ -65,7 +65,7 @@ async function requestRaw(baseUrl, endpoint, { method = 'GET', token, headers = 
  * Tenta chamar POST /sessions/refresh-server no auth.
  *
  * Estrategia adoptada: guardamos o refreshToken na sessao server-side
- * quando o utilizador faz login (ver routes/auth.js).
+ * a partir do cookie Set-Cookie recebido do auth (ver routes/auth.js).
  * Se o campo nao existir, a renovacao falha graciosamente.
  */
 async function tryRefresh(req) {
@@ -74,6 +74,7 @@ async function tryRefresh(req) {
 
 	const result = await requestJson(AUTH_URL, '/sessions/refresh-server', {
 		method: 'POST',
+		headers: { 'X-Internal-Token': config.internal.serviceToken },
 		body: { refreshToken },
 	})
 
@@ -81,9 +82,6 @@ async function tryRefresh(req) {
 		if (result.data.user) {
 			req.session.user = result.data.user
 			if (req.res?.locals) req.res.locals.user = result.data.user
-		}
-		if (result.data.refreshToken) {
-			req.session.refreshToken = result.data.refreshToken
 		}
 		return result.data.token
 	}
