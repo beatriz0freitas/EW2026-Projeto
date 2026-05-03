@@ -237,11 +237,6 @@ Validação desta atualização:
 - ✅ Remover refreshToken do corpo JSON do login (manter apenas em cookie HttpOnly).
 - ✅ Exigir JWT_REFRESH_SECRET no arranque em vez de ter fallback por defeito.
 
-### Metadados e contratos
-
-- ⚠️ Criar schema completo de `metadata.json`.
-- ⚠️ Definir regras específicas por tipo de recurso.
-
 
 ### Experiência funcional final
 
@@ -268,7 +263,7 @@ Validação desta atualização:
 - Notícias automáticas: ✅ funcional.
 - Interface end-to-end: ✅ funcional.
 - UI final com azul escuro, vermelho e branco: ✅ implementada.
-- Helmet e CORS na interface e CORS na API: ❌ ainda em falta.
+- Helmet e CORS na interface : ❌ ainda em falta.
 - Rate limiting global no gateway: ❌ ainda em falta.
 - Testes automáticos: ❌ ainda em falta.
 - Dataset de demonstração com dezenas de recursos: ⚠️ ainda insuficiente.
