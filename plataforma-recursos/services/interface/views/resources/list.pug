@@ -7,16 +7,21 @@ block content
 			p Pesquisa e reutiliza materiais preservados na plataforma.
 			.cabecalho-acoes
 				if user && (user.role === 'produtor' || user.role === 'admin')
-					a.w3-button.botao-claro(href='/resources/new') Submeter recurso
-				a.w3-button.botao-principal(href='/posts') Ver publicações
+					a.w3-button.botao-principal(href='/resources/new') Submeter recurso
+				a.w3-button.w3-border(href='/posts') Ver publicações
 			.etiquetas
 				span.etiqueta Total: #{pagination.total}
 				span.etiqueta.etiqueta--vermelha Página #{pagination.page} de #{pagination.totalPages}
 
-		section.w3-card.w3-white.secao-card
+		section.w3-white.secao-card
 			- const f = filters || {}
 			- const options = filterOptions || { tipos: [], anos: [], temas: [], hashtags: [] }
-			h2 Filtrar recursos
+			.cabecalho-secao
+				div
+					h2 Filtrar recursos
+					p.w3-text-grey Escolhe só o que precisas para reduzir a lista.
+				if activeFiltersCount
+					a.w3-button.w3-border(href='/resources') Limpar filtros
 			form.filtros-recursos(action='/resources' method='get')
 				div
 					label(for='tipo') Tipo
@@ -50,14 +55,20 @@ block content
 					button.w3-button.botao-principal(type='submit') Filtrar
 					a.w3-button.w3-border(href='/resources') Limpar
 
-		section.w3-card.w3-white.secao-card
+		section.w3-white.secao-card
 			.cabecalho-secao
 				div
 					h2 Resultados
-					p.w3-text-grey Recursos encontrados para os filtros atuais.
+					if activeFiltersCount
+						p.w3-text-grey #{activeFiltersCount} filtro(s) aplicado(s).
+					else
+						p.w3-text-grey Todos os recursos visíveis.
 
 			if !items.length
-				p Não existem recursos disponíveis.
+				.empty-state
+					p Não existem recursos para mostrar.
+					if activeFiltersCount
+						a.w3-button.w3-border(href='/resources') Limpar filtros
 			else
 				table.w3-table-all.w3-hoverable.w3-striped
 					thead
@@ -70,8 +81,16 @@ block content
 						each item in items
 							- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
 							tr
-								td= r.titulo || 'Sem título'
-								td= r.tipo || '-'
-								td= r.ano || '-'
+								td(data-label='Título')
+									a.result-title(href=`/resources/${item._id}`)= r.titulo || 'Sem título'
+								td(data-label='Tipo')= r.tipo || '-'
+								td(data-label='Ano')= r.ano || '-'
 								td.tabela-acoes
 									a(href=`/resources/${item._id}`) Ver detalhe
+				if pagination.totalPages > 1
+					nav.pagination(aria-label='Paginação de recursos')
+						if pagination.prevHref
+							a.w3-button.w3-border(href=pagination.prevHref) Anterior
+						span Página #{pagination.page} de #{pagination.totalPages}
+						if pagination.nextHref
+							a.w3-button.w3-border(href=pagination.nextHref) Seguinte

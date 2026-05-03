@@ -3,6 +3,7 @@ extends ../layout
 block content
 	- const uid = user && (user._id || user.id || user.sub) ? String(user._id || user.id || user.sub) : null
 	- const canManagePost = !!(user && (user.role === 'admin' || (uid && String(post.autorId) === uid)))
+	- const commentsCountLabel = comments.length === 1 ? '1 comentário' : `${comments.length} comentários`
 	section.pagina-detalhe
 		section.detalhe-topo
 			.etiquetas
@@ -14,32 +15,56 @@ block content
 				if canManagePost
 					a.w3-button.botao-principal(href=`/posts/${post._id}/edit`) Editar publicação
 
-		section.w3-card.w3-white.secao-card
-			p= post.conteudo
+		article.w3-white.secao-card.post-detail-card
+			.post-detail-card__header
+				.post-card__avatar= (post.autorNome || 'autor').trim().charAt(0).toUpperCase() || 'A'
+				div
+					.post-detail-card__meta
+						span Publicação
+						span por #{post.autorNome || 'desconhecido'}
+						if post.createdAt
+							time(datetime=post.createdAt)= new Date(post.createdAt).toLocaleString('pt-PT')
+						if post.resourceId
+							span Recurso associado
+					p.post-detail-card__content= post.conteudo
 			if canManagePost
 				.conteudo-acoes
 					form(action=`/posts/${post._id}/delete` method='post')
-						button.w3-button.w3-red(type='submit') Remover publicação
+						button.w3-button.w3-red(type='submit' onclick="return confirm('Tem a certeza que pretende remover esta publicação?');") Remover publicação
 
-		section.w3-card.w3-white.secao-card
-			h2 Comentários
-			if !comments.length
-				p Sem comentários.
-			else
-				ul.lista-cards
-					each c in comments
-						li
-							strong= c.autorNome || 'utilizador'
-							| : #{c.texto}
-							- const canDeleteComment = !!(user && (user.role === 'admin' || (uid && String(c.autorId) === uid)))
-							if canDeleteComment
-								form(action=`/posts/${post._id}/comments/${c._id}/delete` method='post')
-									button.w3-button.w3-small.w3-border(type='submit') Remover comentário
-
+		section.w3-white.secao-card.comments-section
+			.cabecalho-secao
+				div
+					h2 Comentários
+					p.w3-text-grey #{commentsCountLabel} nesta publicação.
+				if user
+					span.feed-count Participar
 			if user
-				form.formulario-compacto(action=`/posts/${post._id}/comments` method='post')
+				form.formulario-compacto.comment-form(action=`/posts/${post._id}/comments` method='post')
 					label(for='texto') Novo comentário
-					textarea#texto.w3-input(name='texto' rows='4' required)
+					textarea#texto.w3-input(name='texto' rows='4' required placeholder='Escreve uma resposta clara e útil...')
 					button.w3-button.botao-principal(type='submit') Comentar
 			else
-				p.w3-text-grey Inicia sessão para comentar.
+				.empty-state
+					p Inicia sessão para comentar.
+
+			if !comments.length
+				.empty-state
+					p Sem comentários.
+			else
+				ul.comment-list
+					each c in comments
+						- const commentAuthor = c.autorNome || 'utilizador'
+						- const commentInitial = commentAuthor.trim().charAt(0).toUpperCase() || 'U'
+						li.comment-item
+							.comment-item__avatar= commentInitial
+							.comment-item__body
+								.comment-item__top
+									strong= commentAuthor
+									if c.createdAt
+										time(datetime=c.createdAt)= new Date(c.createdAt).toLocaleString('pt-PT')
+								p= c.texto
+							- const canDeleteComment = !!(user && (user.role === 'admin' || (uid && String(c.autorId) === uid)))
+							if canDeleteComment
+								form.comment-item__action(action=`/posts/${post._id}/comments/${c._id}/delete` method='post')
+									button.w3-button.w3-small.w3-border(type='submit' onclick="return confirm('Remover este comentário?');") Remover comentário

@@ -7,12 +7,12 @@ block content
 			p
 				| Encontra, partilha e acompanha recursos com informação clara, comentários e classificações.
 			.painel-principal__acoes
-				a.w3-button.botao-claro(href='/resources') Explorar recursos
-				a.w3-button.botao-principal(href='/posts') Ver publicações
+				a.w3-button.botao-principal(href='/resources') Explorar recursos
+				a.w3-button.w3-border(href='/posts') Ver publicações
 				if user && (user.role === 'produtor' || user.role === 'admin')
-					a.w3-button.botao-claro(href='/resources/new') Submeter recurso
+					a.w3-button.w3-border(href='/resources/new') Submeter recurso
 				else if !user
-					a.w3-button.botao-claro(href='/auth/login') Entrar
+					a.w3-button.w3-border(href='/auth/login') Entrar
 			.etiquetas
 				if user
 					- const roleLabel = user.role === 'admin' ? 'Administrador' : user.role === 'produtor' ? 'Produtor' : 'Leitor'
@@ -38,46 +38,50 @@ block content
 					span Cria sessão para comentar, classificar e guardar atividade.
 
 		if news && news.length
-			section.w3-card.w3-white.secao-card
+			section.w3-white.secao-card.portal-section.portal-section--news
 				.cabecalho-secao
 					div
 						h2 Últimas notícias
 						p.w3-text-grey Atualizações recentes da plataforma.
-				each item in news
-					- const eventLabel = item.eventType === 'system.new_submission' ? 'Novo recurso' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
-					- const top3Items = item.eventType === 'system.top3' && item.payload && Array.isArray(item.payload.items) ? item.payload.items : []
-					- const isTop3WithItems = item.eventType === 'system.top3' && top3Items.length
-					- const displayTitle = item.eventType === 'system.new_submission' ? 'Novo recurso publicado' : item.eventType === 'system.top3' ? 'Recursos mais descarregados' : item.titulo
-					- const displayContent = item.eventType === 'system.new_submission' && item.payload && item.payload.title ? `${item.payload.producerName || 'Alguém'} publicou o recurso "${item.payload.title}".` : item.conteudo
+				.news-feed
+					each item in news
+						- const eventLabel = item.eventType === 'system.new_submission' ? 'Novo recurso' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
+						- const top3Items = item.eventType === 'system.top3' && item.payload && Array.isArray(item.payload.items) ? item.payload.items : []
+						- const isTop3WithItems = item.eventType === 'system.top3' && top3Items.length
+						- const displayTitle = item.eventType === 'system.new_submission' ? 'Novo recurso publicado' : item.eventType === 'system.top3' ? 'Recursos mais descarregados' : item.titulo
+						- const displayContent = item.eventType === 'system.new_submission' && item.payload && item.payload.title ? `${item.payload.producerName || 'Alguém'} publicou o recurso "${item.payload.title}".` : item.conteudo
 
-					article.news-item
-						.etiquetas
-							if item.tipo === 'system'
-								span.w3-tag.w3-blue-grey Automática
-							else
-								span.w3-tag.w3-teal Administrador
-							if eventLabel
-								span.w3-tag.w3-light-grey= eventLabel
+						article.news-card
+							.news-card__marker
+								span= item.tipo === 'system' ? 'A' : 'N'
+							.news-card__main
+								.news-card__meta
+									if item.tipo === 'system'
+										span.news-badge Automática
+									else
+										span.news-badge.news-badge--manual Administrador
+									if eventLabel
+										span.news-badge.news-badge--light= eventLabel
+									if item.publicadoEm
+										time(datetime=item.publicadoEm)= new Date(item.publicadoEm).toLocaleString('pt-PT')
 
-						h3= displayTitle
+								h3= displayTitle
 
-						if !isTop3WithItems
-							p= displayContent
+								if !isTop3WithItems
+									p= displayContent
 
-						if top3Items.length
-							ol.w3-ul
-								each resource, idx in top3Items
-									li
-										strong #{idx + 1}. #{resource.titulo || 'Recurso'}
-										span.w3-text-grey  · descarregamentos #{resource.downloads || 0}
-										if typeof resource.ratingMedia === 'number'
-											span.w3-text-grey  · avaliação #{resource.ratingMedia}
-
-						if item.publicadoEm
-							p.w3-text-grey.w3-small Publicado em #{new Date(item.publicadoEm).toLocaleString('pt-PT')}
+								if top3Items.length
+									ol.news-rank-list
+										each resource, idx in top3Items
+											li
+												span.news-rank-list__pos #{idx + 1}
+												span.news-rank-list__title= resource.titulo || 'Recurso'
+												span.news-rank-list__stat #{resource.downloads || 0} desc.
+												if typeof resource.ratingMedia === 'number'
+													span.news-rank-list__stat avaliação #{resource.ratingMedia}
 
 		if resources && resources.length
-			section.w3-card.w3-white.secao-card
+			section.w3-white.secao-card
 				.cabecalho-secao
 					div
 						h2 Recursos recentes

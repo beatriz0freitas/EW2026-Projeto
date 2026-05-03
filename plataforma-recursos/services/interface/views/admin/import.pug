@@ -1,76 +1,77 @@
 extends ../layout
 
 block content
-  section.w3-card.w3-white.w3-padding.w3-margin-top
-    h1 Administração · Importar dados
-    p
-      a.w3-button.w3-border(href='/admin/users') Utilizadores
-      a.w3-button.w3-border(href='/admin/news') Notícias
-      a.w3-button.w3-border(href='/admin/data') Dados
+	- const currentAdmin = 'data'
+	section.admin-page
+		header.admin-page-header
+			div
+				p.admin-eyebrow Administração
+				h1 Importar dados
+				p Usa um ficheiro exportado e, se necessário, limita o que entra.
+			include _nav.pug
 
-  section.w3-card.w3-white.w3-padding.w3-margin-top
-    p.w3-small
-      | Os filtros abaixo escolhem que dados entram na plataforma. Sem filtros, o ficheiro é importado por inteiro.
-    p.w3-small
-      | Ao importar recursos, as publicações, classificações, comentários e ficheiros associados também são incluídos.
-    p.w3-small
-      | O caminho recomendado é carregar o ficheiro descarregado na exportação. O campo de texto é apenas uma alternativa para ficheiros pequenos.
+		section.w3-white.secao-card
+			p.w3-text-grey O caminho recomendado é carregar o ficheiro descarregado na exportação. O campo de texto é apenas uma alternativa para ficheiros pequenos.
 
-    if importError
-      p.w3-text-red= importError
+			if importError
+				div.w3-panel.w3-pale-red.w3-leftbar.w3-border-red
+					p= importError
 
-    if importResults
-      if importOk
-        p.w3-text-green Importação concluída com sucesso.
-      else
-        p.w3-text-orange Importação concluída com alguns avisos.
+			if importResults
+				if importOk
+					div.w3-panel.w3-pale-green.w3-leftbar.w3-border-green
+						p Importação concluída com sucesso.
+				else
+					div.w3-panel.w3-pale-yellow.w3-leftbar.w3-border-yellow
+						p Importação concluída com alguns avisos.
 
-      if filterSummary && filterSummary.length
-        h3 Filtros aplicados
-        ul.w3-ul
-          each entry in filterSummary
-            li
-              strong= entry.label + ': '
-              = entry.value
+				if filterSummary && filterSummary.length
+					h3 Filtros aplicados
+					ul.lista-cards
+						each entry in filterSummary
+							li
+								strong= entry.label + ': '
+								= entry.value
 
-      table.w3-table-all.w3-striped
-        thead
-          tr.w3-teal
-            th Área
-            th Processados
-            th Erros
-        tbody
-          - var labels = { resources: 'Recursos', news: 'Notícias', posts: 'Publicações', ratings: 'Classificações', comments: 'Comentários', aip: 'Ficheiros' }
-          each key in ['resources', 'news', 'posts', 'ratings', 'comments', 'aip']
-            - var r = importResults[key] || { upserted: 0, restored: 0, errors: [] }
-            - var total = key === 'aip' ? r.restored : r.upserted
-            tr
-              td= labels[key] || key
-              td= total
-              td
-                = r.errors.length
-                if r.errors.length
-                  ul.w3-ul
-                    each e in r.errors
-                      li= e.id + ': ' + e.message
+				table.w3-table-all.w3-striped.admin-table
+					thead
+						tr.w3-teal
+							th Área
+							th Processados
+							th Erros
+					tbody
+						- var labels = { resources: 'Recursos', news: 'Notícias', posts: 'Publicações', ratings: 'Classificações', comments: 'Comentários', aip: 'Ficheiros' }
+						each key in ['resources', 'news', 'posts', 'ratings', 'comments', 'aip']
+							- var r = importResults[key] || { upserted: 0, restored: 0, errors: [] }
+							- var total = key === 'aip' ? r.restored : r.upserted
+							tr
+								td(data-label='Área')= labels[key] || key
+								td(data-label='Processados')= total
+								td(data-label='Erros')
+									= r.errors.length
+									if r.errors.length
+										ul.w3-ul
+											each e in r.errors
+												li= e.id + ': ' + e.message
 
-    form(method='POST' action='/admin/import' enctype='multipart/form-data')
-      include data-transfer-filters.pug
-      label(for='dumpFile') Ficheiro exportado
-      input#dumpFile.w3-input.w3-border(
-        type='file'
-        name='dumpFile'
-        accept='.json,application/json'
-      )
-      p.w3-small
-        | Usa preferencialmente o ficheiro descarregado pela exportação.
-      label(for='dumpText') Conteúdo do ficheiro (alternativa)
-      textarea#dumpText.w3-input(
-        name='dumpText'
-        rows='20'
-        placeholder='Opcional: cola aqui o conteúdo do ficheiro exportado...'
-      )= dumpText
-      button.w3-button.w3-teal(type='submit') Importar
-
-    p
-      a.w3-button.w3-border(href='/admin/data') Voltar aos dados
+			form(method='POST' action='/admin/import' enctype='multipart/form-data')
+				include data-transfer-filters.pug
+				.form-field(data-field='dumpFile')
+					label(for='dumpFile') Ficheiro exportado
+					input#dumpFile.w3-input.w3-border(
+						type='file'
+						name='dumpFile'
+						accept='.json,application/json'
+					)
+					p.field-feedback Usa preferencialmente o ficheiro descarregado pela exportação.
+				details.form-advanced
+					summary Colar JSON manualmente
+					label(for='dumpText') Conteúdo do ficheiro
+					textarea#dumpText.w3-input(
+						name='dumpText'
+						rows='10'
+						placeholder='Opcional: cola aqui o conteúdo do ficheiro exportado...'
+					)= dumpText
+				.conteudo-acoes
+					button.w3-button.botao-principal(type='submit') Importar
+					a.w3-button.w3-border(href='/admin/data') Voltar aos dados

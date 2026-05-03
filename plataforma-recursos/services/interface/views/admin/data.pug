@@ -1,24 +1,25 @@
 extends ../layout
 
 block content
-  section.w3-card.w3-white.w3-padding.w3-margin-top
-    h1 Administração · Dados
-    p
-      a.w3-button.w3-border(href='/admin/users') Utilizadores
-      a.w3-button.w3-border(href='/admin/news') Notícias
-      a.w3-button.w3-border(href='/admin/data') Dados
+	- const currentAdmin = 'data'
+	section.admin-page
+		header.admin-page-header
+			div
+				p.admin-eyebrow Administração
+				h1 Dados
+				p Exporta uma seleção ou importa um ficheiro anterior.
+			include _nav.pug
 
-  section.w3-card.w3-white.w3-padding.w3-margin-top
-    h2 Exportar
-    p Descarrega um ficheiro com os dados que queres guardar ou transferir.
-    p.w3-small
-      | Sem filtros, a exportação inclui todos os dados. Quando escolhes recursos, o ficheiro inclui também publicações, classificações, comentários e ficheiros associados.
-    form(method='GET' action='/admin/export')
-      include data-transfer-filters.pug
-      button.w3-button.w3-teal(type='submit') Descarregar seleção
-      a.w3-button.w3-border.w3-margin-left(href='/admin/export') Exportação completa
+		section.w3-white.secao-card
+			h2 Exportar
+			p.w3-text-grey Descarrega um ficheiro com os dados que queres guardar ou transferir.
+			form(method='GET' action='/admin/export')
+				include data-transfer-filters.pug
+				.conteudo-acoes
+					button.w3-button.botao-principal(type='submit') Descarregar seleção
+					a.w3-button.w3-border(href='/admin/export') Exportação completa
 
-  section.w3-card.w3-white.w3-padding.w3-margin-top
-    h2 Importar
-    p Repõe dados a partir de um ficheiro criado na exportação. Podes usar filtros para importar só o que precisares.
-    a.w3-button.w3-border(href='/admin/import') Ir para o formulário de importação
+		section.w3-white.secao-card
+			h2 Importar
+			p.w3-text-grey Repõe dados a partir de um ficheiro criado na exportação.
+			a.w3-button.w3-border(href='/admin/import') Ir para importação
