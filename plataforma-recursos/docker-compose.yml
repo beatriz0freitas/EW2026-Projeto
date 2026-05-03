@@ -37,6 +37,9 @@ services:
       - AUTH_URL=http://auth:16027
       - AUTH_COOKIE_NAME=ew.auth
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+      - API_CORS_ORIGINS=${API_CORS_ORIGINS:-http://localhost:16020}
+      - API_RATE_LIMIT_WINDOW_MS=${API_RATE_LIMIT_WINDOW_MS:-900000}
+      - API_RATE_LIMIT_MAX_REQUESTS=${API_RATE_LIMIT_MAX_REQUESTS:-300}
     depends_on:
       - mongodb
     networks:

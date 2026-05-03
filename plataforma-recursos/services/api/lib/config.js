@@ -22,6 +22,22 @@ function parsePositiveInt(value, fallback, name) {
 	return parsed
 }
 
+function parseUrlList(value, fallback, name) {
+	const raw = String(value ?? fallback)
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+
+	if (!raw.length) {
+		throw new Error(`${name} em falta ou vazio.`)
+	}
+
+	return raw.map((origin) => {
+		if (origin === '*') return origin
+		return parseUrl(origin, name)
+	})
+}
+
 function requiredEnv(name) {
 	const value = process.env[name]
 	if (!value) {
@@ -39,6 +55,16 @@ const config = {
 	},
 	internal: {
 		serviceToken: requiredEnv('INTERNAL_SERVICE_TOKEN'),
+	},
+	cors: {
+		origins: parseUrlList(process.env.API_CORS_ORIGINS || process.env.CORS_ORIGIN, 'http://localhost:16020', 'API_CORS_ORIGINS'),
+		credentials: true,
+		methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+		allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+	},
+	security: {
+		rateLimitWindowMs: parsePositiveInt(process.env.API_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000, 'API_RATE_LIMIT_WINDOW_MS'),
+		rateLimitMaxRequests: parsePositiveInt(process.env.API_RATE_LIMIT_MAX_REQUESTS, 300, 'API_RATE_LIMIT_MAX_REQUESTS'),
 	},
 	storage: {
 		aipDir: process.env.AIP_DIR || '/aip',

@@ -11,6 +11,8 @@ const routes = require('./routes')
 const { config } = require('./lib/config')
 const { jsonError } = require('./lib/http')
 const { initSystemNewsTriggers } = require('./lib/systemNewsJob')
+const { explicitCors } = require('./middleware/cors')
+const { rateLimitApi } = require('./middleware/rateLimit')
 const swaggerDocument = YAML.load('./swagger.yaml')
 
 const app = express()
@@ -29,6 +31,7 @@ app.use(
 	})
 )
 
+app.use(explicitCors)
 app.use(express.json({ limit: config.dataTransfer.jsonBodyLimitLegado }))
 app.use(cookieParser())
 
@@ -46,6 +49,7 @@ app.use((req, res, next) => {
 	next()
 })
 
+app.use(rateLimitApi)
 app.use('/api', routes)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 app.get('/api/openapi.json', (req, res) => {
