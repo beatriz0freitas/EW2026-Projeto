@@ -5,7 +5,7 @@ block content
 	- const t = typeof suggestions !== 'undefined' && suggestions ? suggestions : { tipos: [], anos: [], temas: [], hashtags: [] }
 	section.w3-card.w3-white.secao-card
 		h1 Editar recurso
-		p.w3-text-grey Atualiza a metainformação do recurso já armazenado na plataforma.
+		p.w3-text-grey Atualiza a informação que aparece na página do recurso.
 
 		form.formulario-compacto(action=`/resources/${resource._id}/edit` method='post')
 			label(for='titulo') Título
@@ -29,7 +29,7 @@ block content
 				each tema in t.temas
 					option(value=tema)
 
-			label(for='hashtags') Hashtags
+			label(for='hashtags') Etiquetas
 			input#hashtags.w3-input(type='text' name='hashtags' list='hashtags-list' value=(r.hashtags || ''))
 			datalist#hashtags-list
 				each hashtag in t.hashtags
@@ -40,8 +40,8 @@ block content
 
 			label(for='visibilidade') Visibilidade
 			select#visibilidade.w3-select(name='visibilidade' required)
-				option(value='publico' selected=(r.visibilidade === 'publico')) publico
-				option(value='privado' selected=(r.visibilidade !== 'publico')) privado
+				option(value='publico' selected=(r.visibilidade === 'publico')) Público
+				option(value='privado' selected=(r.visibilidade !== 'publico')) Privado
 
 			.conteudo-acoes
 				button.w3-button.botao-principal(type='submit') Guardar alterações

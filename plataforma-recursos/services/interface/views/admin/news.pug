@@ -1,40 +1,61 @@
 extends ../layout
 
 block content
-	section.w3-card.w3-white.w3-padding.w3-margin-top
-		h1 Administração · Notícias
-		p
-			a.w3-button.w3-border(href='/admin/users') Utilizadores
-			a.w3-button.w3-border(href='/admin/news') Notícias
-			a.w3-button.w3-border(href='/admin/data') Dados
-		form(action='/admin/news' method='post')
-			label(for='titulo') Título
-			input#titulo.w3-input(type='text' name='titulo' maxlength='160' required)
+	- const currentAdmin = 'news'
+	section.admin-page
+		header.admin-page-header
+			div
+				p.admin-eyebrow Administração
+				h1 Notícias
+				p Cria avisos simples e revê as atualizações automáticas.
+			include _nav.pug
 
-			label(for='conteudo') Conteúdo
-			textarea#conteudo.w3-input(name='conteudo' rows='6' maxlength='10000' required)
+		section.w3-white.secao-card
+			h2 Criar notícia
+			form.formulario-compacto(action='/admin/news' method='post')
+				label(for='titulo') Título
+				input#titulo.w3-input(type='text' name='titulo' maxlength='160' required)
 
-			button.w3-button.w3-teal(type='submit') Criar notícia
+				label(for='conteudo') Conteúdo
+				textarea#conteudo.w3-input(name='conteudo' rows='6' maxlength='10000' required)
 
-	section.w3-card.w3-white.w3-padding.w3-margin-top
-		h2 Notícias existentes
-		if !items.length
-			p Sem notícias publicadas.
-		else
-			ul.w3-ul.w3-hoverable
-				each item in items
-					- const eventLabel = item.eventType === 'system.new_submission' ? 'Nova submissão' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
-					li
-						div
-							if item.tipo === 'system'
-								span.w3-tag.w3-blue-grey Sistema
-							else
-								span.w3-tag.w3-teal Manual
-							if eventLabel
-								span.w3-tag.w3-light-grey(style='margin-left:8px')= eventLabel
-						strong= item.titulo
-						p= item.conteudo
-						if item.publicadoEm
-							p.w3-text-grey.w3-small Publicado em #{new Date(item.publicadoEm).toLocaleString('pt-PT')}
-						form(action=`/admin/news/${item._id}/delete` method='post')
-							button.w3-button.w3-small.w3-border(type='submit') Remover
+				button.w3-button.botao-principal(type='submit') Criar notícia
+
+		section.w3-white.secao-card
+			h2 Notícias existentes
+			if !items.length
+				.empty-state
+					p Sem notícias publicadas.
+			else
+				ul.news-feed.news-feed--admin
+					each item in items
+						- const eventLabel = item.eventType === 'system.new_submission' ? 'Novo recurso' : item.eventType === 'system.top3' ? 'Top 3 de recursos' : item.eventType === 'system.total_users' ? 'Utilizadores da plataforma' : ''
+						- const top3Items = item.eventType === 'system.top3' && item.payload && Array.isArray(item.payload.items) ? item.payload.items : []
+						- const isTop3WithItems = item.eventType === 'system.top3' && top3Items.length
+						- const displayTitle = item.eventType === 'system.new_submission' ? 'Novo recurso publicado' : item.eventType === 'system.top3' ? 'Recursos mais descarregados' : item.titulo
+						- const displayContent = item.eventType === 'system.new_submission' && item.payload && item.payload.title ? `${item.payload.producerName || 'Alguém'} publicou o recurso "${item.payload.title}".` : item.conteudo
+						li
+							article.news-card.news-card--admin
+								.news-card__main
+									.news-card__meta
+										if item.tipo === 'system'
+											span.news-badge Automática
+										else
+											span.news-badge.news-badge--manual Criada no painel
+										if eventLabel
+											span.news-badge.news-badge--light= eventLabel
+										if item.publicadoEm
+											time(datetime=item.publicadoEm)= new Date(item.publicadoEm).toLocaleString('pt-PT')
+									.news-card__content
+										h3= displayTitle
+										if !isTop3WithItems
+											p= displayContent
+										if top3Items.length
+											ol.news-rank-list
+												each resource, idx in top3Items
+													li
+														span.news-rank-list__pos #{idx + 1}
+														span.news-rank-list__title= resource.titulo || 'Recurso'
+														span.news-rank-list__stat #{resource.downloads || 0} desc.
+								form.news-card__action(action=`/admin/news/${item._id}/delete` method='post')
+									button.w3-button.w3-small.w3-border(type='submit' onclick="return confirm('Remover esta notícia?');") Remover

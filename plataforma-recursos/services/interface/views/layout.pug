@@ -6,19 +6,21 @@ html(lang='pt')
 		title #{title || 'Plataforma de Recursos'}
 		link(rel='stylesheet' href='/stylesheets/style.css')
 	body.app-body
-		header.w3-bar.w3-teal.app-header
-			a.w3-bar-item.w3-button.w3-xlarge(href='/') EW2026
-			a.w3-bar-item.w3-button(href='/resources') Recursos
-			a.w3-bar-item.w3-button(href='/posts') Posts
-			if user && user.role === 'admin'
-				a.w3-bar-item.w3-button(href='/admin/users') Menu administrador
-			if user
-				form.w3-bar-item.w3-right(action='/auth/logout' method='post')
-					button.w3-button.w3-white.w3-border(type='submit') Logout
-				span.w3-bar-item.w3-right Olá, #{user.nome}
-			else
-				a.w3-bar-item.w3-button.w3-right(href='/auth/register') Registar
-				a.w3-bar-item.w3-button.w3-right(href='/auth/login') Entrar
+		header.app-header
+			nav.app-nav(aria-label='Navegação principal')
+				a.app-brand(class=isActivePath('/') ? 'is-active' : '' href='/') EW2026
+				a.app-nav__link(class=isActivePath('/resources') ? 'is-active' : '' href='/resources') Recursos
+				a.app-nav__link(class=isActivePath('/posts') ? 'is-active' : '' href='/posts') Publicações
+				if user && user.role === 'admin'
+					a.app-nav__link(class=isActivePath('/admin') ? 'is-active' : '' href='/admin/users') Administração
+			.app-session
+				if user
+					span.app-session__name Olá, #{user.nome}
+					form(action='/auth/logout' method='post')
+						button.w3-button.w3-white.w3-border(type='submit') Sair
+				else
+					a.app-nav__link(href='/auth/login') Entrar
+					a.w3-button.w3-white.w3-border(href='/auth/register') Registar
 
 		main.w3-container.w3-padding.app-main
 			if success
@@ -31,4 +33,4 @@ html(lang='pt')
 			block content
 
 		footer.w3-container.w3-padding.w3-small.w3-text-grey
-			p Plataforma EW2026 · Interface Web
+			p Plataforma EW2026 · Recursos educativos

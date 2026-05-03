@@ -43,6 +43,11 @@ app.use((req, res, next) => {
 	res.locals.user = req.session.user || null
 	res.locals.success = req.session.success || null
 	res.locals.error = req.session.error || null
+	res.locals.currentPath = req.path || '/'
+	res.locals.isActivePath = (href) => {
+		if (href === '/') return res.locals.currentPath === '/'
+		return res.locals.currentPath === href || res.locals.currentPath.startsWith(`${href}/`)
+	}
 
 	req.flashSuccess = (message) => {
 		req.session.success = message
@@ -89,4 +94,3 @@ app.use((err, req, res, next) => {
 app.listen(config.port, () => {
 	console.log(`[interface] listening on :${config.port}`)
 })
-

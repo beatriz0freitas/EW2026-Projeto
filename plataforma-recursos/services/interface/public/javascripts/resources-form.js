@@ -36,12 +36,12 @@
 
 	const examples = {
 		dataset: {
-			titulo: 'Dataset de apoio a Estatística',
+			titulo: 'Conjunto de dados de apoio a Estatística',
 			subtitulo: 'Exercícios e amostras anonimizadas',
-			tipo: 'dataset',
+			tipo: 'dados',
 			ano: String(currentYear),
 			tema: 'análise de dados',
-			hashtags: '#dados, #estatistica, #ensino',
+			hashtags: 'dados, estatistica, ensino',
 			dataCriacao: `${currentYear}-02-12`,
 			descricao: 'Conjunto de dados e ficheiros de apoio para aulas, exercícios práticos e reutilização em contexto académico.',
 			visibilidade: 'privado',
@@ -52,7 +52,7 @@
 			tipo: 'artigo',
 			ano: String(currentYear - 1),
 			tema: 'preservação digital',
-			hashtags: '#preservacao, #arquivo, #artigo',
+			hashtags: 'preservacao, arquivo, artigo',
 			dataCriacao: `${currentYear - 1}-10-05`,
 			descricao: 'Artigo em PDF com apontamentos complementares e referências para discussão em contexto letivo.',
 			visibilidade: 'publico',
@@ -63,7 +63,7 @@
 			tipo: 'slides',
 			ano: String(currentYear),
 			tema: 'materiais de aula',
-			hashtags: '#slides, #aula, #apoio',
+			hashtags: 'slides, aula, apoio',
 			dataCriacao: `${currentYear}-03-18`,
 			descricao: 'Apresentação de apoio com estrutura da aula, conceitos-chave e referências para estudo autónomo.',
 			visibilidade: 'privado',
@@ -145,7 +145,7 @@
 			setStatusItem('tipo', strict ? 'invalid' : 'neutral', 'Por preencher');
 			return false;
 		}
-		setFieldState('tipo', 'valid', 'Tipo definido.');
+		setFieldState('tipo', 'valid', 'Tipo pronto.');
 		setStatusItem('tipo', 'valid', 'OK');
 		return true;
 	}
@@ -159,11 +159,11 @@
 
 		const value = Number(raw);
 		if (!Number.isInteger(value) || value < 0 || value > 3000) {
-			setFieldState('ano', 'invalid', 'Usa um ano entre 0 e 3000.');
+			setFieldState('ano', 'invalid', 'Escreve um ano válido.');
 			return false;
 		}
 
-		setFieldState('ano', 'valid', 'Ano válido.');
+		setFieldState('ano', 'valid', 'Ano pronto.');
 		return true;
 	}
 
@@ -175,11 +175,11 @@
 		}
 
 		if (!isValidDateLike(value)) {
-			setFieldState('dataCriacao', 'invalid', 'Usa AAAA ou AAAA-MM-DD.');
+			setFieldState('dataCriacao', 'invalid', 'Usa um formato como 2024 ou 2024-10-12.');
 			return false;
 		}
 
-		setFieldState('dataCriacao', 'valid', 'Formato aceite.');
+		setFieldState('dataCriacao', 'valid', 'Data pronta.');
 		return true;
 	}
 
@@ -213,13 +213,13 @@
 		const tags = parseHashtags(value);
 		const isConsistent = parts.every((part) => part.trim().length > 0);
 		if (!tags.length || !isConsistent) {
-			setFieldState('hashtags', 'invalid', 'Separa as hashtags por vírgulas, sem entradas vazias.');
+			setFieldState('hashtags', 'invalid', 'Separa as etiquetas por vírgulas, sem deixar entradas vazias.');
 			setStatusItem('hashtags', 'invalid', 'Rever formato');
 			return false;
 		}
 
-		setFieldState('hashtags', 'valid', `${tags.length} hashtag(s) prontas.`);
-		setStatusItem('hashtags', 'valid', `${tags.length} tag(s)`);
+		setFieldState('hashtags', 'valid', `${tags.length} etiqueta(s) pronta(s).`);
+		setStatusItem('hashtags', 'valid', `${tags.length} etiqueta(s)`);
 		return true;
 	}
 
@@ -289,8 +289,8 @@
 			setStatusItem('ficheiros', strict ? 'invalid' : 'neutral', 'Por anexar');
 			if (infoFicheiros) {
 				infoFicheiros.textContent = strict
-					? 'Seleciona pelo menos um ficheiro para gerar o SIP.'
-					: 'Podes anexar até 20 ficheiros; o SIP será montado automaticamente.';
+					? 'Seleciona pelo menos um ficheiro para enviar o recurso.'
+					: 'Podes anexar até 20 ficheiros; a plataforma prepara o envio automaticamente.';
 			}
 			return false;
 		}
@@ -302,7 +302,7 @@
 			return false;
 		}
 
-		setFieldState('ficheiros', 'valid', `${total} ficheiro(s) prontos para empacotar.`);
+		setFieldState('ficheiros', 'valid', `${total} ficheiro(s) pronto(s) para enviar.`);
 		setStatusItem('ficheiros', 'valid', `${total} ficheiro(s)`);
 		if (infoFicheiros) infoFicheiros.textContent = `${total} ficheiro(s) · ${formatBytes(totalSize)} no total`;
 		return true;
@@ -328,12 +328,12 @@
 		}
 
 		if (requiredReady) {
-			estadoGeral.textContent = 'Os campos obrigatórios estão prontos; revê só os detalhes opcionais se quiseres melhorar a descoberta.';
+			estadoGeral.textContent = 'Os campos obrigatórios estão prontos; podes rever os opcionais para ajudar outras pessoas a encontrar o recurso.';
 			estadoGeral.dataset.state = 'warning';
 			return;
 		}
 
-		estadoGeral.textContent = `Faltam ${totalChecks - okChecks} verificação(ões) para fechar a submissão.`;
+		estadoGeral.textContent = `Ainda faltam ${totalChecks - okChecks} ponto(s) para poderes enviar.`;
 		estadoGeral.dataset.state = 'neutral';
 	}
 
