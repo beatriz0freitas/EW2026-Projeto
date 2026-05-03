@@ -55,6 +55,15 @@ function buildFilterOptionsFromResources(items = []) {
 	}
 }
 
+function buildResourceListHref(filters, page) {
+	const params = new URLSearchParams()
+	params.set('page', String(page))
+	for (const key of ['tipo', 'ano', 'tema', 'hashtag']) {
+		if (filters[key]) params.set(key, String(filters[key]))
+	}
+	return `/resources?${params.toString()}`
+}
+
 async function fetchAllVisibleResources(req) {
 	const limit = 50
 	let page = 1
@@ -274,20 +283,27 @@ router.get('/', routeAsync(async (req, res) => {
 		})
 	}
 
+	const filters = {
+		tipo:    req.query.tipo    || '',
+		ano:     req.query.ano     || '',
+		tema:    req.query.tema    || '',
+		hashtag: req.query.hashtag || '',
+	}
+	const page = Number(list.data?.page || 1)
+	const totalPages = Number(list.data?.totalPages || 1)
+
 	res.render('resources/list', {
 		title: 'Recursos',
 		items: list.data?.items || [],
-		filters: {
-			tipo:    req.query.tipo    || '',
-			ano:     req.query.ano     || '',
-			tema:    req.query.tema    || '',
-			hashtag: req.query.hashtag || '',
-		},
+		filters,
+		activeFiltersCount: Object.values(filters).filter(Boolean).length,
 		filterOptions: resourcesForFilters.ok ? buildFilterOptionsFromResources(resourcesForFilters.items) : { tipos: [], anos: [], temas: [], hashtags: [] },
 		pagination: {
-			page:       list.data?.page       || 1,
-			totalPages: list.data?.totalPages || 1,
+			page,
+			totalPages,
 			total:      list.data?.total      || 0,
+			prevHref: page > 1 ? buildResourceListHref(filters, page - 1) : null,
+			nextHref: page < totalPages ? buildResourceListHref(filters, page + 1) : null,
 		},
 	})
 }))

@@ -1,6 +1,7 @@
 extends ../layout
 
 block content
+	- const postCountLabel = items.length === 1 ? '1 publicação' : `${items.length} publicações`
 	section.pagina-listagem
 		section.cabecalho-pagina
 			h1 Publicações
@@ -10,12 +11,36 @@ block content
 				if user && (user.role === 'produtor' || user.role === 'admin')
 					a.w3-button.botao-principal(href='/posts/new') Criar nova publicação
 
-		section.w3-card.w3-white.secao-card
+		section.w3-white.secao-card.feed-section
+			.feed-section__top
+				div
+					h2 Feed da comunidade
+					p.w3-text-grey Publicações recentes, organizadas como conversas curtas.
+				span.feed-count= postCountLabel
 			if !items.length
-				p Ainda não existem publicações.
+				.empty-state
+					p Ainda não existem publicações.
 			else
-				ul.lista-cards
+				ul.post-feed
 					each post in items
-						li
-							a(href=`/posts/${post._id}`)= post.titulo
-							span.w3-text-grey.w3-small  · por #{post.autorNome || 'autor desconhecido'}
+						- const autor = post.autorNome || 'autor desconhecido'
+						- const inicial = autor.trim().charAt(0).toUpperCase() || 'A'
+						- const conteudo = String(post.conteudo || '').trim()
+						- const resumo = conteudo.length > 180 ? `${conteudo.slice(0, 180)}...` : conteudo
+						li.post-feed__item
+							article.post-card
+								.post-card__avatar= inicial
+								.post-card__body
+									.post-card__meta
+										span Publicação
+										span por #{autor}
+										if post.createdAt
+											time(datetime=post.createdAt)= new Date(post.createdAt).toLocaleString('pt-PT')
+									h2
+										a(href=`/posts/${post._id}`)= post.titulo
+									if resumo
+										p= resumo
+									.post-card__footer
+										if post.resourceId
+											span.etiqueta Recurso associado
+										a.w3-button.botao-claro.post-card__button(href=`/posts/${post._id}`) Abrir conversa
