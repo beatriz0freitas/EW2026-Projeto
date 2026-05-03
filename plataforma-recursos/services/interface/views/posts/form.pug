@@ -5,6 +5,7 @@ block content
 	- const formAction = typeof action !== 'undefined' ? action : '/posts'
 	- const submitText = typeof submitLabel !== 'undefined' ? submitLabel : 'Publicar'
 	- const p = typeof post !== 'undefined' && post ? post : {}
+	- const availableResources = typeof resources !== 'undefined' && Array.isArray(resources) ? resources : []
 	section.w3-card.w3-white.secao-card.cartao-autenticacao
 		h1= headingText
 		form(action=formAction method='post')
@@ -14,7 +15,16 @@ block content
 			label(for='conteudo') Conteúdo
 			textarea#conteudo.w3-input(name='conteudo' rows='8' maxlength='20000' required)= (p.conteudo || '')
 
-			label(for='resourceId') Recurso associado (opcional)
-			input#resourceId.w3-input(type='text' name='resourceId' value=(p.resourceId || '') placeholder='Deixa vazio se não se aplicar')
+			label(for='resourceId') Recurso associado
+			if availableResources.length
+				select#resourceId.w3-select(name='resourceId' required)
+					option(value='' selected=!p.resourceId disabled) Escolha um recurso
+					each resource in availableResources
+						- const resourceId = String(resource._id)
+						- const meta = resource.metadata && resource.metadata.resource ? resource.metadata.resource : {}
+						option(value=resourceId selected=(String(p.resourceId || '') === resourceId)) #{meta.titulo || 'Recurso sem título'}#{meta.tipo ? ` · ${meta.tipo}` : ''}
+			else
+				p.w3-text-grey Não existem recursos disponíveis para associar.
+				input#resourceId(type='hidden' name='resourceId' value='')
 
-			button.w3-button.botao-principal(type='submit')= submitText
+			button.w3-button.botao-principal(type='submit' disabled=!availableResources.length)= submitText

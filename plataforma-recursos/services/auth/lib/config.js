@@ -38,15 +38,15 @@ function nonEmptyString(value, fallback, name) {
 	return resolved
 }
 
+const jwtSecret = requiredEnv('JWT_SECRET')
+
 const config = {
 	port: parsePort(process.env.PORT, 16027, 'PORT'),
-	nodeEnv: process.env.NODE_ENV || 'development',
 	mongoUrl: process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/ew2026',
 
 	jwt: {
-		secret: requiredEnv('JWT_SECRET'),
-		accessSecret: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'dev-access-secret',
-		refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
+		accessSecret: process.env.JWT_ACCESS_SECRET || jwtSecret,
+		refreshSecret: requiredEnv('JWT_REFRESH_SECRET'),
 		accessTtl: nonEmptyString(process.env.JWT_ACCESS_TTL, '15m', 'JWT_ACCESS_TTL'),
 		refreshTtl: nonEmptyString(process.env.JWT_REFRESH_TTL, '7d', 'JWT_REFRESH_TTL'),
 	},

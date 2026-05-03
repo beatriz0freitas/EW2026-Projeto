@@ -102,10 +102,8 @@ function resolveStoredZipPath(resource, aipDir) {
 }
 
 module.exports = {
-	assertSafeRelativePath,
 	buildResourceAipPath,
 	buildStoredAipFile,
-	buildSipZipPath,
 	exportAipFiles,
 	resolveResourceAipPath,
 	resolveStoredZipPath,
