@@ -1,15 +1,12 @@
 /**
  * routes/auth.js
  *
- * ALTERAÇÃO: no login, guarda também o refreshToken na sessão server-side
- * para que o interceptor de 401 em lib/http.js o possa usar para renovar
- * o access token sem pedir novo login ao utilizador.
+ * No login, guarda também o refreshToken na sessão server-side a partir do
+ * cookie Set-Cookie recebido do auth. Assim o interceptor de 401 em lib/http.js
+ * pode renovar o access token sem pedir novo login ao utilizador.
  *
  * Requer que o serviço auth exponha POST /sessions/refresh-server que aceite
  * { refreshToken } no body (em vez de cookie) — ver nota em lib/http.js.
- * Alternativamente, se preferires manter só cookies no auth, remove a lógica
- * de refreshToken aqui e em lib/http.js e usa o endpoint POST /sessions/refresh
- * passando o cookie (que o Node não tem acesso directo em server-side).
  */
 
 const express = require('express')
@@ -21,11 +18,33 @@ const { config } = require('../lib/config')
 
 const router = express.Router()
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+function getSetCookieHeader(headers) {
+	if (!headers) return ''
+	if (typeof headers.getSetCookie === 'function') {
+		return headers.getSetCookie().join(', ')
+	}
+	return headers.get('set-cookie') || ''
+}
+
+function extractRefreshTokenFromAuthCookies(headers) {
+	const setCookie = getSetCookieHeader(headers)
+	if (!setCookie) return null
+
+	const cookieName = config.auth.refreshCookieName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	const match = setCookie.match(new RegExp(`(?:^|,\\s*)${cookieName}=([^;]+)`))
+	return match ? decodeURIComponent(match[1]) : null
+}
+
+const oauthProviders = {
+	google: config.oauth.google.enabled,
+	facebook: config.oauth.facebook.enabled,
+}
+
+if (config.oauth.google.enabled) {
         passport.use(new GoogleStrategy({
-                clientID: process.env.GOOGLE_CLIENT_ID,
-                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-                callbackURL: 'http://localhost:16020/auth/google/callback'
+                clientID: config.oauth.google.clientId,
+                clientSecret: config.oauth.google.clientSecret,
+                callbackURL: config.oauth.google.callbackUrl
         }, async (accessToken, refreshToken, profile, done) => {
                 const email = profile.emails && profile.emails[0] ? profile.emails[0].value : ''
                 const nome = profile.displayName || email.split('@')[0]
@@ -40,11 +59,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         })
 }
 
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+if (config.oauth.facebook.enabled) {
         passport.use(new FacebookStrategy({
-                clientID: process.env.FACEBOOK_APP_ID,
-                clientSecret: process.env.FACEBOOK_APP_SECRET,
-                callbackURL: 'http://localhost:16020/auth/facebook/callback',
+                clientID: config.oauth.facebook.appId,
+                clientSecret: config.oauth.facebook.appSecret,
+                callbackURL: config.oauth.facebook.callbackUrl,
                 profileFields: ['id', 'displayName', 'emails']
         }, async (accessToken, refreshToken, profile, done) => {
                 const email = profile.emails && profile.emails[0] ? profile.emails[0].value : `${profile.id}@facebook.com`
@@ -73,7 +92,7 @@ async function handleOAuthCallback(req, res, provider, providerId, email, nome) 
 
                 req.session.token = login.data.token
                 req.session.user = login.data.user
-                req.session.refreshToken = login.data.refreshToken || null
+                req.session.refreshToken = extractRefreshTokenFromAuthCookies(login.headers)
                 req.flashSuccess('Sessão iniciada com sucesso.')
                 res.redirect('/')
         } catch {
@@ -84,7 +103,7 @@ async function handleOAuthCallback(req, res, provider, providerId, email, nome) 
 
 router.get('/login', (req, res) => {
 	if (req.session.token) return res.redirect('/')
-	res.render('auth/login', { title: 'Entrar' })
+	res.render('auth/login', { title: 'Entrar', oauthProviders })
 })
 
 router.post('/login', async (req, res) => {
@@ -102,8 +121,7 @@ router.post('/login', async (req, res) => {
 
 		req.session.token        = login.data.token
 		req.session.user         = login.data.user
-		// Guardar o refreshToken na sessão para o interceptor de 401
-		req.session.refreshToken = login.data.refreshToken || null
+		req.session.refreshToken = extractRefreshTokenFromAuthCookies(login.headers)
 
 		req.flashSuccess('Sessão iniciada com sucesso.')
 		res.redirect('/')

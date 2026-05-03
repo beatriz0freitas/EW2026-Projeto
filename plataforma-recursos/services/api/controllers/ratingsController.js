@@ -2,6 +2,14 @@ const Rating = require('../models/Rating')
 const Resource = require('../models/Resource')
 const { jsonError, invalidId, isMongoId } = require('../lib/http')
 const { publishTop3NewsIfChanged } = require('../lib/systemNewsJob')
+const { canViewResource, resourceAccessError } = require('../lib/resourceAccess')
+
+function ensureResourceVisible(resource, user, res) {
+	if (canViewResource(resource, user)) return true
+	const error = resourceAccessError(resource, user)
+	jsonError(res, error.status, error.body)
+	return false
+}
 
 module.exports.upsertByResource = async (req, res) => {
 	if (!isMongoId(req.params.id)) return invalidId(res)
@@ -13,6 +21,7 @@ module.exports.upsertByResource = async (req, res) => {
 		if (!resource) {
 			return jsonError(res, 404, 'recurso não encontrado')
 		}
+		if (!ensureResourceVisible(resource, req.user, res)) return
 
 		const rating = await Rating.findOneAndUpdate(
 			{ resourceId: resource._id, userId: req.user.sub },
@@ -38,6 +47,7 @@ module.exports.getStatsByResource = async (req, res) => {
 		if (!resource) {
 			return jsonError(res, 404, 'recurso não encontrado')
 		}
+		if (!ensureResourceVisible(resource, req.user, res)) return
 
 		const stats = await Rating.aggregate([
 			{ $match: { resourceId: resource._id } },
@@ -68,6 +78,7 @@ module.exports.getMineByResource = async (req, res) => {
 		if (!resource) {
 			return jsonError(res, 404, 'recurso não encontrado')
 		}
+		if (!ensureResourceVisible(resource, req.user, res)) return
 
 		const rating = await Rating.findOne({
 			resourceId: resource._id,

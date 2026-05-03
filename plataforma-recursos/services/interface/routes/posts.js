@@ -1,7 +1,7 @@
 const express = require('express')
 
 const { apiRequest } = require('../lib/http')
-const { routeAsync, requireSession, requireLevel, apiErrorMessage } = require('../lib/web')
+const { routeAsync, requireSession, apiErrorMessage } = require('../lib/web')
 
 const router = express.Router()
 
@@ -16,6 +16,18 @@ function canManagePost(req, post) {
 	if (u.role === 'admin') return true
 	const uid = getUserId(req)
 	return uid && String(post.autorId) === uid
+}
+
+async function getAvailableResources(req) {
+	const response = await apiRequest('/resources?limit=100', {
+		token: req.session.token,
+		req,
+	})
+	return {
+		ok: response.ok,
+		items: response.ok ? response.data?.items || [] : [],
+		message: apiErrorMessage(response.data, 'Não foi possível carregar os recursos disponíveis.'),
+	}
 }
 
 router.get(
@@ -40,20 +52,27 @@ router.get(
 	})
 )
 
-router.get('/new', requireSession, requireLevel('produtor'), (req, res) => {
-	res.render('posts/form', {
-		title: 'Nova publicação',
-		heading: 'Criar publicação',
-		action: '/posts',
-		submitLabel: 'Publicar',
-		post: { titulo: '', conteudo: '', resourceId: req.query.resourceId || '' },
+router.get(
+	'/new',
+	requireSession,
+	routeAsync(async (req, res) => {
+		const availableResources = await getAvailableResources(req)
+		if (!availableResources.ok) req.flashError(availableResources.message)
+
+		res.render('posts/form', {
+			title: 'Novo post',
+			heading: 'Criar post',
+			action: '/posts',
+			submitLabel: 'Publicar',
+			post: { titulo: '', conteudo: '', resourceId: req.query.resourceId || '' },
+			resources: availableResources.items,
+		})
 	})
-})
+)
 
 router.post(
 	'/',
 	requireSession,
-	requireLevel('produtor'),
 	routeAsync(async (req, res) => {
 		const { titulo, conteudo, resourceId } = req.body
 
@@ -65,8 +84,9 @@ router.post(
 		})
 
 		if (!created.ok) {
-			req.flashError(apiErrorMessage(created.data, 'Não foi possível criar a publicação.'))
-			return res.redirect('/posts/new')
+			req.flashError(apiErrorMessage(created.data, 'Não foi possível criar o post.'))
+			const query = resourceId ? `?resourceId=${encodeURIComponent(resourceId)}` : ''
+			return res.redirect(`/posts/new${query}`)
 		}
 
 		req.flashSuccess('Publicação criada com sucesso.')
@@ -100,7 +120,6 @@ router.get(
 router.get(
 	'/:id/edit',
 	requireSession,
-	requireLevel('produtor'),
 	routeAsync(async (req, res) => {
 		const postRes = await apiRequest(`/posts/${req.params.id}`, { token: req.session.token, req })
 		if (!postRes.ok) {
@@ -116,6 +135,9 @@ router.get(
 			return res.redirect(`/posts/${req.params.id}`)
 		}
 
+		const availableResources = await getAvailableResources(req)
+		if (!availableResources.ok) req.flashError(availableResources.message)
+
 		res.render('posts/form', {
 			title: 'Editar publicação',
 			heading: 'Editar publicação',
@@ -126,6 +148,7 @@ router.get(
 				conteudo: post.conteudo || '',
 				resourceId: post.resourceId || '',
 			},
+			resources: availableResources.items,
 		})
 	})
 )
@@ -133,7 +156,6 @@ router.get(
 router.post(
 	'/:id/edit',
 	requireSession,
-	requireLevel('produtor'),
 	routeAsync(async (req, res) => {
 		const { titulo, conteudo, resourceId } = req.body
 		const updated = await apiRequest(`/posts/${req.params.id}`, {
@@ -202,7 +224,6 @@ router.post(
 router.post(
 	'/:id/delete',
 	requireSession,
-	requireLevel('produtor'),
 	routeAsync(async (req, res) => {
 		const response = await apiRequest(`/posts/${req.params.id}`, {
 			method: 'DELETE',

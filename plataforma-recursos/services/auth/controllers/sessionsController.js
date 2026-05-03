@@ -23,7 +23,7 @@ module.exports.login = async (req, res) => {
 		res.cookie(REFRESH_COOKIE, refreshToken, buildRefreshCookieOptions())
 
 		res.cookie(config.cookies.name, dados.token, buildAuthCookieOptions())
-		res.json({ ok: true, token: dados.token, refreshToken, user: dados.user })
+		res.json({ ok: true, token: dados.token, user: dados.user })
 	} catch (err) {
 		const msg = String(err?.message || '').toLowerCase()
 		if (msg.includes('desativada')) {
@@ -115,7 +115,7 @@ module.exports.oauthLogin = async (req, res) => {
 		res.cookie(REFRESH_COOKIE, refreshToken, buildRefreshCookieOptions())
 
 		res.cookie(config.cookies.name, dados.token, buildAuthCookieOptions())
-		res.json({ ok: true, token: dados.token, refreshToken, user: dados.user })
+		res.json({ ok: true, token: dados.token, user: dados.user })
 	} catch (err) {
 		jsonError(res, 500, { code: 'INTERNAL_ERROR', message: 'erro interno' })
 	}

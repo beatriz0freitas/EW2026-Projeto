@@ -5,15 +5,15 @@
  *   • Access token  — curta duração (15 min por omissão), enviado em cada pedido
  *   • Refresh token — longa duração (7 dias por omissão), usado só para renovar o access token
  *
- * O refresh token é guardado em cookie HttpOnly e, no fluxo server-side da
- * interface, tambem e devolvido no JSON do login para permitir renovacao.
+ * O refresh token é guardado em cookie HttpOnly. No fluxo server-side da
+ * interface, o cookie Set-Cookie recebido do auth e guardado na sessao.
  */
 
 const jwt = require('jsonwebtoken')
 const { config } = require('./config')
 
 // ─── Segredos ────────────────────────────────────────────────────────────────
-// Devem ser variáveis de ambiente distintas em produção.
+// Devem ser variáveis de ambiente distintas.
 const ACCESS_SECRET = config.jwt.accessSecret
 const REFRESH_SECRET = config.jwt.refreshSecret
 

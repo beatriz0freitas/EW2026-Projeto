@@ -10,6 +10,12 @@ block content
 				span.etiqueta Publicação
 				span.etiqueta.etiqueta--vermelha por #{post.autorNome || 'desconhecido'}
 			h1= post.titulo
+			if post.resource
+				p
+					| Recurso associado: 
+					a(href=`/resources/${post.resource._id}`)= post.resource.titulo
+					if post.resource.tipo
+						span.w3-text-grey  · #{post.resource.tipo}
 			.conteudo-acoes
 				a.w3-button.botao-claro(href='/posts') Voltar às publicações
 				if canManagePost

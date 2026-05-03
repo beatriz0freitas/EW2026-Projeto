@@ -33,13 +33,14 @@ Validação desta atualização:
 
 ### Validação, segurança e contratos
 
-- ✅ Validação reforçada de `metadata.resource` no ingest: `tipo`, `titulo`, `visibilidade`, `ano` e `hashtags`.
+- ✅ Lógica de validação de `metadata.resource` centralizada no módulo `lib/metadataValidator.js`.
+- ✅ Validação coerente aplicada no SIP gerado, upload avançado de SIP ZIP e na atualização (PATCH) de recursos.
+- ✅ Limites de tamanho exatos para campos como `tipo`, `titulo`, `subtitulo`, `descricao`, `tema` definidos.
+- ✅ Array de `hashtags` tem validação estrita do número máximo de entradas e tamanho.
 - ✅ Normalização de caminhos no manifesto para impedir entradas fora de `data/`.
 - ✅ Mensagens de erro de SIP traduzidas para português.
 - ✅ Upload múltiplo em memória com limite de número de ficheiros e tamanho.
-- ✅ PATCH de recursos deixou de substituir cegamente a metadata completa e passa a atualizar campos controlados.
 - ✅ Interface mostra detalhes de erro vindos da API quando a submissão falha.
-- ⚠️ A validação de metadados ainda não é um schema completo por tipo de recurso.
 
 ### Interface e experiência de utilização
 
@@ -93,9 +94,9 @@ Validação desta atualização:
 
 - ✅ `tipo`, `titulo`, `visibilidade`, produtor e data de registo existem no fluxo/modelo.
 - ✅ `subtitulo`, `descrição`, `tema`, `ano`, `hashtags` e `dataCriacao` são suportados na submissão simples.
-- ✅ `ano`, `visibilidade` e `hashtags` têm validação básica.
-- ⚠️ `subtitulo` e `dataCriacao` continuam opcionais.
-- ⚠️ Falta um contrato de metadados mais rigoroso por tipo de recurso.
+- ✅ `ano`, `visibilidade` e `hashtags` têm validação nos 3 métodos de ingestão.
+- ✅ `subtitulo` e `descricao` têm validação de limites de caracteres.
+- ✅ Implementado um esquema exato e rigoroso central partilhado pelo SIP e form.
 
 ### Notícias na página principal
 
@@ -127,8 +128,9 @@ Validação desta atualização:
 - ✅ Contagem de downloads por recurso.
 - ✅ PATCH de resources atualiza campos permitidos da metadata.
 - ✅ GET `/api/posts` aceita filtro opcional `resourceId`.
-- ⚠️ Não há limite explícito em `express.json()` no API.
-- ⚠️ Falta hardening adicional (helmet/cors explícito no gateway/rate limit central).
+- ✅ Helmet implementado
+- ✅ CORS explícito implementado na API.
+- ✅ Rate limiting implementado na API.
 
 ### Auth (`services/auth`)
 
@@ -142,16 +144,13 @@ Validação desta atualização:
 - ✅ Arranque só após ligação ao MongoDB.
 - ✅ CORS configurado no auth.
 - ✅ Rate limiting no login.
-- ⚠️ Refresh token é devolvido também em JSON no login.
-- ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito.
-- ❌ Helmet não implementado.
 - ✅ Endpoints internos legados removidos para simplificar a API Auth.
 - ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
 - ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
-- ⚠️ Refresh token e devolvido tambem em JSON no login (exposicao desnecessaria).
-- ⚠️ `JWT_REFRESH_SECRET` ainda tem fallback por defeito; ideal exigir segredo forte por ambiente.
+- ✅ Refresh token deixou de ser devolvido em JSON no login.
+- ✅ `JWT_REFRESH_SECRET` exigido no arranque do auth.
 - ✅ Rate limiting no login implementado em POST `/auth/sessions` (in-memory por janela temporal).
-- ✅ Helmet nao implementado.
+- ✅ Helmet implementado.
 
 ## Gateway (services/gateway)
 
@@ -165,8 +164,8 @@ Validação desta atualização:
 	- `/api/docs` -> API Swagger UI
 	- `/auth/docs` -> Auth Swagger UI
 	- `/interface/docs` -> Interface Swagger UI
-- ✅ CORS explicito no gateway nao implementado.
-- ✅ Helmet no gateway nao implementado.
+- ✅ CORS explicito no gateway implementado.
+- ✅ Helmet no gateway implementado.
 - ❌ Rate limiting global nao implementado.
 - ⚠️ Sem circuit breaker (apenas timeout e erro 502).
 
@@ -196,8 +195,8 @@ Validação desta atualização:
 - ✅ Handler central de 502.
 - ✅ `proxyTimeout` configurado.
 - ✅ Hub Swagger agregado em `/docs`.
-- ❌ CORS explícito no gateway não implementado.
-- ❌ Helmet no gateway não implementado.
+- ✅ CORS explícito no gateway implementado.
+- ✅ Helmet no gateway implementado.
 - ❌ Rate limiting global não implementado.
 - ⚠️ Sem circuit breaker.
 
@@ -219,6 +218,8 @@ Validação desta atualização:
 - ✅ Interceptor 401 com renovação automática via refresh-server.
 - ✅ Detalhe de recurso apresenta posts associados por `resourceId`.
 - ✅ UI revista para uma experiência mais intuitiva, contrastante e consistente.
+- ❌ Helmet não implementado na interface.
+- ❌ CORS não implementado na interface (aceitável para SSR, mas ausente)
 
 ---
 
@@ -226,17 +227,15 @@ Validação desta atualização:
 
 ### Hardening transversal
 
-- ✅ Rate limit em POST `/auth/sessions`.
-- ❌ Adicionar helmet em auth/api/gateway.
-- ❌ Definir política CORS explícita no gateway.
-- ❌ Rever exposição de rotas internas no gateway.
+- ❌ Adicionar Helmet na interface.
+- ❌ Rate limiting global no gateway.
+ 
 
-### Metadados e contratos
+### Auth — melhorias de segurança
 
-- ✅ Validar `visibilidade`, `ano` e `hashtags`.
-- ✅ Evitar substituição total descontrolada de metadata no PATCH.
-- ⚠️ Criar schema completo de `metadata.json`.
-- ⚠️ Definir regras específicas por tipo de recurso.
+- ✅ Remover refreshToken do corpo JSON do login (manter apenas em cookie HttpOnly).
+- ✅ Exigir JWT_REFRESH_SECRET no arranque em vez de ter fallback por defeito.
+
 
 ### Experiência funcional final
 
@@ -263,5 +262,7 @@ Validação desta atualização:
 - Notícias automáticas: ✅ funcional.
 - Interface end-to-end: ✅ funcional.
 - UI final com azul escuro, vermelho e branco: ✅ implementada.
-- Segurança de produção e testes automáticos: ❌ ainda em falta.
+- Helmet e CORS na interface : ❌ ainda em falta.
+- Rate limiting global no gateway: ❌ ainda em falta.
+- Testes automáticos: ❌ ainda em falta.
 - Dataset de demonstração com dezenas de recursos: ⚠️ ainda insuficiente.

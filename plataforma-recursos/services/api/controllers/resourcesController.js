@@ -4,8 +4,10 @@ const Post = require('../models/Post')
 const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
 const { config } = require('../lib/config')
+const { validateMetadataResource } = require('../lib/metadataValidator')
 const { resolveResourceAipPath } = require('../lib/aipStorage')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
+const { canViewResource, visibilityQuery } = require('../lib/resourceAccess')
 
 function buildFilters(query) {
 	const filters = {}
@@ -20,22 +22,6 @@ function canManageResource(resource, user) {
 	if (!user) return false
 	if (user.role === 'admin') return true
 	return String(resource.produtor) === String(user.sub)
-}
-
-function canViewResource(resource, user) {
-	const visibilidade = resource?.metadata?.resource?.visibilidade || 'privado'
-	if (visibilidade !== 'privado') return true
-	if (!user) return false
-	if (user.role === 'admin') return true
-	return String(resource.produtor) === String(user.sub)
-}
-
-function visibilityQuery(user) {
-	if (!user) return { 'metadata.resource.visibilidade': 'publico' }
-	if (user.role === 'admin') return {}
-	return {
-		$or: [{ 'metadata.resource.visibilidade': 'publico' }, { produtor: String(user.sub) }],
-	}
 }
 
 function limparTexto(valor) {
@@ -53,7 +39,6 @@ function normalizarHashtags(valor) {
 }
 
 function construirMetadataAtualizada(metadataAtual, metadataRecebida) {
-	const erros = []
 	const origem = metadataRecebida?.resource && typeof metadataRecebida.resource === 'object'
 		? metadataRecebida.resource
 		: metadataRecebida
@@ -89,20 +74,16 @@ function construirMetadataAtualizada(metadataAtual, metadataRecebida) {
 			delete resource.ano
 		} else {
 			const ano = Number(anoTexto)
-			if (!Number.isInteger(ano) || ano < 0 || ano > 3000) {
-				erros.push({ code: 'BAD_METADATA', message: 'ano deve ser um inteiro entre 0 e 3000' })
-			} else {
+			if (Number.isInteger(ano)) {
 				resource.ano = ano
+			} else {
+				resource.ano = origem.ano 
 			}
 		}
 	}
 
 	if (Object.prototype.hasOwnProperty.call(origem, 'visibilidade')) {
-		if (!['publico', 'privado'].includes(origem.visibilidade)) {
-			erros.push({ code: 'BAD_METADATA', message: 'visibilidade deve ser publico ou privado' })
-		} else {
-			resource.visibilidade = origem.visibilidade
-		}
+		resource.visibilidade = origem.visibilidade
 	}
 
 	if (Object.prototype.hasOwnProperty.call(origem, 'hashtags')) {
@@ -111,13 +92,11 @@ function construirMetadataAtualizada(metadataAtual, metadataRecebida) {
 		else delete resource.hashtags
 	}
 
-	if (!resource.tipo) erros.push({ code: 'BAD_METADATA', message: 'tipo é obrigatório' })
-	if (!resource.titulo) erros.push({ code: 'BAD_METADATA', message: 'titulo é obrigatório' })
-	if (!['publico', 'privado'].includes(resource.visibilidade)) {
-		erros.push({ code: 'BAD_METADATA', message: 'visibilidade deve ser publico ou privado' })
+	const validation = validateMetadataResource(resource)
+	if (!validation.ok) {
+		return validation
 	}
 
-	if (erros.length) return { ok: false, errors: erros }
 	return {
 		ok: true,
 		metadata: {

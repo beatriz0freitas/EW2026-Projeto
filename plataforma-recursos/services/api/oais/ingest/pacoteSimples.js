@@ -1,6 +1,8 @@
 const crypto = require('crypto')
 const path = require('path')
 
+const { validateMetadataResource } = require('../../lib/metadataValidator')
+
 function limparTexto(valor) {
 	return String(valor || '').trim()
 }
@@ -184,26 +186,43 @@ function construirMetadados(body, ficheiros) {
 	}
 }
 
+/**
+ * Valida a submissão simples usando o validador central de metadados.
+ * Inclui também validação dos ficheiros.
+ */
 function validarSubmissaoSimples(body, ficheiros) {
 	const erros = []
-	const titulo = limparTexto(body.titulo)
-	const tipo = limparTexto(body.tipo)
-	const ano = limparTexto(body.ano)
 
-	if (!titulo) {
-		erros.push({ code: 'METADADOS_INVALIDOS', message: 'O titulo do recurso e obrigatorio.' })
-	}
-	if (!tipo) {
-		erros.push({ code: 'METADADOS_INVALIDOS', message: 'O tipo do recurso e obrigatorio.' })
-	}
-	if (body.visibilidade && !['publico', 'privado'].includes(body.visibilidade)) {
-		erros.push({ code: 'METADADOS_INVALIDOS', message: 'A visibilidade deve ser publico ou privado.' })
-	}
-	if (ano && (!Number.isInteger(Number(ano)) || Number(ano) < 0 || Number(ano) > 3000)) {
-		erros.push({ code: 'METADADOS_INVALIDOS', message: 'O ano deve ser um inteiro entre 0 e 3000.' })
-	}
+	// Validar ficheiros primeiro (independente dos metadados)
 	if (!Array.isArray(ficheiros) || ficheiros.length === 0) {
 		erros.push({ code: 'FICHEIROS_EM_FALTA', message: 'Submete pelo menos um ficheiro do recurso.' })
+	}
+
+	// Construir o objecto resource para validar com o validador central
+	const resourceParaValidar = {
+		tipo: limparTexto(body.tipo) || undefined,
+		titulo: limparTexto(body.titulo) || undefined,
+		visibilidade: body.visibilidade,
+		subtitulo: limparTexto(body.subtitulo) || undefined,
+		descricao: limparTexto(body.descricao) || undefined,
+		tema: limparTexto(body.tema) || undefined,
+		ano: limparTexto(body.ano) || undefined,
+		dataCriacao: limparTexto(body.dataCriacao) || undefined,
+		hashtags: body.hashtags
+			? normalizarHashtags(body.hashtags)
+			: undefined,
+	}
+
+	// Remover campos undefined para não confundir o validador
+	Object.keys(resourceParaValidar).forEach((key) => {
+		if (resourceParaValidar[key] === undefined) {
+			delete resourceParaValidar[key]
+		}
+	})
+
+	const validacao = validateMetadataResource(resourceParaValidar)
+	if (!validacao.ok) {
+		erros.push(...validacao.errors)
 	}
 
 	return erros

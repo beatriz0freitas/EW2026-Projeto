@@ -37,6 +37,9 @@ services:
       - AUTH_URL=http://auth:16027
       - AUTH_COOKIE_NAME=ew.auth
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+      - API_CORS_ORIGINS=${API_CORS_ORIGINS:-http://localhost:16020}
+      - API_RATE_LIMIT_WINDOW_MS=${API_RATE_LIMIT_WINDOW_MS:-900000}
+      - API_RATE_LIMIT_MAX_REQUESTS=${API_RATE_LIMIT_MAX_REQUESTS:-300}
     depends_on:
       - mongodb
     networks:
@@ -51,6 +54,7 @@ services:
       - PORT=16027
       - MONGO_URL=mongodb://mongodb:27017/ew2026
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - API_URL=http://api:16025
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
     depends_on:
@@ -67,8 +71,11 @@ services:
       - PORT=16026
       - API_URL=http://api:16025
       - AUTH_URL=http://auth:16027
+      - AUTH_REFRESH_COOKIE_NAME=ew2026_refresh
+      - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
       - SESSION_SECRET=${SESSION_SECRET}
       - SESSION_COOKIE_NAME=ew.sid
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:16020}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - FACEBOOK_APP_ID=${FACEBOOK_APP_ID}
