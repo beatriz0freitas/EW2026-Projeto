@@ -172,5 +172,4 @@ async function construirSipSimples({ body, ficheiros }) {
 
 module.exports = {
 	construirSipSimples,
-	criarZipSemCompressao,
 }
