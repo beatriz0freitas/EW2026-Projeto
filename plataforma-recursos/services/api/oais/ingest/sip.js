@@ -6,11 +6,53 @@ const path = require('path')
 
 const unzipper = require('unzipper')
 
+const Aip = require('../../models/Aip')
 const Resource = require('../../models/Resource')
 const { buildResourceAipPath, buildStoredAipFile } = require('../../lib/aipStorage')
 const { validateMetadata } = require('../../lib/metadataValidator')
 
-// Calcula o SHA-256 de um ficheiro para comparar com o manifest.
+const EXTENSOES_PERMITIDAS = new Set(['.pdf', '.txt', '.docx', '.xlsx', '.jpg', '.jpeg', '.png', '.gif', '.mp4', '.zip'])
+const MAX_FICHEIRO_BYTES = 50 * 1024 * 1024
+const CAMADAS = ['estrutura', 'metadados', 'seguranca', 'consistencia']
+const FICHEIROS_RAIZ_PERMITIDOS = new Set(['manifest.json', 'bagit.txt', 'checksums.txt'])
+
+function criarRelatorioBase({ producerId, sipHash }) {
+	return {
+		dataValidacao: new Date().toISOString(),
+		produtor: producerId || null,
+		sipHash,
+		erros: [],
+		avisos: [],
+	}
+}
+
+function criarValidacoes() {
+	return Object.fromEntries(CAMADAS.map((camada) => [camada, { ok: true, detalhes: '' }]))
+}
+
+function adicionarErro(ctx, camada, code, message) {
+	ctx.errors.push({ code, message, camada })
+	ctx.validacoes[camada].ok = false
+	ctx.relatorio.erros.push(message)
+}
+
+function adicionarAviso(ctx, camada, code, message) {
+	ctx.warnings.push({ code, message, camada })
+	ctx.relatorio.avisos.push(message)
+}
+
+function finalizarValidacoes(ctx) {
+	for (const camada of CAMADAS) {
+		const erros = ctx.errors.filter((erro) => erro.camada === camada).map((erro) => erro.message)
+		const avisos = ctx.warnings.filter((aviso) => aviso.camada === camada).map((aviso) => aviso.message)
+		ctx.validacoes[camada].detalhes = [...erros, ...avisos].join(' ')
+	}
+}
+
+function sha256Buffer(buffer) {
+	return crypto.createHash('sha256').update(buffer).digest('hex')
+}
+
 function sha256File(filePath) {
 	return new Promise((resolve, reject) => {
 		const hash = crypto.createHash('sha256')
@@ -21,58 +63,10 @@ function sha256File(filePath) {
 	})
 }
 
-// Lista recursivamente todos os ficheiros dentro de uma diretoria.
-async function listFilesRecursively(rootDir) {
-	const files = []
-	async function walk(current) {
-		const entries = await fsp.readdir(current, { withFileTypes: true })
-		for (const entry of entries) {
-			const fullPath = path.join(current, entry.name)
-			if (entry.isDirectory()) {
-				await walk(fullPath)
-			} else if (entry.isFile()) {
-				files.push(fullPath)
-			}
-		}
-	}
-	await walk(rootDir)
-	return files
-}
-
-// Faz parse de um manifest estilo "sha256  caminho", ignorando comentários/linhas vazias.
-function parseManifest(text) {
-	const lines = text.split(/\r?\n/)
-	const entries = []
-	for (const raw of lines) {
-		const line = raw.trim()
-		if (!line || line.startsWith('#')) continue
-		const firstSpace = line.indexOf(' ')
-		if (firstSpace === -1) {
-			entries.push({ checksum: null, filePath: null, raw: line })
-			continue
-		}
-		const checksum = line.slice(0, firstSpace).trim()
-		const filePath = line.slice(firstSpace).trim()
-		entries.push({ checksum, filePath })
-	}
-	return entries
-}
-
-function normalizeManifestPath(filePath) {
-	const normalized = path.posix.normalize(String(filePath || '').replace(/\\/g, '/'))
-	if (!normalized || normalized.startsWith('../') || normalized === '..' || path.posix.isAbsolute(normalized)) {
-		return null
-	}
-	if (!normalized.startsWith('data/')) return null
-	return normalized
-}
-
-// Cria diretoria mesmo que já exista.
 async function ensureDir(dirPath) {
 	await fsp.mkdir(dirPath, { recursive: true })
 }
 
-// Copia recursivamente uma pasta, usado para guardar o bag no AIP.
 async function copyDir(src, dst) {
 	await ensureDir(dst)
 	const entries = await fsp.readdir(src, { withFileTypes: true })
@@ -88,24 +82,63 @@ async function copyDir(src, dst) {
 	}
 }
 
-// Extrai ZIP para uma diretoria temporária com proteção contra zip-slip.
-async function safeUnzipToDir(zipBuffer, outDir) {
-	await ensureDir(outDir)
-	const directory = await unzipper.Open.buffer(zipBuffer)
-	for (const file of directory.files) {
-		const rawPath = file.path
-		if (!rawPath) continue
+function normalizarCaminhoZip(rawPath) {
+	const normalized = path.posix.normalize(String(rawPath || '').replace(/\\/g, '/'))
+	if (!normalized || normalized === '.' || normalized.startsWith('../') || normalized === '..' || path.posix.isAbsolute(normalized)) {
+		return null
+	}
+	return normalized
+}
 
-		const normalized = path.normalize(rawPath)
-		if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
-			throw new Error(`caminho inseguro no ZIP: ${rawPath}`)
+function caminhoDataRelativo(fileName) {
+	const safeName = normalizarCaminhoZip(fileName)
+	if (!safeName) return null
+	return safeName.startsWith('data/') ? safeName : `data/${safeName}`
+}
+
+function nomePerigoso(nome) {
+	return /[<>:"|?*\x00-\x1f]/.test(nome)
+}
+
+function parseChecksumText(text) {
+	const entries = new Map()
+	for (const raw of String(text || '').split(/\r?\n/)) {
+		const line = raw.trim()
+		if (!line || line.startsWith('#')) continue
+		const firstSpace = line.indexOf(' ')
+		if (firstSpace === -1) continue
+		const checksum = line.slice(0, firstSpace).trim()
+		const filePath = normalizarCaminhoZip(line.slice(firstSpace).trim())
+		if (checksum && filePath) entries.set(filePath, checksum)
+	}
+	return entries
+}
+
+async function safeUnzipToDir(zipBuffer, outDir, ctx) {
+	await ensureDir(outDir)
+
+	let directory
+	try {
+		directory = await unzipper.Open.buffer(zipBuffer)
+	} catch {
+		adicionarErro(ctx, 'estrutura', 'BAD_ZIP', 'ZIP inválido ou corrompido')
+		return []
+	}
+
+	const extracted = []
+	for (const file of directory.files) {
+		const safePath = normalizarCaminhoZip(file.path)
+		if (!safePath) {
+			adicionarErro(ctx, 'seguranca', 'UNSAFE_PATH', `caminho inseguro no ZIP: ${file.path}`)
+			continue
 		}
 
-		const target = path.join(outDir, normalized)
+		const target = path.join(outDir, safePath)
 		const resolvedOut = path.resolve(outDir) + path.sep
 		const resolvedTarget = path.resolve(target)
 		if (!resolvedTarget.startsWith(resolvedOut)) {
-			throw new Error(`zip-slip detetado no caminho: ${rawPath}`)
+			adicionarErro(ctx, 'seguranca', 'ZIP_SLIP', `zip-slip detetado no caminho: ${file.path}`)
+			continue
 		}
 
 		if (file.type === 'Directory') {
@@ -121,91 +154,208 @@ async function safeUnzipToDir(zipBuffer, outDir) {
 				.on('finish', resolve)
 				.on('error', reject)
 		})
+
+		const stat = await fsp.stat(resolvedTarget)
+		extracted.push({ path: safePath, fullPath: resolvedTarget, size: stat.size })
+	}
+
+	return extracted
+}
+
+function normalizarManifesto(rawManifest) {
+	const manifest = rawManifest && typeof rawManifest === 'object' && !Array.isArray(rawManifest)
+		? rawManifest
+		: {}
+	const resource = { ...manifest }
+
+	delete resource.files
+	if (!resource.visibilidade) resource.visibilidade = 'publico'
+
+	return {
+		metadata: {
+			resource,
+			submissao: {
+				modo: 'sip',
+				manifesto: 'manifest.json',
+				geradoEm: new Date().toISOString(),
+				ficheiros: (Array.isArray(manifest.files) ? manifest.files : []).map((file) => ({
+					nomeOriginal: file?.name || '',
+					nomeNoPacote: file?.name || '',
+					mimeType: file?.type || 'application/octet-stream',
+					tamanho: file?.size || null,
+					required: file?.required !== false,
+				})),
+			},
+		},
+		files: Array.isArray(manifest.files) ? manifest.files : [],
+		manifestoOriginal: manifest,
 	}
 }
 
-// Ingest (SIP ZIP -> validação -> guardar AIP em disco -> registo no Mongo).
-async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
-	const errors = []
+async function lerJson(filePath, ctx, camada, code, label) {
+	try {
+		return JSON.parse(await fsp.readFile(filePath, 'utf8'))
+	} catch (err) {
+		adicionarErro(ctx, camada, code, `${label} inválido: ${err.message}`)
+		return null
+	}
+}
 
-	// 1) Extrair o SIP para uma pasta temporária.
+async function guardarAipErro({ ctx, producerId, sipId, sipHash, manifest }) {
+	finalizarValidacoes(ctx)
+	try {
+		await Aip.create({
+			sipId,
+			status: 'erro',
+			produtor: producerId || null,
+			manifesto: manifest || null,
+			validacoes: ctx.validacoes,
+			relatorio: ctx.relatorio,
+			checksumSIP: sipHash,
+		})
+	} catch (err) {
+		console.error('[api][ingest] warning: failed to save AIP error trace:', err)
+	}
+}
+
+function categoriaPrincipal(errors) {
+	return errors.find((erro) => erro.camada)?.camada || 'estrutura'
+}
+
+async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
+	const sipHash = sha256Buffer(zipBuffer)
+	const sipId = `SIP-${new Date().getFullYear()}-${Date.now()}`
+	const ctx = {
+		errors: [],
+		warnings: [],
+		validacoes: criarValidacoes(),
+		relatorio: criarRelatorioBase({ producerId, sipHash }),
+	}
+	let manifestOriginal = null
+
+	if (zipBuffer.length > 100 * 1024 * 1024) {
+		adicionarErro(ctx, 'seguranca', 'SIP_TOO_LARGE', 'tamanho total do ZIP excede 100MB')
+	}
+
 	const tmpRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'ew2026-sip-'))
 	const extractDir = path.join(tmpRoot, 'bag')
 
 	try {
-		await safeUnzipToDir(zipBuffer, extractDir)
+		const extracted = await safeUnzipToDir(zipBuffer, extractDir, ctx)
+		const extractedByPath = new Map(extracted.map((file) => [file.path, file]))
 
-		// 2) Verificar estrutura mínima do SIP (BagIt + manifest + data + metadata).
-		const bagitPath = path.join(extractDir, 'bagit.txt')
-		const manifestPath = path.join(extractDir, 'manifest-sha256.txt')
+		const manifestJsonPath = path.join(extractDir, 'manifest.json')
 		const dataDir = path.join(extractDir, 'data')
-		const metadataPath = path.join(dataDir, 'metadata.json')
+		const checksumsPath = path.join(extractDir, 'checksums.txt')
 
-		if (!fs.existsSync(bagitPath)) errors.push({ code: 'MISSING_BAGIT', message: 'bagit.txt em falta' })
-		if (!fs.existsSync(manifestPath)) errors.push({ code: 'MISSING_MANIFEST', message: 'manifest-sha256.txt em falta' })
-		if (!fs.existsSync(dataDir)) errors.push({ code: 'MISSING_DATA_DIR', message: 'diretoria data/ em falta' })
-		if (!fs.existsSync(metadataPath)) errors.push({ code: 'MISSING_METADATA', message: 'data/metadata.json em falta' })
+		if (!fs.existsSync(dataDir)) {
+			adicionarErro(ctx, 'estrutura', 'MISSING_DATA_DIR', 'pasta data/ em falta')
+		}
 
-		if (errors.length) return { ok: false, errors }
+		for (const file of extracted) {
+			if (!file.path.startsWith('data/') && !FICHEIROS_RAIZ_PERMITIDOS.has(file.path)) {
+				adicionarErro(ctx, 'estrutura', 'UNEXPECTED_ROOT_FILE', `ficheiro não permitido na raiz do SIP: ${file.path}`)
+			}
+		}
 
-		// 3) Ler e validar metadata com o validador central.
 		let metadata
-		try {
-			metadata = JSON.parse(await fsp.readFile(metadataPath, 'utf-8'))
-		} catch (err) {
-			return { ok: false, errors: [{ code: 'BAD_METADATA', message: `JSON inválido em metadata.json: ${err.message}` }] }
+		let manifestFiles = []
+		if (fs.existsSync(manifestJsonPath)) {
+			const parsed = await lerJson(manifestJsonPath, ctx, 'estrutura', 'BAD_MANIFEST_JSON', 'manifest.json')
+			if (parsed) {
+				const normalized = normalizarManifesto(parsed)
+				metadata = normalized.metadata
+				manifestFiles = normalized.files
+				manifestOriginal = normalized.manifestoOriginal
+			}
+		} else {
+			adicionarErro(ctx, 'estrutura', 'MISSING_MANIFEST', 'manifest.json em falta')
 		}
 
-		const validacao = validateMetadata(metadata)
-		if (!validacao.ok) return { ok: false, errors: validacao.errors }
-
-		// 4) Ler manifest e verificar checksums dos ficheiros referenciados.
-		const manifestText = await fsp.readFile(manifestPath, 'utf-8')
-		const manifestEntries = parseManifest(manifestText)
-
-		for (const entry of manifestEntries) {
-			if (!entry.checksum || !entry.filePath) {
-				errors.push({ code: 'BAD_MANIFEST', message: `linha inválida no manifesto: ${entry.raw || ''}` })
-				continue
-			}
-			if (!/^[a-fA-F0-9]{64}$/.test(entry.checksum)) {
-				errors.push({ code: 'BAD_MANIFEST', message: `checksum SHA-256 inválido para ${entry.filePath}` })
-				continue
-			}
-			const safeManifestPath = normalizeManifestPath(entry.filePath)
-			if (!safeManifestPath) {
-				errors.push({ code: 'BAD_MANIFEST', message: `O caminho no manifesto deve ficar dentro de data/: ${entry.filePath}` })
-				continue
-			}
-
-			entry.filePath = safeManifestPath
-			const fullPath = path.join(extractDir, safeManifestPath)
-			if (!fs.existsSync(fullPath)) {
-				errors.push({ code: 'MISSING_PAYLOAD', message: `ficheiro referenciado no manifesto em falta: ${safeManifestPath}` })
-				continue
-			}
-
-			const digest = await sha256File(fullPath)
-			if (digest.toLowerCase() !== entry.checksum.toLowerCase()) {
-				errors.push({ code: 'CHECKSUM_MISMATCH', message: `checksum diferente para ${safeManifestPath}` })
+		if (metadata) {
+			const validacao = validateMetadata(metadata)
+			if (!validacao.ok) {
+				for (const erro of validacao.errors) adicionarErro(ctx, 'metadados', erro.code, erro.message)
 			}
 		}
 
-		if (errors.length) return { ok: false, errors }
+		const payloadFiles = extracted.filter((file) => file.path.startsWith('data/'))
+		const declaredPaths = new Set()
+		for (const entry of manifestFiles) {
+			const declaredName = typeof entry === 'string' ? entry : entry?.name
+			const declaredPath = caminhoDataRelativo(declaredName)
+			if (!declaredPath) {
+				adicionarErro(ctx, 'seguranca', 'UNSAFE_DECLARED_PATH', `ficheiro declarado com caminho inválido: ${declaredName}`)
+				continue
+			}
+			declaredPaths.add(declaredPath)
 
-		// 5) Garantir que todos os ficheiros reais em data/ aparecem no manifest.
-		const dataFiles = await listFilesRecursively(dataDir)
-		const manifestPaths = new Set(manifestEntries.filter(e => e.filePath).map(e => e.filePath))
-		for (const filePathAbs of dataFiles) {
-			const rel = path.relative(extractDir, filePathAbs).split(path.sep).join('/')
-			if (!manifestPaths.has(rel)) {
-				errors.push({ code: 'BAD_MANIFEST', message: `ficheiro em data/ não listado no manifesto: ${rel}` })
+			const basename = path.posix.basename(declaredPath)
+			if (nomePerigoso(basename)) {
+				adicionarErro(ctx, 'seguranca', 'BAD_FILENAME', `nome de ficheiro inválido: ${declaredName}`)
+			}
+
+			const ext = path.posix.extname(declaredPath).toLowerCase()
+			if (!EXTENSOES_PERMITIDAS.has(ext)) {
+				adicionarErro(ctx, 'seguranca', 'BAD_EXTENSION', `extensão não permitida em ${declaredName}`)
+			}
+
+			const realFile = extractedByPath.get(declaredPath)
+			if (!realFile) {
+				adicionarErro(ctx, 'estrutura', 'MISSING_PAYLOAD', `ficheiro declarado no manifesto não existe em data/: ${declaredName}`)
+				continue
+			}
+
+			if (realFile.size > MAX_FICHEIRO_BYTES) {
+				adicionarErro(ctx, 'seguranca', 'PAYLOAD_TOO_LARGE', `ficheiro excede 50MB: ${declaredName}`)
+			}
+
+			if (entry && typeof entry === 'object' && entry.size !== undefined && Number(entry.size) !== realFile.size) {
+				adicionarErro(ctx, 'consistencia', 'SIZE_MISMATCH', `tamanho declarado não coincide para ${declaredName}`)
 			}
 		}
 
-		if (errors.length) return { ok: false, errors }
+		for (const payload of payloadFiles) {
+			if (!declaredPaths.has(payload.path)) {
+				adicionarErro(ctx, 'consistencia', 'ORPHAN_PAYLOAD', `ficheiro em data/ não listado no manifesto: ${payload.path}`)
+			}
+		}
 
-		// 6) Guardar AIP: pasta do recurso (com base no _id), bag extraído e o ZIP original.
+		const checksumFile = fs.existsSync(checksumsPath) ? checksumsPath : null
+		if (checksumFile) {
+			const checksums = parseChecksumText(await fsp.readFile(checksumFile, 'utf8'))
+			for (const [filePath, checksum] of checksums) {
+				const safePath = caminhoDataRelativo(filePath)
+				if (!safePath || !extractedByPath.has(safePath)) {
+					adicionarErro(ctx, 'consistencia', 'CHECKSUM_TARGET_MISSING', `checksum aponta para ficheiro inexistente: ${filePath}`)
+					continue
+				}
+				if (!/^[a-fA-F0-9]{64}$/.test(checksum)) {
+					adicionarErro(ctx, 'consistencia', 'BAD_CHECKSUM', `checksum SHA-256 inválido para ${filePath}`)
+					continue
+				}
+				const digest = await sha256File(extractedByPath.get(safePath).fullPath)
+				if (digest.toLowerCase() !== checksum.toLowerCase()) {
+					adicionarErro(ctx, 'consistencia', 'CHECKSUM_MISMATCH', `checksum diferente para ${filePath}`)
+				}
+			}
+		} else {
+			adicionarAviso(ctx, 'consistencia', 'CHECKSUMS_MISSING', 'checksums.txt não fornecido; validação por checksum ignorada')
+		}
+
+		if (ctx.errors.length) {
+			await guardarAipErro({ ctx, producerId, sipId, sipHash, manifest: manifestOriginal })
+			return {
+				ok: false,
+				status: 'erro',
+				categoria: categoriaPrincipal(ctx.errors),
+				errors: ctx.errors,
+				validacoes: ctx.validacoes,
+				relatorio: ctx.relatorio,
+			}
+		}
+
+		finalizarValidacoes(ctx)
 		await ensureDir(aipDir)
 
 		const resourceDoc = new Resource({
@@ -226,9 +376,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 
 		try {
 			await ensureDir(resourceAipDir)
-
-			const bagDst = path.join(resourceAipDir, 'bag')
-			await copyDir(extractDir, bagDst)
+			await copyDir(extractDir, path.join(resourceAipDir, 'bag'))
 			await fsp.writeFile(path.join(resourceAipDir, 'sip.zip'), zipBuffer)
 
 			resourceDoc.aipPath = resourceAipDir
@@ -239,7 +387,36 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 				size: uploadedFile?.size ?? zipBuffer.length,
 			})
 			await resourceDoc.save()
+
+			const aipDoc = await Aip.create({
+				sipId,
+				recursoId: resourceDoc._id,
+				status: 'ok',
+				produtor: producerId || null,
+				manifesto: manifestOriginal,
+				validacoes: ctx.validacoes,
+				storageLocal: resourceAipDir,
+				relatorio: ctx.relatorio,
+				checksumSIP: sipHash,
+			})
+
+			return {
+				ok: true,
+				status: 'ok',
+				aipId: aipDoc.sipId,
+				resourceId,
+				recursoId: resourceId,
+				mensagem: 'SIP ingerido com sucesso',
+				storageLocal: resourceAipDir,
+				validacoes: ctx.validacoes,
+				relatorio: ctx.relatorio,
+			}
 		} catch (err) {
+			try {
+				await Resource.deleteOne({ _id: resourceDoc._id })
+			} catch (resourceCleanupErr) {
+				console.error(`[api][ingest] warning: failed to rollback resource ${resourceDoc._id}:`, resourceCleanupErr)
+			}
 			try {
 				await fsp.rm(resourceAipDir, { recursive: true, force: true })
 			} catch (cleanupErr) {
@@ -247,10 +424,17 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 			}
 			throw err
 		}
-
-		return { ok: true, resourceId }
 	} catch (err) {
-		return { ok: false, errors: [{ code: 'INGEST_FAILED', message: err.message }] }
+		adicionarErro(ctx, 'estrutura', 'INGEST_FAILED', err.message)
+		await guardarAipErro({ ctx, producerId, sipId, sipHash, manifest: manifestOriginal })
+		return {
+			ok: false,
+			status: 'erro',
+			categoria: categoriaPrincipal(ctx.errors),
+			errors: ctx.errors,
+			validacoes: ctx.validacoes,
+			relatorio: ctx.relatorio,
+		}
 	} finally {
 		try {
 			await fsp.rm(tmpRoot, { recursive: true, force: true })

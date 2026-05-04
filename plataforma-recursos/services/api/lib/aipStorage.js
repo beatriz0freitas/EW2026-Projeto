@@ -95,17 +95,10 @@ async function restoreAipFiles({ aipDir, resourceId, files }) {
 	return resourceAipPath
 }
 
-function resolveStoredZipPath(resource, aipDir) {
-	const storedFilePath = typeof resource?.aipFile?.path === 'string' ? resource.aipFile.path.trim() : ''
-	if (storedFilePath) return path.resolve(storedFilePath)
-	return buildSipZipPath(resolveResourceAipPath(resource, aipDir))
-}
-
 module.exports = {
 	buildResourceAipPath,
 	buildStoredAipFile,
 	exportAipFiles,
 	resolveResourceAipPath,
-	resolveStoredZipPath,
 	restoreAipFiles,
 }

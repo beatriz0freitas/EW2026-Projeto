@@ -89,7 +89,7 @@ function apiErrorMessageWithDetails(payload, fallback) {
 	const details = Array.isArray(payload?.details)
 		? payload.details
 			.map((detail) => detail?.message)
-			.filter((message) => message && !/(SIP|BagIt|JSON|metadata|metadados|manifest|checksum|sha|data\/|AIP|API)/i.test(message))
+			.filter(Boolean)
 		: []
 	if (!details.length) return base
 	return `${base}: ${details.join(' ')}`

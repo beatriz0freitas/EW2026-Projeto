@@ -21,7 +21,7 @@ block content
 							| Podes começar com um exemplo e ajustar os campos ao teu recurso.
 					.example-toolbar(role='group' aria-label='Exemplos de preenchimento')
 						span.example-toolbar__label Exemplo rápido
-						button.w3-button.w3-border(type='button' data-example='dataset') Dados
+						button.w3-button.w3-border(type='button' data-example='relatorio') Relatório
 						button.w3-button.w3-border(type='button' data-example='artigo') Artigo
 						button.w3-button.w3-border(type='button' data-example='slides') Slides
 						button.w3-button.w3-border(type='button' data-example='clear') Limpar
@@ -46,18 +46,16 @@ block content
 							.field-label-row
 								label(for='tipo') Tipo
 								span.field-badge.field-badge--required Obrigatório
-							input#tipo.w3-input(type='text' name='tipo' list='tipos-recurso' required placeholder='Ex: livro, artigo, slides, dados')
+							input#tipo.w3-input(type='text' name='tipo' list='tipos-recurso' required placeholder='Ex: artigo, tese, slides')
 							datalist#tipos-recurso
 								option(value='artigo')
-								option(value='livro')
-								option(value='relatorio')
 								option(value='tese')
 								option(value='slides')
-								option(value='dados')
-								option(value='aplicacao')
-								option(value='trabalho')
 								option(value='teste')
-								option(value='problema resolvido')
+								option(value='relatorio')
+								option(value='aplicacao')
+								option(value='problema')
+								option(value='outro')
 							p.field-feedback(data-default-text='Escolhe um tipo simples e reconhecível para facilitar a pesquisa.') Escolhe um tipo simples e reconhecível para facilitar a pesquisa.
 
 						.form-field(data-field='ano')

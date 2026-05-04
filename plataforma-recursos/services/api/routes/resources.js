@@ -19,7 +19,7 @@ router.get('/:id', optionalAuth, resourcesController.getById)
 router.patch('/:id', requireLevel('produtor'), resourcesController.patchById)
 
 // DELETE /api/resources/:id
-// FIX: apaga também a pasta AIP em disco após remover o documento do MongoDB.
+// Remove o recurso, a rastreabilidade AIP e a pasta AIP em disco.
 router.delete('/:id', requireLevel('produtor'), resourcesController.deleteById)
 
 module.exports = router

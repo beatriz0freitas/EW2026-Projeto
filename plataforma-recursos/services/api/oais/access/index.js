@@ -1,8 +1,8 @@
 const express = require('express')
-const path = require('path')
 
+const Aip = require('../../models/Aip')
 const Resource = require('../../models/Resource')
-const { getDipZipPath } = require('./dip')
+const { buildDipZip } = require('./dip')
 const { optionalAuth } = require('../../middleware/auth')
 const { config } = require('../../lib/config')
 const { jsonError, isMongoId } = require('../../lib/http')
@@ -48,21 +48,23 @@ router.get('/access/:id', optionalAuth, async (req, res) => {
 		}
 	}
 
-	// 3) Devolver o ZIP (DIP = SIP)
-	const zipPath = await getDipZipPath({ resource, aipDir })
-	if (!zipPath) {
+	// 3) Converter o AIP preservado num DIP em ZIP
+	const dip = await buildDipZip({ resource, aipDir })
+	if (!dip) {
 		return jsonError(res, 404, {
 			code: 'AIP_FILE_NOT_FOUND',
 			message: 'ficheiro AIP não encontrado em disco',
 		})
 	}
 
-	const filename = resource?.aipFile?.originalName || `resource-${req.params.id}.zip`
+	const filename = dip.filename
 	res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
 	res.setHeader('Content-Type', 'application/zip')
+	res.setHeader('Content-Length', String(dip.buffer.length))
 
 	try {
 		await Resource.updateOne({ _id: resource._id }, { $inc: { downloadCount: 1 } })
+		await Aip.updateOne({ recursoId: resource._id, status: 'ok' }, { $inc: { downloadCount: 1 } })
 		publishTop3NewsIfChanged().catch((err) => {
 			console.error('[api][access] warning: could not publish top3 news after download:', err)
 		})
@@ -70,7 +72,7 @@ router.get('/access/:id', optionalAuth, async (req, res) => {
 		console.error('[api][access] warning: could not increment downloadCount:', err)
 	}
 
-	res.sendFile(path.resolve(zipPath))
+	res.send(dip.buffer)
 })
 
 module.exports = router

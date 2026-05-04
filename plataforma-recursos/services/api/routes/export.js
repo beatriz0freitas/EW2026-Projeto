@@ -7,7 +7,7 @@
  *
  * POST /api/import          — importa um dump gerado pelo endpoint acima.
  *                             Requer autenticação de admin.
- *                             Aceita JSON legado ou multipart/form-data com dumpFile.
+ *                             Aceita JSON no corpo ou multipart/form-data com dumpFile.
  *                             Estratégia: upsert por _id para ser idempotente (pode ser chamado várias vezes).
  *
  * Nota: o dump inclui também os ficheiros do AIP em base64 para permitir

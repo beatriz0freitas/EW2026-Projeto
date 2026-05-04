@@ -4,8 +4,8 @@
 
 'use strict'
 
+const TIPOS_VALIDOS = new Set(['artigo', 'tese', 'slides', 'teste', 'relatorio', 'aplicacao', 'problema', 'outro'])
 const VISIBILIDADES_VALIDAS = new Set(['publico', 'privado'])
-const DATA_CRIACAO_REGEX = /^\d{4}(-\d{2}(-\d{2})?)?$/
 
 const LIMITES = {
 	tipo: { min: 1, max: 80 },
@@ -46,6 +46,11 @@ function validateMetadataResource(resource) {
 	const tipo = limparTexto(resource.tipo)
 	if (!tipo) {
 		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.tipo é obrigatório' })
+	} else if (!TIPOS_VALIDOS.has(tipo)) {
+		errors.push({
+			code: 'BAD_METADATA',
+			message: `metadata.resource.tipo deve ser um de: ${Array.from(TIPOS_VALIDOS).join(', ')}`,
+		})
 	} else if (tipo.length > LIMITES.tipo.max) {
 		errors.push({
 			code: 'BAD_METADATA',
@@ -61,6 +66,10 @@ function validateMetadataResource(resource) {
 			code: 'BAD_METADATA',
 			message: `metadata.resource.titulo não pode exceder ${LIMITES.titulo.max} caracteres`,
 		})
+	}
+
+	if (resource.visibilidade === undefined || resource.visibilidade === null || resource.visibilidade === '') {
+		resource.visibilidade = 'publico'
 	}
 
 	if (!VISIBILIDADES_VALIDAS.has(resource.visibilidade)) {
@@ -114,20 +123,25 @@ function validateMetadataResource(resource) {
 
 	if (resource.dataCriacao !== undefined && resource.dataCriacao !== null && resource.dataCriacao !== '') {
 		const dataCriacao = limparTexto(resource.dataCriacao)
-		if (!DATA_CRIACAO_REGEX.test(dataCriacao)) {
+		const timestamp = Date.parse(dataCriacao)
+		if (!dataCriacao || Number.isNaN(timestamp)) {
 			errors.push({
 				code: 'BAD_METADATA',
-				message: 'metadata.resource.dataCriacao deve estar no formato YYYY, YYYY-MM ou YYYY-MM-DD',
+				message: 'metadata.resource.dataCriacao deve ser uma data ISO 8601 válida',
 			})
 		}
 	}
 
 	if (resource.hashtags !== undefined && resource.hashtags !== null) {
+		if (typeof resource.hashtags === 'string') {
+			resource.hashtags = resource.hashtags
+				.split(',')
+				.map((tag) => tag.trim())
+				.filter(Boolean)
+		}
+
 		if (!Array.isArray(resource.hashtags)) {
-			errors.push({
-				code: 'BAD_METADATA',
-				message: 'metadata.resource.hashtags deve ser uma lista',
-			})
+			errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.hashtags deve ser uma lista' })
 		} else {
 			if (resource.hashtags.length > LIMITES.hashtags.maxEntries) {
 				errors.push({
@@ -174,7 +188,6 @@ function validateMetadataResource(resource) {
 
 /**
  * Valida o objecto metadata completo (que contém metadata.resource).
- * Aceita tanto { resource: {...} } como o resource directamente (legado).
  *
  * @param {unknown} metadata
  * @returns {{ ok: boolean, errors: Array<{ code: string, message: string }> }}
@@ -183,25 +196,22 @@ function validateMetadata(metadata) {
 	if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
 		return {
 			ok: false,
-			errors: [{ code: 'BAD_METADATA', message: 'metadata.json deve ser um objeto JSON' }],
+			errors: [{ code: 'BAD_METADATA', message: 'metadata deve ser um objeto JSON' }],
 		}
 	}
 
-	const resource = metadata.resource && typeof metadata.resource === 'object'
-		? metadata.resource
-		: metadata
-
-	if (!metadata.resource) {
+	if (!metadata.resource || typeof metadata.resource !== 'object' || Array.isArray(metadata.resource)) {
 		return {
 			ok: false,
 			errors: [{ code: 'BAD_METADATA', message: 'metadata.resource é obrigatório' }],
 		}
 	}
 
-	return validateMetadataResource(resource)
+	return validateMetadataResource(metadata.resource)
 }
 
 module.exports = {
+	TIPOS_VALIDOS,
 	validateMetadata,
 	validateMetadataResource,
 }

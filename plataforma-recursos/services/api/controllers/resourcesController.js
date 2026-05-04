@@ -1,4 +1,6 @@
 const fsp = require('fs/promises')
+const path = require('path')
+const Aip = require('../models/Aip')
 const Resource = require('../models/Resource')
 const Post = require('../models/Post')
 const Rating = require('../models/Rating')
@@ -39,9 +41,7 @@ function normalizarHashtags(valor) {
 }
 
 function construirMetadataAtualizada(metadataAtual, metadataRecebida) {
-	const origem = metadataRecebida?.resource && typeof metadataRecebida.resource === 'object'
-		? metadataRecebida.resource
-		: metadataRecebida
+	const origem = metadataRecebida?.resource
 
 	if (!origem || typeof origem !== 'object' || Array.isArray(origem)) {
 		return {
@@ -166,6 +166,8 @@ module.exports.patchById = async (req, res) => {
 
 module.exports.deleteById = async (req, res) => {
 	if (!isMongoId(req.params.id)) return invalidId(res)
+	let stagedDir = null
+	let originalDir = null
 	try {
 		const resource = await Resource.findById(req.params.id)
 		if (!resource) return jsonError(res, 404, 'recurso não encontrado')
@@ -174,14 +176,22 @@ module.exports.deleteById = async (req, res) => {
 		}
 
 		const resourceDir = resolveResourceAipPath(resource, config.storage.aipDir)
+		originalDir = resourceDir
 		try {
-			await fsp.rm(resourceDir, { recursive: true, force: true })
+			await fsp.access(resourceDir)
+			stagedDir = path.join(
+				path.dirname(resourceDir),
+				`.${path.basename(resourceDir)}.deleting-${Date.now()}`
+			)
+			await fsp.rename(resourceDir, stagedDir)
 		} catch (fsErr) {
-			console.error(`[resources] erro: não foi possível apagar AIP em disco: ${resourceDir}`, fsErr)
-			return jsonError(res, 500, {
-				code: 'AIP_DELETE_FAILED',
-				message: 'não foi possível apagar o recurso em disco',
-			})
+			if (fsErr.code !== 'ENOENT') {
+				console.error(`[resources] erro: não foi possível preparar remoção do AIP em disco: ${resourceDir}`, fsErr)
+				return jsonError(res, 500, {
+					code: 'AIP_DELETE_FAILED',
+					message: 'não foi possível apagar o recurso em disco',
+				})
+			}
 		}
 
 		const posts = await Post.find({ resourceId: resource._id }).select('_id').lean()
@@ -189,13 +199,34 @@ module.exports.deleteById = async (req, res) => {
 
 		await Promise.all([
 			Resource.deleteOne({ _id: resource._id }),
+			Aip.deleteMany({ recursoId: resource._id }),
 			Rating.deleteMany({ resourceId: resource._id }),
 			Post.deleteMany({ resourceId: resource._id }),
 			postIds.length ? Comment.deleteMany({ postId: { $in: postIds } }) : Promise.resolve(),
 		])
 
+		if (stagedDir) {
+			try {
+				await fsp.rm(stagedDir, { recursive: true, force: true })
+			} catch (fsErr) {
+				console.error(`[resources] aviso: recurso removido da BD, mas a limpeza final em disco falhou: ${stagedDir}`, fsErr)
+				return jsonError(res, 500, {
+					code: 'AIP_DELETE_FAILED',
+					message: 'o recurso foi removido da base de dados, mas a limpeza final em disco falhou',
+				})
+			}
+		}
+
 		res.json({ ok: true })
-	} catch {
+	} catch (err) {
+		if (stagedDir && originalDir) {
+			try {
+				await fsp.rename(stagedDir, originalDir)
+			} catch (restoreErr) {
+				console.error(`[resources] erro: falhou a reposição do AIP após erro na remoção: ${stagedDir}`, restoreErr)
+			}
+		}
+		console.error('[resources] erro ao remover recurso:', err)
 		jsonError(res, 500, 'erro interno')
 	}
 }

@@ -2,6 +2,7 @@ const crypto = require('crypto')
 const path = require('path')
 
 const { validateMetadataResource } = require('../../lib/metadataValidator')
+const { criarZipSemCompressao } = require('../../lib/simpleZip')
 
 function limparTexto(valor) {
 	return String(valor || '').trim()
@@ -16,112 +17,6 @@ function normalizarHashtags(valor) {
 
 function calcularSha256(conteudo) {
 	return crypto.createHash('sha256').update(conteudo).digest('hex')
-}
-
-function criarTabelaCrc32() {
-	const tabela = []
-	for (let n = 0; n < 256; n++) {
-		let c = n
-		for (let k = 0; k < 8; k++) {
-			c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1)
-		}
-		tabela[n] = c >>> 0
-	}
-	return tabela
-}
-
-const TABELA_CRC32 = criarTabelaCrc32()
-
-function calcularCrc32(conteudo) {
-	let crc = 0xffffffff
-	for (const byte of conteudo) {
-		crc = TABELA_CRC32[(crc ^ byte) & 0xff] ^ (crc >>> 8)
-	}
-	return (crc ^ 0xffffffff) >>> 0
-}
-
-function obterDataDos(data = new Date()) {
-	const ano = Math.max(1980, data.getFullYear())
-	const mes = data.getMonth() + 1
-	const dia = data.getDate()
-	const horas = data.getHours()
-	const minutos = data.getMinutes()
-	const segundos = Math.floor(data.getSeconds() / 2)
-
-	return {
-		hora: (horas << 11) | (minutos << 5) | segundos,
-		data: ((ano - 1980) << 9) | (mes << 5) | dia,
-	}
-}
-
-function criarZipSemCompressao(entradas) {
-	const partesLocais = []
-	const partesCentrais = []
-	const dataDos = obterDataDos()
-	let deslocamento = 0
-
-	for (const entrada of entradas) {
-		const nome = Buffer.from(entrada.caminho, 'utf8')
-		const conteudo = Buffer.isBuffer(entrada.conteudo)
-			? entrada.conteudo
-			: Buffer.from(String(entrada.conteudo || ''), 'utf8')
-		const crc32 = calcularCrc32(conteudo)
-		const tamanho = conteudo.length
-
-		if (tamanho > 0xffffffff || deslocamento > 0xffffffff) {
-			throw new Error('ficheiro demasiado grande para o ZIP simples')
-		}
-
-		const cabecalhoLocal = Buffer.alloc(30)
-		cabecalhoLocal.writeUInt32LE(0x04034b50, 0)
-		cabecalhoLocal.writeUInt16LE(20, 4)
-		cabecalhoLocal.writeUInt16LE(0x0800, 6)
-		cabecalhoLocal.writeUInt16LE(0, 8)
-		cabecalhoLocal.writeUInt16LE(dataDos.hora, 10)
-		cabecalhoLocal.writeUInt16LE(dataDos.data, 12)
-		cabecalhoLocal.writeUInt32LE(crc32, 14)
-		cabecalhoLocal.writeUInt32LE(tamanho, 18)
-		cabecalhoLocal.writeUInt32LE(tamanho, 22)
-		cabecalhoLocal.writeUInt16LE(nome.length, 26)
-		cabecalhoLocal.writeUInt16LE(0, 28)
-
-		partesLocais.push(cabecalhoLocal, nome, conteudo)
-
-		const cabecalhoCentral = Buffer.alloc(46)
-		cabecalhoCentral.writeUInt32LE(0x02014b50, 0)
-		cabecalhoCentral.writeUInt16LE(20, 4)
-		cabecalhoCentral.writeUInt16LE(20, 6)
-		cabecalhoCentral.writeUInt16LE(0x0800, 8)
-		cabecalhoCentral.writeUInt16LE(0, 10)
-		cabecalhoCentral.writeUInt16LE(dataDos.hora, 12)
-		cabecalhoCentral.writeUInt16LE(dataDos.data, 14)
-		cabecalhoCentral.writeUInt32LE(crc32, 16)
-		cabecalhoCentral.writeUInt32LE(tamanho, 20)
-		cabecalhoCentral.writeUInt32LE(tamanho, 24)
-		cabecalhoCentral.writeUInt16LE(nome.length, 28)
-		cabecalhoCentral.writeUInt16LE(0, 30)
-		cabecalhoCentral.writeUInt16LE(0, 32)
-		cabecalhoCentral.writeUInt16LE(0, 34)
-		cabecalhoCentral.writeUInt16LE(0, 36)
-		cabecalhoCentral.writeUInt32LE(0, 38)
-		cabecalhoCentral.writeUInt32LE(deslocamento, 42)
-
-		partesCentrais.push(cabecalhoCentral, nome)
-		deslocamento += cabecalhoLocal.length + nome.length + conteudo.length
-	}
-
-	const diretorioCentral = Buffer.concat(partesCentrais)
-	const fim = Buffer.alloc(22)
-	fim.writeUInt32LE(0x06054b50, 0)
-	fim.writeUInt16LE(0, 4)
-	fim.writeUInt16LE(0, 6)
-	fim.writeUInt16LE(entradas.length, 8)
-	fim.writeUInt16LE(entradas.length, 10)
-	fim.writeUInt32LE(diretorioCentral.length, 12)
-	fim.writeUInt32LE(deslocamento, 16)
-	fim.writeUInt16LE(0, 20)
-
-	return Buffer.concat([...partesLocais, diretorioCentral, fim])
 }
 
 function criarNomeSeguro(nomeOriginal, indice, usados) {
@@ -147,7 +42,7 @@ function criarNomeSeguro(nomeOriginal, indice, usados) {
 function construirMetadados(body, ficheiros) {
 	const titulo = limparTexto(body.titulo)
 	const tipo = limparTexto(body.tipo)
-	const visibilidade = body.visibilidade === 'publico' ? 'publico' : 'privado'
+	const visibilidade = body.visibilidade === 'privado' ? 'privado' : 'publico'
 	const ano = limparTexto(body.ano)
 
 	const recurso = {
@@ -239,12 +134,20 @@ async function construirSipSimples({ body, ficheiros }) {
 	}))
 
 	const metadados = construirMetadados(body || {}, ficheirosNormalizados)
-	const metadadosBuffer = Buffer.from(`${JSON.stringify(metadados, null, 2)}\n`, 'utf8')
+	const manifestJson = {
+		...metadados.resource,
+		files: ficheirosNormalizados.map((ficheiro) => ({
+			name: `ficheiros/${ficheiro.nomeNoPacote}`,
+			size: ficheiro.size,
+			type: ficheiro.mimetype || 'application/octet-stream',
+			required: true,
+		})),
+	}
+	const manifestBuffer = Buffer.from(`${JSON.stringify(manifestJson, null, 2)}\n`, 'utf8')
 	const ficheirosDoPacote = ficheirosNormalizados.map((ficheiro) => ({
 		caminho: `data/ficheiros/${ficheiro.nomeNoPacote}`,
 		conteudo: ficheiro.buffer,
 	}))
-	ficheirosDoPacote.push({ caminho: 'data/metadata.json', conteudo: metadadosBuffer })
 
 	const manifesto = ficheirosDoPacote
 		.map((ficheiro) => `${calcularSha256(ficheiro.conteudo)}  ${ficheiro.caminho}`)
@@ -254,7 +157,8 @@ async function construirSipSimples({ body, ficheiros }) {
 
 	const zipBuffer = criarZipSemCompressao([
 		{ caminho: 'bagit.txt', conteudo: bagitBuffer },
-		{ caminho: 'manifest-sha256.txt', conteudo: manifestoBuffer },
+		{ caminho: 'manifest.json', conteudo: manifestBuffer },
+		{ caminho: 'checksums.txt', conteudo: manifestoBuffer },
 		...ficheirosDoPacote,
 	])
 

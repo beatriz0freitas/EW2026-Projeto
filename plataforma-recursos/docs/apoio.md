@@ -2,7 +2,7 @@
 
 > Objetivo: resumo executivo de como a solução cumpre o enunciado.
 >
-> Atualizado em: 2026-04-28
+> Atualizado em: 2026-05-04
 
 ## 1) O que o enunciado pede
 
@@ -58,9 +58,9 @@ Mantive o `nginx` como entrada externa e o `gateway` como ponto lógico da aplic
 
 Usei MongoDB para metadados e entidades do domínio, e disco para os ficheiros AIP. Esta divisão é mais natural para OAIS: os dados descritivos ficam pesquisáveis e o conteúdo arquivístico fica guardado como ficheiro.
 
-### DIP inicial igual ao SIP
+### DIP gerado a partir do AIP
 
-Na fase atual, o DIP é devolvido sem transformação complexa. Foi a opção mais simples e alinhada com o enunciado, que permite começar com `DIP = SIP`. Assim cumpro o requisito sem introduzir complexidade desnecessária.
+O SIP submetido pelo produtor é validado e convertido num AIP persistido em disco, com rastreabilidade própria no MongoDB. Quando um utilizador descarrega o recurso, o DIP é gerado a partir desse AIP preservado, e não devolvido diretamente como o ZIP de entrada.
 
 ### Segurança no backend
 
@@ -74,7 +74,7 @@ Optei por JWT com refresh token porque funciona bem numa arquitetura distribuíd
 
 - Não foi escolhida uma arquitetura monolítica porque dificultaria evolução e depuração.
 - Não foi colocada toda a lógica de segurança na interface porque isso seria frágil e facilmente contornável.
-- Não foi feita uma transformação complexa do DIP nesta fase porque aumentaria o custo sem trazer valor imediato ao núcleo funcional.
+- Não foi feita uma transformação semântica complexa do conteúdo do DIP, mas o download já passa pela conversão AIP -> DIP, garantindo que o pacote servido vem do arquivo preservado.
 - Não foram introduzidos provedores externos de autenticação porque o enunciado pode ser cumprido com autenticação local simples e direta.
 - Não foram adicionadas otimizações prematuras ou padrões excessivos porque o foco foi cumprir o essencial com estabilidade.
 
@@ -91,24 +91,31 @@ Optei por JWT com refresh token porque funciona bem numa arquitetura distribuíd
 
 ## 1) Upload/Download de Pacotes (SIP/DIP)
 
+Guia detalhado do formato atual: [docs/oais-sip-aip-dip.md](oais-sip-aip-dip.md).
+
 ### Upload (SIP)
 
 **Fluxo:**
 
-1. O cliente faz POST `/api/oais/ingest` com um ficheiro ZIP.
+1. O cliente faz POST `/api/oais/ingest` com um ficheiro ZIP no campo multipart `sip`.
 2. O serviço API valida se é um ZIP válido.
-3. O ZIP é descompactado para uma pasta temporária em memória.
-4. O SIP é validado (estrutura BagIt simplificada, checksums).
-5. Se válido, todo o conteúdo é guardado em disco em `data/aip/<resourceId>/`.
-6. Um registo é criado em MongoDB com referência ao caminho AIP e metadados.
+3. O ZIP é extraído para uma pasta temporária.
+4. O SIP é validado por camadas: estrutura, metadados, segurança e consistência.
+5. Se válido, o conteúdo extraído é guardado como AIP em `data/aip/<resourceId>/bag/` e o ZIP original é preservado em `data/aip/<resourceId>/sip.zip`.
+6. São criados registos em MongoDB nas coleções `resources` e `aips`.
 
 **Validações de SIP:**
 
-- Ficheiro tem de ser um ZIP.
-- Estrutura obrigatória: `bagit.txt`, `manifest-sha256.txt`, `data/`, `metadata.json`.
-- `metadata.json` tem de conter `resource.tipo`, `resource.titulo`, `resource.visibilidade`.
-- Os checksums em `manifest-sha256.txt` são verificados contra os ficheiros em `data/`.
+- Ficheiro tem de ser um ZIP válido.
+- Estrutura obrigatória: `manifest.json` na raiz e pasta `data/`.
+- Ficheiros de raiz permitidos: `manifest.json`, `bagit.txt` e `checksums.txt`.
+- `manifest.json` tem de conter pelo menos `titulo` e `tipo`.
+- `tipo` tem de pertencer à enumeração: `artigo`, `tese`, `slides`, `teste`, `relatorio`, `aplicacao`, `problema`, `outro`.
+- `visibilidade` tem de ser `publico` ou `privado`; por defeito é `publico`.
+- Os ficheiros declarados em `manifest.json.files` têm de existir em `data/`.
+- Se `checksums.txt` existir, os checksums SHA-256 são verificados contra os ficheiros em `data/`.
 - Proteção contra "zip-slip" (caminhos maliciosos dentro do ZIP).
+- Whitelist de extensões e limites de tamanho por ficheiro/pacote.
 
 **Permissões:**
 
@@ -129,14 +136,14 @@ Optei por JWT com refresh token porque funciona bem numa arquitetura distribuíd
 3. Verifica visibilidade:
    - Se `publico`: qualquer pessoa pode descarregar.
    - Se `privado`: só o produtor que submeteu ou um admin.
-4. Devolve o ficheiro ZIP guardado em disco.
-5. Incrementa o contador `downloadCount` no MongoDB.
+4. Gera um ZIP DIP a partir da pasta AIP guardada em disco.
+5. Incrementa `downloadCount` no recurso e no registo AIP.
 
 **Dados devolvidos:**
 
 - O `Content-Disposition` define o nome do ficheiro.
 - O `Content-Type` é `application/zip`.
-- Na fase atual, DIP = SIP (sem transformação).
+- O DIP contém o AIP preservado, incluindo `bag/` e `sip.zip`.
 
 **Código relevante:**
 
@@ -206,45 +213,53 @@ Um ficheiro ZIP que o produtor envia contendo o recurso a ser arquivado.
 
 ```
 recurso.zip
-├── bagit.txt                 (marcador BagIt)
-├── manifest-sha256.txt       (checksums de cada ficheiro)
+├── manifest.json             (metadados e lista de ficheiros)
+├── bagit.txt                 (opcional; marcador BagIt)
+├── checksums.txt             (opcional; SHA-256 dos ficheiros)
 ├── data/                     (conteúdo do recurso)
 │   ├── ficheiro1.pdf
 │   ├── imagem.jpg
 │   └── ...
-└── metadata.json             (metadados estruturados)
 ```
 
-**metadata.json obrigatório:**
+**manifest.json obrigatório:**
 
 ```json
 {
-  "resource": {
-    "tipo": "livro|documento|imagem|video",
-    "titulo": "...",
-    "visibilidade": "publico|privado",
-    "ano": 2023,
-    "tema": "...",
-    "hashtags": ["tag1", "tag2"]
-  }
+  "titulo": "Título do Recurso",
+  "subtitulo": "Subtítulo opcional",
+  "tipo": "artigo",
+  "hashtags": ["web", "programacao"],
+  "visibilidade": "publico",
+  "dataCriacao": "2026-03-01",
+  "descricao": "Descrição do recurso",
+  "files": [
+    {
+      "name": "ficheiro1.pdf",
+      "size": 2048000,
+      "type": "application/pdf",
+      "required": true
+    }
+  ]
 }
 ```
 
 ### AIP (Archival Information Package)
 
 **O que é:**
-O SIP é armazenado na sua forma original em disco. Serve de "arquivo autêntico".
+O SIP validado é transformado num AIP. O sistema guarda a cópia extraída em `bag/`, preserva o `sip.zip` original e cria um registo de rastreabilidade na coleção `aips`.
 
 **Localização em disco:**
 
 ```
 data/aip/<resourceId>/
-├── bagit.txt
-├── manifest-sha256.txt
-├── data/
-│   └── ...
-├── metadata.json
-└── recurso.zip (ficheiro original comprimido novamente)
+├── bag/
+│   ├── manifest.json
+│   ├── bagit.txt
+│   ├── checksums.txt
+│   └── data/
+│       └── ...
+└── sip.zip
 ```
 
 **Por que em disco e não só em MongoDB:**
@@ -264,14 +279,13 @@ data/aip/<resourceId>/
 O pacote enviado ao utilizador quando descarrega.
 
 **Implementação atual:**
-Na fase inicial, `DIP = SIP`. Sem transformações complexas.
+O DIP é um ZIP gerado no momento do download a partir da pasta AIP guardada em disco.
 
 **Por que esta opção:**
 
-- O enunciado permite explicitamente `DIP = SIP` numa fase inicial.
-- Reduz complexidade de transformação.
-- Cumpre requisito de forma simples.
-- Futuro: permitir re-codificação, normalização, etc.
+- Cumpre a conversão AIP -> DIP pedida no enunciado.
+- Mantém a rastreabilidade do que foi ingerido.
+- Permite evoluir futuramente para DIPs filtrados, anonimizados, normalizados ou adaptados ao perfil do consumidor.
 
 ---
 
@@ -426,12 +440,12 @@ consumidor (1) → apenas leitura de públicos
 
 ### Esquema de Taxonomia
 
-Os recursos são classificados através de campos no `metadata.json`:
+Os recursos são classificados através de campos em `metadata.resource`, derivados do `manifest.json` do SIP:
 
 ```json
 {
   "resource": {
-    "tipo": "livro",
+    "tipo": "artigo",
     "ano": 2023,
     "tema": "história",
     "hashtags": ["#história", "#século-XX"]
@@ -443,7 +457,7 @@ Os recursos são classificados através de campos no `metadata.json`:
 
 | Dimensão          | Tipo   | Obrigatório | Exemplos                          |
 | ------------------ | ------ | ------------ | --------------------------------- |
-| **tipo**     | string | Sim          | livro, documento, imagem, video   |
+| **tipo**     | string | Sim          | artigo, tese, slides, teste       |
 | **ano**      | number | Não         | 2023, 1945                        |
 | **tema**     | string | Não         | história, tecnologia, educação |
 | **hashtags** | array  | Não         | ["#história", "#XX"]             |
@@ -461,7 +475,7 @@ Os recursos são classificados através de campos no `metadata.json`:
 
 ### Por que esta abordagem
 
-- **Flexibilidade:** campos em metadata.json permitem adicionar novos sem migrar schema.
+- **Flexibilidade:** campos em `metadata.resource` permitem adicionar novos dados descritivos sem migrar schema.
 - **Simplicidade:** não precisa de tabela de referência separada.
 - **Compatibilidade OAIS:** metadados descritivos ficam no SIP.
 
@@ -603,7 +617,7 @@ Os recursos são classificados através de campos no `metadata.json`:
 ```javascript
 {
   _id: ObjectId,
-  metadata: Object,                // JSON completo de metadata.json
+  metadata: Object,                // metadados internos no formato { resource: {...} }
   aipPath: string,                 // caminho em disco: data/aip/<resourceId>
   aipFile: {
     originalName: string,          // nome do ZIP original
@@ -757,7 +771,7 @@ Para uma apresentação funcional, recomenda-se:
 **Opção 1: Upload manual**
 
 ```bash
-# Criar um SIP em ZIP (com bagit.txt, manifest, data/, metadata.json)
+# Criar um SIP em ZIP (com manifest.json, data/, bagit.txt e checksums.txt)
 # POST /api/oais/ingest -F "sip=@recurso.zip"
 ```
 
@@ -781,26 +795,28 @@ Para uma apresentação funcional, recomenda-se:
 
 ```
 exemplo.zip
+├── manifest.json
+│   {
+│     "titulo": "Uma História de Portugal",
+│     "tipo": "artigo",
+│     "visibilidade": "publico",
+│     "ano": 2022,
+│     "tema": "história",
+│     "hashtags": ["história", "portugal"],
+│     "files": [
+│       { "name": "livro.pdf", "size": 2048000, "type": "application/pdf", "required": true },
+│       { "name": "capa.jpg", "size": 204800, "type": "image/jpeg", "required": false }
+│     ]
+│   }
 ├── bagit.txt
 │   Text-Encoding: UTF-8
 │   BagIt-Version: 1.0
-├── manifest-sha256.txt
+├── checksums.txt
 │   abc123... data/livro.pdf
 │   def456... data/capa.jpg
-├── data/
-│   ├── livro.pdf
-│   └── capa.jpg
-└── metadata.json
-    {
-      "resource": {
-        "tipo": "livro",
-        "titulo": "Uma História de Portugal",
-        "visibilidade": "publico",
-        "ano": 2022,
-        "tema": "história",
-        "hashtags": ["#história", "#portugal"]
-      }
-    }
+└── data/
+    ├── livro.pdf
+    └── capa.jpg
 ```
 
 ### Considerações para Produção

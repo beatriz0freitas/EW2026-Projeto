@@ -1,13 +1,17 @@
 {
-  "resource": {
-    "tipo": "dataset",
-    "titulo": "Dataset de exemplo",
-    "subtitulo": "Materiais de apoio para a unidade curricular",
-    "visibilidade": "privado",
-    "ano": 2026,
-    "tema": "analise de dados",
-    "dataCriacao": "2026-05-01",
-    "descricao": "Conjunto de ficheiros de exemplo para apoio letivo, reutilizacao e preservacao digital.",
-    "hashtags": ["dados", "ensino", "ew2026"]
-  }
+  "titulo": "Relatório de exemplo",
+  "subtitulo": "Materiais de apoio para a unidade curricular",
+  "tipo": "relatorio",
+  "hashtags": ["ensino", "ew2026"],
+  "visibilidade": "publico",
+  "dataCriacao": "2026-05-01",
+  "descricao": "Conjunto de ficheiros de exemplo para apoio letivo, reutilizacao e preservacao digital.",
+  "files": [
+    {
+      "name": "ficheiro-principal.pdf",
+      "size": 2048000,
+      "type": "application/pdf",
+      "required": true
+    }
+  ]
 }

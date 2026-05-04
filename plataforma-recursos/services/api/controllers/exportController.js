@@ -1,4 +1,5 @@
 const Resource = require('../models/Resource')
+const Aip = require('../models/Aip')
 const NewsItem = require('../models/NewsItem')
 const Post = require('../models/Post')
 const Rating = require('../models/Rating')
@@ -49,8 +50,9 @@ function filtrarNoticiasDerivadasInvalidas(news, resources) {
 module.exports.exportAll = async (req, res) => {
 	try {
 		const filtros = construirFiltrosTransferencia(req.query)
-		const [resources, newsRaw, posts, ratings, comments] = await Promise.all([
+		const [resources, aips, newsRaw, posts, ratings, comments] = await Promise.all([
 			Resource.find().lean(),
+			Aip.find().lean(),
 			NewsItem.find().lean(),
 			Post.find().lean(),
 			Rating.find().lean(),
@@ -59,6 +61,8 @@ module.exports.exportAll = async (req, res) => {
 		const news = filtrarNoticiasDerivadasInvalidas(newsRaw, resources)
 
 		const dumpFiltrado = construirDumpFiltrado({ resources, news, posts, ratings, comments }, filtros)
+		const resourceIdsFiltrados = new Set(dumpFiltrado.resources.map((resource) => String(resource._id)))
+		const aipsFiltrados = aips.filter((aipDoc) => resourceIdsFiltrados.has(String(aipDoc.recursoId)))
 		const aip = []
 
 		for (const resource of dumpFiltrado.resources) {
@@ -80,6 +84,7 @@ module.exports.exportAll = async (req, res) => {
 			exportedAt: new Date().toISOString(),
 			filtersApplied: filtros,
 			resources: dumpFiltrado.resources,
+			aips: aipsFiltrados,
 			news: dumpFiltrado.news,
 			posts: dumpFiltrado.posts,
 			ratings: dumpFiltrado.ratings,
@@ -108,10 +113,10 @@ module.exports.importAll = async (req, res) => {
 
 	const filtros = construirFiltrosTransferencia(payload.filters || payload || req.query)
 
-	if (!dump || !['1', '2'].includes(dump.version)) {
+	if (!dump || dump.version !== '2') {
 		return jsonError(res, 400, {
 			code: 'INVALID_DUMP',
-			message: 'dump inválido ou versão não suportada (esperado version: "1" ou "2")',
+			message: 'dump inválido ou versão não suportada (esperado version: "2")',
 		})
 	}
 
@@ -122,10 +127,15 @@ module.exports.importAll = async (req, res) => {
 		ratings: { upserted: 0, errors: [] },
 		comments: { upserted: 0, errors: [] },
 		aip: { restored: 0, errors: [] },
+		aips: { upserted: 0, errors: [] },
 	}
 
 	const importedResourceIds = new Set()
 	const dumpFiltrado = construirDumpFiltrado(dump, filtros)
+	const resourceIdsFiltrados = new Set(dumpFiltrado.resources.map((resource) => String(resource._id)))
+	const aipsFiltrados = Array.isArray(dump.aips)
+		? dump.aips.filter((aipDoc) => resourceIdsFiltrados.has(String(aipDoc.recursoId)))
+		: []
 
 	async function upsertAll(Model, docs, key) {
 		if (!Array.isArray(docs)) return
@@ -173,9 +183,7 @@ module.exports.importAll = async (req, res) => {
 				results.aip.errors.push({
 					id: resourceId,
 					message:
-						dump.version === '2'
-							? 'dump sem ficheiros AIP para este recurso'
-							: 'dump versão 1 não inclui ficheiros AIP; restauro do disco não é possível',
+						'dump sem ficheiros AIP para este recurso',
 				})
 				continue
 			}
@@ -194,6 +202,7 @@ module.exports.importAll = async (req, res) => {
 	}
 
 	await upsertAll(Resource, dumpFiltrado.resources, 'resources')
+	await upsertAll(Aip, aipsFiltrados, 'aips')
 	await upsertAll(NewsItem, dumpFiltrado.news, 'news')
 	await upsertAll(Post, dumpFiltrado.posts, 'posts')
 	await upsertAll(Rating, dumpFiltrado.ratings, 'ratings')

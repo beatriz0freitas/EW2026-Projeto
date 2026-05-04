@@ -21,9 +21,14 @@ function jsonError(res, status, errorOrOptions) {
 	const message = options.message || 'erro interno'
 	const payload = {
 		ok: false,
+		status: options.status || 'erro',
 		code: options.code || `HTTP_${status}`,
 		message,
+		categoria: options.categoria || null,
 		details: options.details || null,
+		erros: options.erros || null,
+		validacoes: options.validacoes || null,
+		relatorio: options.relatorio || null,
 		requestId: res.locals?.requestId || null,
 		// Compatibilidade com clientes antigos
 		error: message,

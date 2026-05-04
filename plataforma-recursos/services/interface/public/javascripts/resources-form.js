@@ -35,10 +35,10 @@
 	};
 
 	const examples = {
-		dataset: {
-			titulo: 'Conjunto de dados de apoio a Estatística',
+		relatorio: {
+			titulo: 'Relatório de apoio a Estatística',
 			subtitulo: 'Exercícios e amostras anonimizadas',
-			tipo: 'dados',
+			tipo: 'relatorio',
 			ano: String(currentYear),
 			tema: 'análise de dados',
 			hashtags: 'dados, estatistica, ensino',
