@@ -40,8 +40,8 @@ block content
 							th Processados
 							th Erros
 					tbody
-						- var labels = { resources: 'Recursos', news: 'Notícias', posts: 'Publicações', ratings: 'Classificações', comments: 'Comentários', aip: 'Ficheiros' }
-						each key in ['resources', 'news', 'posts', 'ratings', 'comments', 'aip']
+						- var labels = { resources: 'Recursos', aips: 'Rastreabilidade AIP', news: 'Notícias', posts: 'Publicações', ratings: 'Classificações', comments: 'Comentários', aip: 'Ficheiros AIP' }
+						each key in ['resources', 'aips', 'news', 'posts', 'ratings', 'comments', 'aip']
 							- var r = importResults[key] || { upserted: 0, restored: 0, errors: [] }
 							- var total = key === 'aip' ? r.restored : r.upserted
 							tr

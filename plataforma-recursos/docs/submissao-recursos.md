@@ -1,5 +1,7 @@
 # Submissao de recursos
 
+> Formato atual: SIP ZIP com `manifest.json` na raiz, pasta `data/`, `bagit.txt` opcional e `checksums.txt` opcional. O formato antigo com `data/metadata.json` e `manifest-sha256.txt` não é aceite.
+
 ## Via interface
 
 Produtores e administradores podem criar recursos em `/resources/new`.
@@ -12,45 +14,51 @@ Existem dois modos:
 Nos dois casos, o backend executa o mesmo fluxo OAIS:
 
 ```text
-submissao -> SIP -> validacao -> AIP -> DIP
+submissao -> SIP -> validacao por camadas -> AIP guardado -> DIP gerado do AIP
 ```
 
-## Via pasta local
+## Via ZIP preparado
 
-Para preparar recursos a partir do codigo ou de um dataset local, criar uma pasta com:
+Para preparar um SIP manualmente, criar um ZIP com:
 
 ```text
-recursos/meu-recurso/
-├── metadados.json
-└── ficheiros/
+meu-recurso.zip
+├── manifest.json
+├── bagit.txt
+├── checksums.txt
+└── data/
     ├── recurso.pdf
-    └── dados.json
+    └── notas.txt
 ```
 
-Exemplo de `metadados.json`:
+Exemplo de `manifest.json`:
 
 ```json
 {
-  "resource": {
-    "tipo": "dataset",
-    "titulo": "Dataset de exemplo",
-    "visibilidade": "publico",
-    "tema": "dados",
-    "hashtags": ["exemplo", "dataset"]
-  }
+  "titulo": "Dataset de exemplo",
+  "tipo": "artigo",
+  "visibilidade": "publico",
+  "tema": "dados",
+  "hashtags": ["exemplo", "dataset"],
+  "files": [
+    {
+      "name": "recurso.pdf",
+      "type": "application/pdf",
+      "required": true
+    },
+    {
+      "name": "notas.txt",
+      "type": "text/plain",
+      "required": false
+    }
+  ]
 }
 ```
 
-Gerar apenas o SIP:
+Submeter na API:
 
 ```bash
-node scripts/submeter-recurso.js recursos/meu-recurso
+curl -X POST http://localhost:16020/api/oais/ingest \
+  -H "Authorization: Bearer <token-produtor>" \
+  -F "sip=@meu-recurso.zip"
 ```
-
-Gerar e submeter na API:
-
-```bash
-API_TOKEN=<token-produtor> API_URL=http://localhost:16025/api node scripts/submeter-recurso.js recursos/meu-recurso
-```
-
-O script escreve um relatorio em `output/reports/report.json`.

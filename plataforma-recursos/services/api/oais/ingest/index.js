@@ -11,6 +11,7 @@ const { publishTop3NewsIfChanged } = require('../../lib/systemNewsJob')
 const { createMultipleMemoryUpload, createSingleMemoryUpload } = require('../../lib/upload')
 
 const router = express.Router()
+const MAX_PAYLOAD_FILE_SIZE_BYTES = 50 * 1024 * 1024
 const uploadSip = createSingleMemoryUpload({
 	fieldName: 'sip',
 	maxFileSizeBytes: config.oais.maxSipFileSizeBytes,
@@ -34,7 +35,7 @@ const uploadSip = createSingleMemoryUpload({
 const uploadSubmissaoSimples = createMultipleMemoryUpload({
 	fieldName: 'ficheiros',
 	maxFiles: 20,
-	maxFileSizeBytes: config.oais.maxSipFileSizeBytes,
+	maxFileSizeBytes: MAX_PAYLOAD_FILE_SIZE_BYTES,
 	maxFieldSizeBytes: 2 * 1024 * 1024,
 	allowedExtensions: [],
 	allowedMimeTypes: [],
@@ -88,49 +89,49 @@ async function publicarNoticiasDepoisDaSubmissao(req, resourceId) {
 	})
 }
 
+async function receberSip(req, res) {
+	if (!req.file) {
+		return jsonError(res, 400, {
+			code: 'MISSING_FILE',
+			message: 'Ficheiro ZIP preparado em falta',
+			details: [{ code: 'MISSING_FILE', message: 'Ficheiro ZIP preparado em falta' }],
+		})
+	}
+
+	const aipDir = config.storage.aipDir
+
+	const result = await ingestSipZip({
+		zipBuffer: req.file.buffer,
+		aipDir,
+		producerId: req.user.sub,
+		uploadedFile: {
+			originalName: req.file.originalname,
+			mimeType: req.file.mimetype,
+			size: req.file.size,
+		},
+	})
+
+	if (!result.ok) {
+		return jsonError(res, 422, {
+			code: 'INVALID_SIP',
+			message: 'Não foi possível ler o ficheiro preparado',
+			categoria: result.categoria,
+			details: result.errors,
+			erros: result.errors?.map((erro) => erro.message),
+			validacoes: result.validacoes,
+			relatorio: result.relatorio,
+		})
+	}
+
+	await publicarNoticiasDepoisDaSubmissao(req, result.resourceId)
+
+	res.status(201).json(result)
+}
+
 // POST /api/oais/ingest
 // Só produtores e admins podem submeter recursos.
 // O produtor fica registado no metadata guardado.
-router.post(
-	'/ingest',
-	requireLevel('produtor'),
-	uploadSip,
-	async (req, res) => {
-		if (!req.file) {
-			return jsonError(res, 400, {
-				code: 'MISSING_FILE',
-				message: 'Ficheiro ZIP preparado em falta',
-				details: [{ code: 'MISSING_FILE', message: 'Ficheiro ZIP preparado em falta' }],
-			})
-		}
-
-		const aipDir = config.storage.aipDir
-
-		// Injetar o produtor no resultado para ser guardado pelo sip.js
-		const result = await ingestSipZip({
-			zipBuffer: req.file.buffer,
-			aipDir,
-			producerId: req.user.sub,
-			uploadedFile: {
-				originalName: req.file.originalname,
-				mimeType: req.file.mimetype,
-				size: req.file.size,
-			},
-		})
-
-		if (!result.ok) {
-			return jsonError(res, 422, {
-				code: 'INVALID_SIP',
-				message: 'Não foi possível ler o ficheiro preparado',
-				details: result.errors,
-			})
-		}
-
-		await publicarNoticiasDepoisDaSubmissao(req, result.resourceId)
-
-		res.status(201).json({ ok: true, resourceId: result.resourceId })
-	}
-)
+router.post('/ingest', requireLevel('produtor'), uploadSip, receberSip)
 
 async function receberSubmissaoSimples(req, res) {
 	const tamanhoTotal = (req.files || []).reduce((soma, ficheiro) => soma + Number(ficheiro.size || 0), 0)
@@ -169,15 +170,18 @@ async function receberSubmissaoSimples(req, res) {
 		return jsonError(res, 422, {
 			code: 'INVALID_SIP_GENERATED',
 			message: 'não foi possível preparar os ficheiros automaticamente',
+			categoria: result.categoria,
 			details: result.errors,
+			erros: result.errors?.map((erro) => erro.message),
+			validacoes: result.validacoes,
+			relatorio: result.relatorio,
 		})
 	}
 
 	await publicarNoticiasDepoisDaSubmissao(req, result.resourceId)
 
 	res.status(201).json({
-		ok: true,
-		resourceId: result.resourceId,
+		...result,
 		metadata: pacote.metadados,
 	})
 }

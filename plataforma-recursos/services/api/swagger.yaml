@@ -27,7 +27,22 @@ components:
         message:
           type: string
           example: id invalido
+        categoria:
+          type: string
+          nullable: true
+          example: metadados
         details:
+          nullable: true
+        erros:
+          type: array
+          nullable: true
+          items:
+            type: string
+        validacoes:
+          type: object
+          nullable: true
+        relatorio:
+          type: object
           nullable: true
         requestId:
           type: string
@@ -88,8 +103,8 @@ components:
           additionalProperties: true
           example:
             resource:
-              titulo: Ficha de Matematica 8o ano
-              tipo: ficha
+              titulo: Relatorio de Matematica 8o ano
+              tipo: relatorio
               ano: 8
               tema: algebra
               hashtags: [matematica, exercicios]
@@ -190,7 +205,7 @@ paths:
     post:
       tags: [OAIS]
       summary: Ingerir SIP (ZIP) e criar recurso
-      description: Requer autenticacao com role produtor ou admin. Aceita apenas ficheiros .zip (ate 100 MB por omissao).
+      description: Requer autenticacao com role produtor ou admin. Aceita apenas SIP em ZIP com manifest.json na raiz, data/ e checksums.txt opcional.
       security:
         - bearerAuth: []
       requestBody:
@@ -225,6 +240,13 @@ paths:
                   resourceId:
                     type: string
                     example: 663d8af2d6b8fd24f7a22b10
+                  aipId:
+                    type: string
+                    example: SIP-2026-00001
+                  validacoes:
+                    type: object
+                  relatorio:
+                    type: object
         '401':
           description: Nao autenticado
           content:
@@ -232,7 +254,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: SIP invalido
+          description: SIP invalido; resposta inclui categoria, erros, validacoes por camada e relatorio
           content:
             application/json:
               schema:
@@ -242,7 +264,7 @@ paths:
     post:
       tags: [OAIS]
       summary: Criar recurso por submissao simples
-      description: Recebe metadados e ficheiros soltos, gera automaticamente um SIP BagIt e executa o mesmo processo de ingestao.
+      description: Recebe metadados e ficheiros soltos, gera automaticamente um SIP com manifest.json, bagit.txt, checksums.txt e data/, e executa o mesmo processo de ingestao.
       security:
         - bearerAuth: []
       requestBody:
@@ -314,6 +336,7 @@ paths:
     get:
       tags: [OAIS]
       summary: Descarregar DIP em ZIP
+      description: Converte o AIP preservado em storage num DIP ZIP no momento do download.
       parameters:
         - name: id
           in: path
@@ -366,7 +389,7 @@ paths:
           in: query
           schema:
             type: string
-            example: ficha
+            example: relatorio
         - name: ano
           in: query
           schema:
@@ -951,7 +974,7 @@ paths:
                 dump:
                   type: object
                   additionalProperties: true
-                  description: Dump exportado previamente. O formato bruto legado tambem continua aceite.
+                  description: Dump exportado previamente.
                 filters:
                   type: object
                   properties:

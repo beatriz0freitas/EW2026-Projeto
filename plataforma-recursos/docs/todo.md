@@ -6,7 +6,7 @@ Legenda:
 - ⚠️ Parcial / com ressalvas
 - ❌ Em falta
 
-Atualizado em: 2026-05-01
+Atualizado em: 2026-05-04
 
 Validação desta atualização:
 
@@ -27,7 +27,7 @@ Validação desta atualização:
 - ✅ Criado fluxo de submissão simples em `/resources/new/simple`.
 - ✅ Criado endpoint API `POST /api/oais/ingest/simples`.
 - ✅ A submissão simples recebe metadados e ficheiros soltos e gera automaticamente um SIP BagIt.
-- ✅ O SIP gerado contém `bagit.txt`, `manifest-sha256.txt`, `data/metadata.json` e os ficheiros do recurso.
+- ✅ O SIP gerado contém `manifest.json`, `bagit.txt`, `checksums.txt`, `data/` e os ficheiros do recurso.
 - ✅ O mesmo fluxo de ingestão OAIS é usado para SIP avançado e submissão simples.
 - ✅ Mantido o upload avançado de SIP ZIP para utilizadores que já têm um pacote preparado.
 
@@ -59,7 +59,7 @@ Validação desta atualização:
 - ✅ Swagger da interface atualizado com `/resources/new/simple`.
 - ✅ Criado `docs/submissao-recursos.md` com instruções de submissão.
 - ✅ Criado template `services/interface/public/templates/metadados.exemplo.json`.
-- ✅ Criado script/apoio de submissão em `scripts/submeter-recurso.js`.
+- ✅ Documentação de submissão atualizada para o formato único atual.
 
 ---
 
@@ -80,6 +80,7 @@ Validação desta atualização:
 - ✅ Validação de checksums SHA-256 e deteção de zip-slip.
 - ✅ Geração automática de SIP a partir de metadados e ficheiros.
 - ✅ DIP disponível por GET `/api/oais/access/:id`.
+- ✅ DIP gerado a partir do AIP preservado em disco.
 - ✅ Controlo público/privado no acesso ao DIP.
 
 ### Utilizadores e perfis
