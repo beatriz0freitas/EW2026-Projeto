@@ -211,7 +211,6 @@ function validateMetadata(metadata) {
 }
 
 module.exports = {
-	TIPOS_VALIDOS,
 	validateMetadata,
 	validateMetadataResource,
 }
