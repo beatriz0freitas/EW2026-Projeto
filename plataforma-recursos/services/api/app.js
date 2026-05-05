@@ -11,6 +11,7 @@ const routes = require('./routes')
 const { config } = require('./lib/config')
 const { jsonError } = require('./lib/http')
 const { initSystemNewsTriggers } = require('./lib/systemNewsJob')
+const { auditHttpRequests } = require('./lib/audit')
 const { explicitCors } = require('./middleware/cors')
 const { rateLimitApi } = require('./middleware/rateLimit')
 const swaggerDocument = YAML.load('./swagger.yaml')
@@ -50,6 +51,7 @@ app.use((req, res, next) => {
 })
 
 app.use(rateLimitApi)
+app.use(auditHttpRequests)
 app.use('/api', routes)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 app.get('/api/openapi.json', (req, res) => {

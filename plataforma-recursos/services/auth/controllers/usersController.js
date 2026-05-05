@@ -1,6 +1,7 @@
 const UserService = require('../services/userService')
 const { jsonError } = require('../lib/http')
 const { publishUsersCountChangedNews } = require('../lib/systemNewsClient')
+const { recordAuditEventAsync } = require('../lib/auditClient')
 
 module.exports.register = async (req, res) => {
 	try {
@@ -9,6 +10,13 @@ module.exports.register = async (req, res) => {
 
 		publishUsersCountChangedNews(counts).catch((err) => {
 			console.error('[auth] warning: could not publish users-count news:', err)
+		})
+		recordAuditEventAsync(req, {
+			action: 'user.register',
+			statusCode: 201,
+			actor: { id: user._id, role: user.role, nome: user.nome },
+			target: { type: 'user', id: user._id },
+			metadata: { email: user.email, role: user.role },
 		})
 
 		res.status(201).json({ ok: true, user })
@@ -54,6 +62,11 @@ module.exports.patchUserById = async (req, res) => {
 	try {
 		const user = await UserService.update(req.params.id, req.body)
 		if (!user) return jsonError(res, 404, { code: 'USER_NOT_FOUND', message: 'utilizador nao encontrado' })
+		recordAuditEventAsync(req, {
+			action: req.body?.role !== undefined ? 'user.role.update' : 'user.update',
+			target: { type: 'user', id: req.params.id },
+			metadata: { fields: Object.keys(req.body || {}), role: user.role },
+		})
 		res.json({ ok: true, user })
 	} catch (err) {
 		if (String(err?.message || '').toLowerCase().includes('invalido')) {
@@ -76,6 +89,12 @@ module.exports.deleteUserById = async (req, res) => {
 		if (!user) {
 			return jsonError(res, 404, { code: 'USER_NOT_FOUND', message: 'utilizador nao encontrado' })
 		}
+
+		recordAuditEventAsync(req, {
+			action: 'user.delete',
+			target: { type: 'user', id: req.params.id },
+			metadata: { email: user.email, role: user.role },
+		})
 
 		res.json({ ok: true, user })
 	} catch (err) {
