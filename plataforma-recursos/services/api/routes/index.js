@@ -9,6 +9,7 @@ const commentsRouter = require('./comments')
 const ratingsRouter = require('./ratings')
 const newsRouter = require('./news')
 const exportRouter = require('./export')   
+const auditRouter = require('./audit')
 
 const router = express.Router()
 
@@ -22,5 +23,6 @@ router.use('/', commentsRouter)
 router.use('/', ratingsRouter)
 router.use('/news', newsRouter)
 router.use('/', exportRouter)
+router.use('/', auditRouter)
 
 module.exports = router

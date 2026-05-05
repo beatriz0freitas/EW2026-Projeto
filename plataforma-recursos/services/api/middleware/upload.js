@@ -1,7 +1,7 @@
 const path = require('path')
 const multer = require('multer')
 
-const { jsonError } = require('./http')
+const { jsonError } = require('../lib/http')
 
 function normalizeAllowedExtensions(extensions = []) {
 	return new Set(

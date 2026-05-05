@@ -6,7 +6,7 @@ const { buildDipZip } = require('./dip')
 const { optionalAuth } = require('../../middleware/auth')
 const { config } = require('../../lib/config')
 const { jsonError, isMongoId } = require('../../lib/http')
-const { publishTop3NewsIfChanged } = require('../../lib/systemNewsJob')
+const { publishTop3NewsIfChanged } = require('../../jobs/systemNews')
 
 const router = express.Router()
 

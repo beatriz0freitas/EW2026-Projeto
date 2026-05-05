@@ -16,6 +16,7 @@ function denyInternalRoute(req, res) {
 // Endpoint interno usado por auth/api para publicar notícias de sistema.
 // Deve ficar acessível apenas na rede Docker, diretamente no serviço API.
 router.all('/news/system', denyInternalRoute)
+router.all('/internal/audit', denyInternalRoute)
 
 router.use(
 	'/',

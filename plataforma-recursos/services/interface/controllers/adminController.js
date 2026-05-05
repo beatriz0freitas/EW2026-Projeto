@@ -219,6 +219,44 @@ function showData(req, res) {
 	})
 }
 
+async function listAudit(req, res) {
+	const params = new URLSearchParams()
+	for (const key of ['action', 'status', 'service', 'actorId', 'targetType', 'targetId', 'from', 'to', 'page']) {
+		const value = String(req.query?.[key] || '').trim()
+		if (value) params.set(key, value)
+	}
+	params.set('limit', '30')
+
+	const response = await apiRequest(`/audit?${params.toString()}`, { token: req.session.token, req })
+	if (!response.ok) {
+		return res.status(response.status || 500).render('error', {
+			title: 'Auditoria',
+			message: apiErrorMessage(response.data, 'Não foi possível obter os registos de auditoria.'),
+		})
+	}
+
+	res.render('admin/audit', {
+		title: 'Admin · Auditoria',
+		items: response.data?.items || [],
+		options: response.data?.options || { actions: [], services: [] },
+		pagination: {
+			page: response.data?.page || 1,
+			totalPages: response.data?.totalPages || 1,
+			total: response.data?.total || 0,
+		},
+		filters: {
+			action: String(req.query?.action || ''),
+			status: String(req.query?.status || ''),
+			service: String(req.query?.service || ''),
+			actorId: String(req.query?.actorId || ''),
+			targetType: String(req.query?.targetType || ''),
+			targetId: String(req.query?.targetId || ''),
+			from: String(req.query?.from || ''),
+			to: String(req.query?.to || ''),
+		},
+	})
+}
+
 module.exports = {
 	renderImportWithError,
 	listUsers,
@@ -231,4 +269,5 @@ module.exports = {
 	showImportForm,
 	importData,
 	showData,
+	listAudit,
 }

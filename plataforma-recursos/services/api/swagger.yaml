@@ -14,6 +14,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    internalToken:
+      type: apiKey
+      in: header
+      name: X-Internal-Token
   schemas:
     ErrorResponse:
       type: object
@@ -192,6 +196,18 @@ paths:
       responses:
         '200':
           description: Especificacao OpenAPI da API
+
+  /api/docs:
+    get:
+      tags: [Docs]
+      summary: Interface Swagger UI da API
+      responses:
+        '200':
+          description: HTML do Swagger UI da API
+          content:
+            text/html:
+              schema:
+                type: string
 
   /api/health:
     get:
@@ -800,7 +816,9 @@ paths:
     post:
       tags: [News]
       summary: Criar noticia de sistema (uso interno entre servicos)
-      description: Requer header interno X-Internal-Service-Token.
+      description: Endpoint interno. Requer `X-Internal-Token` (ou Authorization Bearer com token interno).
+      security:
+        - internalToken: []
       requestBody:
         required: true
         content:
@@ -866,7 +884,7 @@ paths:
           description: Escopo a exportar.
           schema:
             type: string
-            enum: [all, resources, news]
+            enum: [all, resources, news, users]
             default: all
         - name: resourceType
           in: query
@@ -980,7 +998,7 @@ paths:
                   properties:
                     scope:
                       type: string
-                      enum: [all, resources, news]
+                      enum: [all, resources, news, users]
                     resourceType:
                       type: string
                     resourceYear:
@@ -1031,7 +1049,7 @@ paths:
                   description: Alternativa legada para colar JSON em texto.
                 scope:
                   type: string
-                  enum: [all, resources, news]
+                  enum: [all, resources, news, users]
                 resourceType:
                   type: string
                 resourceYear:
@@ -1080,3 +1098,101 @@ paths:
           description: Importacao concluida
         '207':
           description: Importacao parcialmente concluida
+
+  /api/audit:
+    get:
+      tags: [Audit]
+      summary: Listar eventos de auditoria (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [success, failure]
+        - name: service
+          in: query
+          schema:
+            type: string
+        - name: actorId
+          in: query
+          schema:
+            type: string
+        - name: targetType
+          in: query
+          schema:
+            type: string
+        - name: targetId
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Lista paginada de eventos de auditoria
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '403':
+          description: Permissoes insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/internal/audit:
+    post:
+      tags: [Audit]
+      summary: Registar evento de auditoria interno
+      description: Endpoint interno para serviços registarem eventos num repositório central. Requer `X-Internal-Token`.
+      security:
+        - internalToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Evento registado
+        '401':
+          description: Token interno ausente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Token interno invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

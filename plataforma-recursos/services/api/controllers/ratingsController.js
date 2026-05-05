@@ -1,7 +1,7 @@
 const Rating = require('../models/Rating')
 const Resource = require('../models/Resource')
 const { jsonError, invalidId, isMongoId } = require('../lib/http')
-const { publishTop3NewsIfChanged } = require('../lib/systemNewsJob')
+const { publishTop3NewsIfChanged } = require('../jobs/systemNews')
 const { canViewResource, resourceAccessError } = require('../lib/resourceAccess')
 
 function ensureResourceVisible(resource, user, res) {

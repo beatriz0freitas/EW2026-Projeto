@@ -1,0 +1,117 @@
+extends ../layout
+
+block content
+	- const currentAdmin = 'audit'
+	- const queryBase = new URLSearchParams()
+	- for (const key of ['action', 'status', 'service', 'actorId', 'targetType', 'targetId', 'from', 'to']) { if (filters[key]) queryBase.set(key, filters[key]) }
+	section.admin-page
+		header.admin-page-header
+			div
+				p.admin-eyebrow Administração
+				h1 Auditoria
+				p Revê ações feitas por utilizadores e serviços.
+			include _nav.pug
+
+		section.w3-white.secao-card
+			h2 Filtros
+			form.audit-filters(method='GET' action='/admin/audit')
+				div
+					label(for='action') Ação
+					select#audit-action.w3-select(name='action')
+						option(value='') Todas
+						each action in options.actions || []
+							option(value=action selected=filters.action === action)= action
+				div
+					label(for='status') Estado
+					select#status.w3-select(name='status')
+						option(value='') Todos
+						option(value='success' selected=filters.status === 'success') Sucesso
+						option(value='failure' selected=filters.status === 'failure') Falha
+				div
+					label(for='service') Serviço
+					select#service.w3-select(name='service')
+						option(value='') Todos
+						each service in options.services || []
+							option(value=service selected=filters.service === service)= service
+				div
+					label(for='actorId') Utilizador
+					input#actorId.w3-input(type='text' name='actorId' value=filters.actorId placeholder='admin.teste')
+				div
+					label(for='targetType') Tipo de alvo
+					input#targetType.w3-input(type='text' name='targetType' value=filters.targetType placeholder='resource, user, data_dump')
+				div
+					label(for='targetId') ID do alvo
+					input#targetId.w3-input(type='text' name='targetId' value=filters.targetId)
+				div
+					label(for='from') Desde
+					input#from.w3-input(type='date' name='from' value=filters.from)
+				div
+					label(for='to') Até
+					input#to.w3-input(type='date' name='to' value=filters.to)
+				.audit-filter-actions
+					button.w3-button.botao-principal(type='submit') Filtrar
+					a.w3-button.w3-border(href='/admin/audit') Limpar
+
+		section.w3-white.secao-card
+			.audit-results-header
+				div
+					h2 Eventos
+					p.w3-text-grey #{pagination.total} registos encontrados.
+			if !items.length
+				.empty-state
+					p Sem eventos para os filtros escolhidos.
+			else
+				.w3-responsive
+					table.admin-table.audit-table
+						thead
+							tr
+								th Quando
+								th Ator
+								th Ação
+								th Alvo
+								th Pedido
+								th Estado
+						tbody
+							each item in items
+								- const createdAt = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-PT') : ''
+								- const actor = item.actor && item.actor.id ? item.actor.id : 'anónimo'
+								- const actorRole = item.actor && item.actor.role ? item.actor.role : ''
+								- const targetType = item.target && item.target.type ? item.target.type : ''
+								- const targetId = item.target && item.target.id ? item.target.id : ''
+								- const statusClass = item.status === 'success' ? 'audit-status audit-status--success' : 'audit-status audit-status--failure'
+								tr
+									td(data-label='Quando')
+										time(datetime=item.createdAt)= createdAt
+										if item.service
+											span.audit-muted= item.service
+									td(data-label='Ator')
+										strong= actor
+										if actorRole
+											span.audit-muted= actorRole
+									td(data-label='Ação')
+										code.audit-code= item.action
+									td(data-label='Alvo')
+										if targetType || targetId
+											span= targetType || 'alvo'
+											if targetId
+												span.audit-muted= targetId
+										else
+											span.audit-muted -
+									td(data-label='Pedido')
+										span.audit-method= item.method
+										span.audit-path= item.path
+										if item.requestId
+											span.audit-muted #{item.requestId}
+									td(data-label='Estado')
+										span(class=statusClass)= item.status === 'success' ? 'Sucesso' : 'Falha'
+										span.audit-muted= item.statusCode
+
+				if pagination.totalPages > 1
+					nav.pagination(aria-label='Paginação de auditoria')
+						- const prevQuery = new URLSearchParams(queryBase.toString())
+						- prevQuery.set('page', String(Math.max(1, pagination.page - 1)))
+						- const nextQuery = new URLSearchParams(queryBase.toString())
+						- nextQuery.set('page', String(Math.min(pagination.totalPages, pagination.page + 1)))
+						a.w3-button.w3-border(class=pagination.page <= 1 ? 'w3-disabled' : '' href=pagination.page <= 1 ? '#' : `/admin/audit?${prevQuery.toString()}`) Anterior
+						span Página #{pagination.page} de #{pagination.totalPages}
+						a.w3-button.w3-border(class=pagination.page >= pagination.totalPages ? 'w3-disabled' : '' href=pagination.page >= pagination.totalPages ? '#' : `/admin/audit?${nextQuery.toString()}`) Seguinte
