@@ -11,7 +11,49 @@ const Resource = require('../../models/Resource')
 const { buildResourceAipPath, buildStoredAipFile } = require('../../lib/aipStorage')
 const { validateMetadata } = require('../../lib/metadataValidator')
 
-const EXTENSOES_PERMITIDAS = new Set(['.pdf', '.txt', '.docx', '.xlsx', '.jpg', '.jpeg', '.png', '.gif', '.mp4', '.zip'])
+const EXTENSOES_PERMITIDAS = new Set([
+	'',
+	'.pdf',
+	'.txt',
+	'.docx',
+	'.xlsx',
+	'.xls',
+	'.csv',
+	'.json',
+	'.xml',
+	'.md',
+	'.ipynb',
+	'.py',
+	'.js',
+	'.ts',
+	'.java',
+	'.hs',
+	'.cpp',
+	'.c',
+	'.hpp',
+	'.h',
+	'.css',
+	'.html',
+	'.yml',
+	'.yaml',
+	'.ini',
+	'.toml',
+	'.sql',
+	'.vpp',
+	'.jpg',
+	'.jpeg',
+	'.png',
+	'.gif',
+	'.svg',
+	'.webp',
+	'.mp4',
+	'.mov',
+	'.mp3',
+	'.wav',
+	'.zip',
+	'.rar',
+	'.7z',
+])
 const MAX_FICHEIRO_BYTES = 50 * 1024 * 1024
 const CAMADAS = ['estrutura', 'metadados', 'seguranca', 'consistencia']
 const FICHEIROS_RAIZ_PERMITIDOS = new Set(['manifest.json', 'bagit.txt', 'checksums.txt'])
