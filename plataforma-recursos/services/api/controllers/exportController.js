@@ -8,6 +8,7 @@ const { config } = require('../lib/config')
 const { buildResourceAipPath, buildStoredAipFile, exportAipFiles, restoreAipFiles } = require('../lib/aipStorage')
 const { construirFiltrosTransferencia, construirDumpFiltrado } = require('../lib/dataTransferFilters')
 const { jsonError } = require('../lib/http')
+const { exportUsersForTransfer, importUsersForTransfer } = require('../lib/authDataTransferClient')
 
 function extrairDumpDoPedido(req) {
 	if (req.file?.buffer?.length) {
@@ -50,17 +51,19 @@ function filtrarNoticiasDerivadasInvalidas(news, resources) {
 module.exports.exportAll = async (req, res) => {
 	try {
 		const filtros = construirFiltrosTransferencia(req.query)
-		const [resources, aips, newsRaw, posts, ratings, comments] = await Promise.all([
+		const incluirUsers = filtros.scope === 'all' || filtros.scope === 'users'
+		const [resources, aips, newsRaw, posts, ratings, comments, users] = await Promise.all([
 			Resource.find().lean(),
 			Aip.find().lean(),
 			NewsItem.find().lean(),
 			Post.find().lean(),
 			Rating.find().lean(),
 			Comment.find().lean(),
+			incluirUsers ? exportUsersForTransfer() : Promise.resolve([]),
 		])
 		const news = filtrarNoticiasDerivadasInvalidas(newsRaw, resources)
 
-		const dumpFiltrado = construirDumpFiltrado({ resources, news, posts, ratings, comments }, filtros)
+		const dumpFiltrado = construirDumpFiltrado({ resources, news, users, posts, ratings, comments }, filtros)
 		const resourceIdsFiltrados = new Set(dumpFiltrado.resources.map((resource) => String(resource._id)))
 		const aipsFiltrados = aips.filter((aipDoc) => resourceIdsFiltrados.has(String(aipDoc.recursoId)))
 		const aip = []
@@ -86,6 +89,7 @@ module.exports.exportAll = async (req, res) => {
 			resources: dumpFiltrado.resources,
 			aips: aipsFiltrados,
 			news: dumpFiltrado.news,
+			users: dumpFiltrado.users,
 			posts: dumpFiltrado.posts,
 			ratings: dumpFiltrado.ratings,
 			comments: dumpFiltrado.comments,
@@ -123,6 +127,7 @@ module.exports.importAll = async (req, res) => {
 	const results = {
 		resources: { upserted: 0, errors: [] },
 		news: { upserted: 0, errors: [] },
+		users: { upserted: 0, errors: [] },
 		posts: { upserted: 0, errors: [] },
 		ratings: { upserted: 0, errors: [] },
 		comments: { upserted: 0, errors: [] },
@@ -204,6 +209,16 @@ module.exports.importAll = async (req, res) => {
 	await upsertAll(Resource, dumpFiltrado.resources, 'resources')
 	await upsertAll(Aip, aipsFiltrados, 'aips')
 	await upsertAll(NewsItem, dumpFiltrado.news, 'news')
+	if (Array.isArray(dumpFiltrado.users) && dumpFiltrado.users.length) {
+		try {
+			results.users = await importUsersForTransfer(dumpFiltrado.users)
+		} catch (err) {
+			results.users.errors.push({
+				id: 'auth',
+				message: err.message || 'falha ao importar utilizadores no servico auth',
+			})
+		}
+	}
 	await upsertAll(Post, dumpFiltrado.posts, 'posts')
 	await upsertAll(Rating, dumpFiltrado.ratings, 'ratings')
 	await upsertAll(Comment, dumpFiltrado.comments, 'comments')

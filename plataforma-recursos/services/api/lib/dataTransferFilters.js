@@ -1,10 +1,11 @@
-const ESCOPOS_VALIDOS = new Set(['all', 'resources', 'news'])
+const ESCOPOS_VALIDOS = new Set(['all', 'resources', 'news', 'users'])
 
-const ORDEM_COLECOES = ['resources', 'news', 'posts', 'ratings', 'comments', 'aip']
+const ORDEM_COLECOES = ['resources', 'news', 'users', 'posts', 'ratings', 'comments', 'aip']
 
 const DEFINICOES_COLECOES = {
 	resources: { raiz: true, camposData: ['createdAt'], campoId: '_id' },
 	news: { raiz: true, camposData: ['publicadoEm', 'createdAt'], campoId: '_id' },
+	users: { raiz: true, camposData: ['data_registo', 'ultimo_acesso'], campoId: '_id' },
 	posts: { dependeDe: 'resources', campoReferencia: 'resourceId', campoId: '_id' },
 	ratings: { dependeDe: 'resources', campoReferencia: 'resourceId' },
 	comments: { dependeDe: 'posts', campoReferencia: 'postId' },
@@ -120,6 +121,7 @@ const DEFINICOES_FILTROS = {
 		incluiColecaoRaiz: (nomeColecao, valor) => {
 			if (valor === 'resources') return nomeColecao === 'resources'
 			if (valor === 'news') return nomeColecao === 'news'
+			if (valor === 'users') return nomeColecao === 'users'
 			return true
 		},
 	},
@@ -230,7 +232,7 @@ const DEFINICOES_FILTROS = {
 	recentLimit: {
 		normalizar: (valor) => normalizarInteiro(valor, { min: 1 }),
 		estaAtivo: (valor) => Number.isInteger(valor) && valor > 0,
-		colecoes: ['resources', 'news'],
+		colecoes: ['resources', 'news', 'users'],
 		transformarColecao: (itens, valor, contexto) =>
 			selecionarMaisRecentes(itens, valor, contexto.camposData),
 	},

@@ -133,6 +133,50 @@ module.exports.getStats = async () => {
 	return { totalUsers, totalActiveUsers }
 }
 
+module.exports.exportForTransfer = () =>
+	User.find({}).sort({ nome: 1 }).lean().exec()
+
+module.exports.importForTransfer = async (users) => {
+	const results = { upserted: 0, errors: [] }
+	if (!Array.isArray(users)) return results
+
+	const allowedUpdateFields = [
+		'nome',
+		'email',
+		'password',
+		'googleId',
+		'facebookId',
+		'role',
+		'filiacao',
+		'nivel_acesso',
+		'data_registo',
+		'ultimo_acesso',
+		'ativo',
+	]
+
+	for (const user of users) {
+		try {
+			if (!user?._id) throw new Error('utilizador sem _id')
+
+			const nextUser = {}
+			for (const field of allowedUpdateFields) {
+				if (user[field] !== undefined) nextUser[field] = user[field]
+			}
+
+			await User.findByIdAndUpdate(
+				user._id,
+				{ $set: nextUser },
+				{ upsert: true, new: true, runValidators: false }
+			)
+			results.upserted++
+		} catch (err) {
+			results.errors.push({ id: String(user?._id || ''), message: err.message })
+		}
+	}
+
+	return results
+}
+
 module.exports.login = async (identifier, password) => {
 	const lookup = String(identifier || '').trim()
 	if (!lookup || !password) throw new Error('credenciais invalidas')

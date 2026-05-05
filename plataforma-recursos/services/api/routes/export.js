@@ -1,17 +1,5 @@
 /**
  * routes/export.js
- *
- * GET  /api/export          — exporta todos os dados (recursos, notícias, posts, ratings, comentários)
- *                             como JSON. Quando inclui recursos, exporta também o conteúdo completo
- *                             dos ficheiros AIP para permitir restauro integral fora do MongoDB.
- *
- * POST /api/import          — importa um dump gerado pelo endpoint acima.
- *                             Requer autenticação de admin.
- *                             Aceita JSON no corpo ou multipart/form-data com dumpFile.
- *                             Estratégia: upsert por _id para ser idempotente (pode ser chamado várias vezes).
- *
- * Nota: o dump inclui também os ficheiros do AIP em base64 para permitir
- * restore completo do MongoDB e do storage em disco no ambiente de destino.
  */
 
 const express = require('express')
