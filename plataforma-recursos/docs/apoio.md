@@ -482,7 +482,7 @@ Os recursos são classificados através de campos em `metadata.resource`, deriva
 **Código:**
 
 - [services/api/models/Resource.js](../services/api/models/Resource.js): modelo
-- [services/api/lib/dataTransferFilters.js](../services/api/lib/dataTransferFilters.js): filtros em export/import
+- [services/api/transfer/filters.js](../services/api/transfer/filters.js): filtros em export/import
 
 ---
 
@@ -742,7 +742,7 @@ Mostra as últimas 5 notícias (ordenadas por `publicadoEm` descendente).
 
 - [services/api/models/NewsItem.js](../services/api/models/NewsItem.js)
 - [services/api/lib/newsPublisher.js](../services/api/lib/newsPublisher.js): publicação
-- [services/api/lib/systemNewsJob.js](../services/api/lib/systemNewsJob.js): jobs automáticas
+- [services/api/jobs/systemNews.js](../services/api/jobs/systemNews.js): jobs automáticas
 - [services/api/routes/news.js](../services/api/routes/news.js): CRUD manual
 
 ---

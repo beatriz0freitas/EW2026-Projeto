@@ -7,7 +7,7 @@ const express = require('express')
 const exportController = require('../controllers/exportController')
 const { config } = require('../lib/config')
 const { requireLevel } = require('../middleware/auth')
-const { createSingleMemoryUpload } = require('../lib/upload')
+const { createSingleMemoryUpload } = require('../middleware/upload')
 
 const router = express.Router()
 const processarUploadDump = createSingleMemoryUpload({

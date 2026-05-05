@@ -1,46 +1,9 @@
-const AuditLog = require('../models/AuditLog')
-
-const MAX_METADATA_TEXT = 2000
-
-function normalizeText(value) {
-	const text = String(value || '').trim()
-	return text.length > MAX_METADATA_TEXT ? `${text.slice(0, MAX_METADATA_TEXT)}...` : text
-}
-
-function sanitizeMetadata(value) {
-	if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
-	const blocked = new Set(['password', 'token', 'refreshToken', 'authorization', 'cookie', 'dump', 'dumpText'])
-	const output = {}
-
-	for (const [key, raw] of Object.entries(value)) {
-		if (blocked.has(key)) continue
-		if (raw === undefined) continue
-		if (raw === null || ['string', 'number', 'boolean'].includes(typeof raw)) {
-			output[key] = typeof raw === 'string' ? normalizeText(raw) : raw
-		} else if (Array.isArray(raw)) {
-			output[key] = raw.slice(0, 20).map((item) => (
-				typeof item === 'string' ? normalizeText(item) : item
-			))
-		} else if (typeof raw === 'object') {
-			output[key] = sanitizeMetadata(raw)
-		}
-	}
-
-	return output
-}
+const { recordAuditEvent } = require('./recorder')
 
 function getClientIp(req) {
 	const forwarded = req.headers['x-forwarded-for']
 	if (forwarded) return String(forwarded).split(',')[0].trim()
 	return req.ip || req.socket?.remoteAddress || null
-}
-
-function buildActor(user, fallback = {}) {
-	return {
-		id: user?.sub || user?._id || user?.id || fallback.id || null,
-		role: user?.role || fallback.role || null,
-		nome: user?.nome || fallback.nome || null,
-	}
 }
 
 function inferTarget(path) {
@@ -107,28 +70,6 @@ function shouldAuditRequest(req) {
 	return path.startsWith('/api/')
 }
 
-async function recordAuditEvent(event) {
-	try {
-		await AuditLog.create({
-			service: event.service || 'api',
-			action: event.action || 'unknown',
-			method: event.method || 'SYSTEM',
-			path: event.path || '',
-			status: event.status || 'success',
-			statusCode: Number(event.statusCode || 200),
-			requestId: event.requestId || null,
-			ip: event.ip || null,
-			userAgent: event.userAgent || null,
-			actor: buildActor(event.actor || null),
-			target: event.target || { type: null, id: null },
-			metadata: sanitizeMetadata(event.metadata),
-			createdAt: event.createdAt || new Date(),
-		})
-	} catch (err) {
-		console.error('[audit] warning: could not record audit event:', err)
-	}
-}
-
 function auditHttpRequests(req, res, next) {
 	if (!shouldAuditRequest(req)) return next()
 
@@ -157,8 +98,4 @@ function auditHttpRequests(req, res, next) {
 	next()
 }
 
-module.exports = {
-	auditHttpRequests,
-	recordAuditEvent,
-	sanitizeMetadata,
-}
+module.exports = { auditHttpRequests }
