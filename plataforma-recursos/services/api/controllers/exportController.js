@@ -5,10 +5,10 @@ const Post = require('../models/Post')
 const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
 const { config } = require('../lib/config')
-const { buildResourceAipPath, buildStoredAipFile, exportAipFiles, restoreAipFiles } = require('../lib/aipStorage')
-const { construirFiltrosTransferencia, construirDumpFiltrado } = require('../lib/dataTransferFilters')
+const { buildResourceAipPath, buildStoredAipFile, exportAipFiles, restoreAipFiles } = require('../oais/aipStorage')
+const { construirFiltrosTransferencia, construirDumpFiltrado } = require('../transfer/filters')
 const { jsonError } = require('../lib/http')
-const { exportUsersForTransfer, importUsersForTransfer } = require('../lib/authDataTransferClient')
+const { exportUsersForTransfer, importUsersForTransfer } = require('../transfer/authClient')
 
 function extrairDumpDoPedido(req) {
 	if (req.file?.buffer?.length) {

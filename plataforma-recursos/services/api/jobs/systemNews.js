@@ -1,7 +1,7 @@
 const Resource = require('../models/Resource')
 const Rating = require('../models/Rating')
 const NewsItem = require('../models/NewsItem')
-const { publishNews } = require('./newsPublisher')
+const { publishNews } = require('../lib/newsPublisher')
 
 function stableTop3Signature(items) {
 	return JSON.stringify(

@@ -7,8 +7,8 @@ const { requireLevel } = require('../../middleware/auth')
 const { config } = require('../../lib/config')
 const { jsonError } = require('../../lib/http')
 const { publishNews } = require('../../lib/newsPublisher')
-const { publishTop3NewsIfChanged } = require('../../lib/systemNewsJob')
-const { createMultipleMemoryUpload, createSingleMemoryUpload } = require('../../lib/upload')
+const { publishTop3NewsIfChanged } = require('../../jobs/systemNews')
+const { createMultipleMemoryUpload, createSingleMemoryUpload } = require('../../middleware/upload')
 
 const router = express.Router()
 const MAX_PAYLOAD_FILE_SIZE_BYTES = 50 * 1024 * 1024

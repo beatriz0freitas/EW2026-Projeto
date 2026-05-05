@@ -1,6 +1,6 @@
 const AuditLog = require('../models/AuditLog')
 const { getPagination, totalPages, jsonError } = require('../lib/http')
-const { recordAuditEvent, sanitizeMetadata } = require('../lib/audit')
+const { recordAuditEvent, sanitizeMetadata } = require('../audit')
 
 function buildFilters(query = {}) {
 	const filters = {}

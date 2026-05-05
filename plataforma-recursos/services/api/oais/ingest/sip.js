@@ -8,7 +8,7 @@ const unzipper = require('unzipper')
 
 const Aip = require('../../models/Aip')
 const Resource = require('../../models/Resource')
-const { buildResourceAipPath, buildStoredAipFile } = require('../../lib/aipStorage')
+const { buildResourceAipPath, buildStoredAipFile } = require('../aipStorage')
 const { validateMetadata } = require('../../lib/metadataValidator')
 
 const EXTENSOES_PERMITIDAS = new Set([

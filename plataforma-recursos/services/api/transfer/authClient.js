@@ -1,4 +1,4 @@
-const { config } = require('./config')
+const { config } = require('../lib/config')
 
 async function parseResponseBody(response) {
 	const text = await response.text()
