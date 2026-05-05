@@ -109,19 +109,8 @@ async function ensureDir(dirPath) {
 	await fsp.mkdir(dirPath, { recursive: true })
 }
 
-async function copyDir(src, dst) {
-	await ensureDir(dst)
-	const entries = await fsp.readdir(src, { withFileTypes: true })
-	for (const entry of entries) {
-		const from = path.join(src, entry.name)
-		const to = path.join(dst, entry.name)
-		if (entry.isDirectory()) {
-			await copyDir(from, to)
-		} else if (entry.isFile()) {
-			await ensureDir(path.dirname(to))
-			await fsp.copyFile(from, to)
-		}
-	}
+async function copiarDiretoria(origem, destino) {
+	await fsp.cp(origem, destino, { recursive: true })
 }
 
 function normalizarCaminhoZip(rawPath) {
@@ -154,6 +143,45 @@ function parseChecksumText(text) {
 		if (checksum && filePath) entries.set(filePath, checksum)
 	}
 	return entries
+}
+
+function construirRespostaErro(ctx) {
+	return {
+		ok: false,
+		status: 'erro',
+		categoria: categoriaPrincipal(ctx.errors),
+		errors: ctx.errors,
+		validacoes: ctx.validacoes,
+		relatorio: ctx.relatorio,
+	}
+}
+
+function normalizarManifesto(parsed) {
+	const manifest = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+		? parsed
+		: {}
+	const { files = [], ...resource } = manifest
+	if (!resource.visibilidade) resource.visibilidade = 'publico'
+
+	return {
+		metadata: {
+			resource,
+			submissao: {
+				modo: 'sip',
+				manifesto: 'manifest.json',
+				geradoEm: new Date().toISOString(),
+				ficheiros: files.map((file) => ({
+					nomeOriginal: file?.name || '',
+					nomeNoPacote: file?.name || '',
+					mimeType: file?.type || 'application/octet-stream',
+					tamanho: file?.size || null,
+					required: file?.required !== false,
+				})),
+			},
+		},
+		files,
+		manifestoOriginal: manifest,
+	}
 }
 
 async function safeUnzipToDir(zipBuffer, outDir, ctx) {
@@ -202,36 +230,6 @@ async function safeUnzipToDir(zipBuffer, outDir, ctx) {
 	}
 
 	return extracted
-}
-
-function normalizarManifesto(rawManifest) {
-	const manifest = rawManifest && typeof rawManifest === 'object' && !Array.isArray(rawManifest)
-		? rawManifest
-		: {}
-	const resource = { ...manifest }
-
-	delete resource.files
-	if (!resource.visibilidade) resource.visibilidade = 'publico'
-
-	return {
-		metadata: {
-			resource,
-			submissao: {
-				modo: 'sip',
-				manifesto: 'manifest.json',
-				geradoEm: new Date().toISOString(),
-				ficheiros: (Array.isArray(manifest.files) ? manifest.files : []).map((file) => ({
-					nomeOriginal: file?.name || '',
-					nomeNoPacote: file?.name || '',
-					mimeType: file?.type || 'application/octet-stream',
-					tamanho: file?.size || null,
-					required: file?.required !== false,
-				})),
-			},
-		},
-		files: Array.isArray(manifest.files) ? manifest.files : [],
-		manifestoOriginal: manifest,
-	}
 }
 
 async function lerJson(filePath, ctx, camada, code, label) {
@@ -285,12 +283,11 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 	try {
 		const extracted = await safeUnzipToDir(zipBuffer, extractDir, ctx)
 		const extractedByPath = new Map(extracted.map((file) => [file.path, file]))
+		const manifestExtraido = extractedByPath.get('manifest.json')
+		const checksumExtraido = extractedByPath.get('checksums.txt')
+		const temPayload = extracted.some((file) => file.path.startsWith('data/'))
 
-		const manifestJsonPath = path.join(extractDir, 'manifest.json')
-		const dataDir = path.join(extractDir, 'data')
-		const checksumsPath = path.join(extractDir, 'checksums.txt')
-
-		if (!fs.existsSync(dataDir)) {
+		if (!temPayload) {
 			adicionarErro(ctx, 'estrutura', 'MISSING_DATA_DIR', 'pasta data/ em falta')
 		}
 
@@ -302,8 +299,8 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 
 		let metadata
 		let manifestFiles = []
-		if (fs.existsSync(manifestJsonPath)) {
-			const parsed = await lerJson(manifestJsonPath, ctx, 'estrutura', 'BAD_MANIFEST_JSON', 'manifest.json')
+		if (manifestExtraido) {
+			const parsed = await lerJson(manifestExtraido.fullPath, ctx, 'estrutura', 'BAD_MANIFEST_JSON', 'manifest.json')
 			if (parsed) {
 				const normalized = normalizarManifesto(parsed)
 				metadata = normalized.metadata
@@ -363,9 +360,8 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 			}
 		}
 
-		const checksumFile = fs.existsSync(checksumsPath) ? checksumsPath : null
-		if (checksumFile) {
-			const checksums = parseChecksumText(await fsp.readFile(checksumFile, 'utf8'))
+		if (checksumExtraido) {
+			const checksums = parseChecksumText(await fsp.readFile(checksumExtraido.fullPath, 'utf8'))
 			for (const [filePath, checksum] of checksums) {
 				const safePath = caminhoDataRelativo(filePath)
 				if (!safePath || !extractedByPath.has(safePath)) {
@@ -387,14 +383,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 
 		if (ctx.errors.length) {
 			await guardarAipErro({ ctx, producerId, sipId, sipHash, manifest: manifestOriginal })
-			return {
-				ok: false,
-				status: 'erro',
-				categoria: categoriaPrincipal(ctx.errors),
-				errors: ctx.errors,
-				validacoes: ctx.validacoes,
-				relatorio: ctx.relatorio,
-			}
+			return construirRespostaErro(ctx)
 		}
 
 		finalizarValidacoes(ctx)
@@ -418,7 +407,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 
 		try {
 			await ensureDir(resourceAipDir)
-			await copyDir(extractDir, path.join(resourceAipDir, 'bag'))
+			await copiarDiretoria(extractDir, path.join(resourceAipDir, 'bag'))
 			await fsp.writeFile(path.join(resourceAipDir, 'sip.zip'), zipBuffer)
 
 			resourceDoc.aipPath = resourceAipDir
@@ -469,14 +458,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 	} catch (err) {
 		adicionarErro(ctx, 'estrutura', 'INGEST_FAILED', err.message)
 		await guardarAipErro({ ctx, producerId, sipId, sipHash, manifest: manifestOriginal })
-		return {
-			ok: false,
-			status: 'erro',
-			categoria: categoriaPrincipal(ctx.errors),
-			errors: ctx.errors,
-			validacoes: ctx.validacoes,
-			relatorio: ctx.relatorio,
-		}
+		return construirRespostaErro(ctx)
 	} finally {
 		try {
 			await fsp.rm(tmpRoot, { recursive: true, force: true })
