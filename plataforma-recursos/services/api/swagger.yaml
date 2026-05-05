@@ -14,6 +14,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    internalToken:
+      type: apiKey
+      in: header
+      name: X-Internal-Token
   schemas:
     ErrorResponse:
       type: object
@@ -192,6 +196,18 @@ paths:
       responses:
         '200':
           description: Especificacao OpenAPI da API
+
+  /api/docs:
+    get:
+      tags: [Docs]
+      summary: Interface Swagger UI da API
+      responses:
+        '200':
+          description: HTML do Swagger UI da API
+          content:
+            text/html:
+              schema:
+                type: string
 
   /api/health:
     get:
@@ -800,7 +816,9 @@ paths:
     post:
       tags: [News]
       summary: Criar noticia de sistema (uso interno entre servicos)
-      description: Requer header interno X-Internal-Service-Token.
+      description: Endpoint interno. Requer `X-Internal-Token` (ou Authorization Bearer com token interno).
+      security:
+        - internalToken: []
       requestBody:
         required: true
         content:

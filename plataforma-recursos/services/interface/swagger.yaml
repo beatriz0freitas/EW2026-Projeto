@@ -39,6 +39,18 @@ paths:
         '200':
           description: Especificacao OpenAPI da Interface
 
+  /docs:
+    get:
+      tags: [Docs]
+      summary: Interface Swagger UI da interface web
+      responses:
+        '200':
+          description: HTML do Swagger UI da Interface
+          content:
+            text/html:
+              schema:
+                type: string
+
   /health:
     get:
       tags: [Health]
@@ -152,6 +164,42 @@ paths:
       responses:
         '302':
           description: Redireciona para login
+
+  /auth/google:
+    get:
+      tags: [Auth]
+      summary: Iniciar login OAuth com Google
+      description: Disponivel apenas quando GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET estao configurados.
+      responses:
+        '302':
+          description: Redireciona para o provider Google
+
+  /auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: Callback OAuth do Google
+      description: Disponivel apenas quando GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET estao configurados.
+      responses:
+        '302':
+          description: Redireciona apos login/registo OAuth
+
+  /auth/facebook:
+    get:
+      tags: [Auth]
+      summary: Iniciar login OAuth com Facebook
+      description: Disponivel apenas quando FACEBOOK_APP_ID e FACEBOOK_APP_SECRET estao configurados.
+      responses:
+        '302':
+          description: Redireciona para o provider Facebook
+
+  /auth/facebook/callback:
+    get:
+      tags: [Auth]
+      summary: Callback OAuth do Facebook
+      description: Disponivel apenas quando FACEBOOK_APP_ID e FACEBOOK_APP_SECRET estao configurados.
+      responses:
+        '302':
+          description: Redireciona apos login/registo OAuth
 
   /resources:
     get:
@@ -287,6 +335,84 @@ paths:
             text/html:
               schema:
                 $ref: '#/components/schemas/ErrorPage'
+
+  /resources/{id}/edit:
+    get:
+      tags: [Resources]
+      summary: Formulário de edição de recurso
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HTML do formulário de edição
+          content:
+            text/html:
+              schema:
+                type: string
+        '302':
+          description: Redirecionamento caso não tenha sessão/permissões
+
+    post:
+      tags: [Resources]
+      summary: Guardar alterações do recurso
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [tipo, titulo, visibilidade]
+              properties:
+                tipo:
+                  type: string
+                titulo:
+                  type: string
+                subtitulo:
+                  type: string
+                ano:
+                  type: integer
+                tema:
+                  type: string
+                hashtags:
+                  type: string
+                dataCriacao:
+                  type: string
+                visibilidade:
+                  type: string
+                  enum: [publico, privado]
+      responses:
+        '302':
+          description: Redireciona para o detalhe do recurso
+
+  /resources/{id}/delete:
+    post:
+      tags: [Resources]
+      summary: Remover recurso
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redireciona para a listagem de recursos
 
   /resources/{id}/dip:
     get:
