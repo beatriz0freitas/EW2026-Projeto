@@ -1,6 +1,6 @@
 const express = require('express')
 
-const { ingestSipZip } = require('./sip')
+const { ingerirSipZip } = require('./sip')
 const { construirSipSimples } = require('./pacoteSimples')
 const Resource = require('../../models/Resource')
 const { requireLevel } = require('../../middleware/auth')
@@ -11,7 +11,7 @@ const { publishTop3NewsIfChanged } = require('../../jobs/systemNews')
 const { createMultipleMemoryUpload, createSingleMemoryUpload } = require('../../middleware/upload')
 
 const router = express.Router()
-const MAX_PAYLOAD_FILE_SIZE_BYTES = 50 * 1024 * 1024
+const MAX_TAMANHO_FICHEIRO_PAYLOAD = 50 * 1024 * 1024
 
 function responderErroIngestao(res, code, message, result) {
 	return jsonError(res, 422, {
@@ -56,7 +56,7 @@ const uploadSip = createSingleMemoryUpload({
 const uploadSubmissaoSimples = createMultipleMemoryUpload({
 	fieldName: 'ficheiros',
 	maxFiles: 20,
-	maxFileSizeBytes: MAX_PAYLOAD_FILE_SIZE_BYTES,
+	maxFileSizeBytes: MAX_TAMANHO_FICHEIRO_PAYLOAD,
 	maxFieldSizeBytes: 2 * 1024 * 1024,
 	allowedExtensions: [],
 	allowedMimeTypes: [],
@@ -121,7 +121,7 @@ async function receberSip(req, res) {
 
 	const aipDir = config.storage.aipDir
 
-	const result = await ingestSipZip({
+	const result = await ingerirSipZip({
 		zipBuffer: req.file.buffer,
 		aipDir,
 		producerId: req.user.sub,
@@ -168,7 +168,7 @@ async function receberSubmissaoSimples(req, res) {
 		})
 	}
 
-	const result = await ingestSipZip({
+	const result = await ingerirSipZip({
 		zipBuffer: pacote.zipBuffer,
 		aipDir: config.storage.aipDir,
 		producerId: req.user.sub,

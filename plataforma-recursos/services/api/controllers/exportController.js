@@ -5,7 +5,7 @@ const Post = require('../models/Post')
 const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
 const { config } = require('../lib/config')
-const { buildResourceAipPath, buildStoredAipFile, exportAipFiles, restoreAipFiles } = require('../oais/aipStorage')
+const { construirCaminhoAipRecurso, construirFicheiroAipGuardado, exportarFicheirosAip, reporFicheirosAip } = require('../oais/aipStorage')
 const { construirFiltrosTransferencia, construirDumpFiltrado } = require('../transfer/filters')
 const { jsonError } = require('../lib/http')
 const { exportUsersForTransfer, importUsersForTransfer } = require('../transfer/authClient')
@@ -70,7 +70,7 @@ module.exports.exportAll = async (req, res) => {
 
 		for (const resource of dumpFiltrado.resources) {
 			try {
-				aip.push(await exportAipFiles(resource, config.storage.aipDir))
+				aip.push(await exportarFicheirosAip(resource, config.storage.aipDir))
 			} catch (err) {
 				console.error(`[export] erro ao incluir AIP do recurso ${resource._id}:`, err)
 				return jsonError(res, 500, {
@@ -150,13 +150,13 @@ module.exports.importAll = async (req, res) => {
 				const nextDoc = { ...doc }
 
 				if (key === 'resources') {
-					const resourceAipPath = buildResourceAipPath(config.storage.aipDir, doc._id)
+					const resourceAipPath = construirCaminhoAipRecurso(config.storage.aipDir, doc._id)
 					nextDoc.aipPath = resourceAipPath
-					nextDoc.aipFile = buildStoredAipFile({
-						resourceAipPath,
-						originalName: doc.aipFile?.originalName,
+					nextDoc.aipFile = construirFicheiroAipGuardado({
+						caminhoAipRecurso: resourceAipPath,
+						nomeOriginal: doc.aipFile?.originalName,
 						mimeType: doc.aipFile?.mimeType,
-						size: doc.aipFile?.size,
+						tamanho: doc.aipFile?.size,
 					})
 				}
 
@@ -194,9 +194,9 @@ module.exports.importAll = async (req, res) => {
 			}
 
 			try {
-				await restoreAipFiles({
-					aipDir: config.storage.aipDir,
-					resourceId,
+				await reporFicheirosAip({
+					pastaAip: config.storage.aipDir,
+					recursoId: resourceId,
 					files: entry.files,
 				})
 				results.aip.restored++
