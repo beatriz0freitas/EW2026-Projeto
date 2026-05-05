@@ -8,7 +8,7 @@ const unzipper = require('unzipper')
 
 const Aip = require('../../models/Aip')
 const Resource = require('../../models/Resource')
-const { buildResourceAipPath, buildStoredAipFile } = require('../aipStorage')
+const { construirCaminhoAipRecurso, construirFicheiroAipGuardado } = require('../aipStorage')
 const { validateMetadata } = require('../../lib/metadataValidator')
 
 const EXTENSOES_PERMITIDAS = new Set([
@@ -105,8 +105,8 @@ function sha256File(filePath) {
 	})
 }
 
-async function ensureDir(dirPath) {
-	await fsp.mkdir(dirPath, { recursive: true })
+async function garantirDiretoria(caminhoDiretoria) {
+	await fsp.mkdir(caminhoDiretoria, { recursive: true })
 }
 
 async function copiarDiretoria(origem, destino) {
@@ -131,18 +131,19 @@ function nomePerigoso(nome) {
 	return /[<>:"|?*\x00-\x1f]/.test(nome)
 }
 
-function parseChecksumText(text) {
-	const entries = new Map()
-	for (const raw of String(text || '').split(/\r?\n/)) {
-		const line = raw.trim()
-		if (!line || line.startsWith('#')) continue
-		const firstSpace = line.indexOf(' ')
-		if (firstSpace === -1) continue
-		const checksum = line.slice(0, firstSpace).trim()
-		const filePath = normalizarCaminhoZip(line.slice(firstSpace).trim())
-		if (checksum && filePath) entries.set(filePath, checksum)
+
+function lerTextoChecksums(texto) {
+	const entradas = new Map()
+	for (const linhaBruta of String(texto || '').split(/\r?\n/)) {
+		const linha = linhaBruta.trim()
+		if (!linha || linha.startsWith('#')) continue
+		const primeiroEspaco = linha.indexOf(' ')
+		if (primeiroEspaco === -1) continue
+		const checksum = linha.slice(0, primeiroEspaco).trim()
+		const caminhoFicheiro = normalizarCaminhoZip(linha.slice(primeiroEspaco).trim())
+		if (checksum && caminhoFicheiro) entradas.set(caminhoFicheiro, checksum)
 	}
-	return entries
+	return entradas
 }
 
 function construirRespostaErro(ctx) {
@@ -184,8 +185,8 @@ function normalizarManifesto(parsed) {
 	}
 }
 
-async function safeUnzipToDir(zipBuffer, outDir, ctx) {
-	await ensureDir(outDir)
+async function extrairZipEmSeguranca(zipBuffer, outDir, ctx) {
+	await garantirDiretoria(outDir)
 
 	let directory
 	try {
@@ -212,11 +213,11 @@ async function safeUnzipToDir(zipBuffer, outDir, ctx) {
 		}
 
 		if (file.type === 'Directory') {
-			await ensureDir(resolvedTarget)
+			await garantirDiretoria(resolvedTarget)
 			continue
 		}
 
-		await ensureDir(path.dirname(resolvedTarget))
+		await garantirDiretoria(path.dirname(resolvedTarget))
 		await new Promise((resolve, reject) => {
 			file
 				.stream()
@@ -262,7 +263,7 @@ function categoriaPrincipal(errors) {
 	return errors.find((erro) => erro.camada)?.camada || 'estrutura'
 }
 
-async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
+async function ingerirSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 	const sipHash = sha256Buffer(zipBuffer)
 	const sipId = `SIP-${new Date().getFullYear()}-${Date.now()}`
 	const ctx = {
@@ -281,7 +282,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 	const extractDir = path.join(tmpRoot, 'bag')
 
 	try {
-		const extracted = await safeUnzipToDir(zipBuffer, extractDir, ctx)
+		const extracted = await extrairZipEmSeguranca(zipBuffer, extractDir, ctx)
 		const extractedByPath = new Map(extracted.map((file) => [file.path, file]))
 		const manifestExtraido = extractedByPath.get('manifest.json')
 		const checksumExtraido = extractedByPath.get('checksums.txt')
@@ -361,7 +362,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 		}
 
 		if (checksumExtraido) {
-			const checksums = parseChecksumText(await fsp.readFile(checksumExtraido.fullPath, 'utf8'))
+			const checksums = lerTextoChecksums(await fsp.readFile(checksumExtraido.fullPath, 'utf8'))
 			for (const [filePath, checksum] of checksums) {
 				const safePath = caminhoDataRelativo(filePath)
 				if (!safePath || !extractedByPath.has(safePath)) {
@@ -387,7 +388,7 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 		}
 
 		finalizarValidacoes(ctx)
-		await ensureDir(aipDir)
+		await garantirDiretoria(aipDir)
 
 		const resourceDoc = new Resource({
 			metadata,
@@ -403,19 +404,19 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 		})
 
 		const resourceId = String(resourceDoc._id)
-		const resourceAipDir = buildResourceAipPath(aipDir, resourceId)
+		const resourceAipDir = construirCaminhoAipRecurso(aipDir, resourceId)
 
 		try {
-			await ensureDir(resourceAipDir)
+			await garantirDiretoria(resourceAipDir)
 			await copiarDiretoria(extractDir, path.join(resourceAipDir, 'bag'))
 			await fsp.writeFile(path.join(resourceAipDir, 'sip.zip'), zipBuffer)
 
 			resourceDoc.aipPath = resourceAipDir
-			resourceDoc.aipFile = buildStoredAipFile({
-				resourceAipPath: resourceAipDir,
-				originalName: uploadedFile?.originalName,
+			resourceDoc.aipFile = construirFicheiroAipGuardado({
+				caminhoAipRecurso: resourceAipDir,
+				nomeOriginal: uploadedFile?.originalName,
 				mimeType: uploadedFile?.mimeType,
-				size: uploadedFile?.size ?? zipBuffer.length,
+				tamanho: uploadedFile?.size ?? zipBuffer.length,
 			})
 			await resourceDoc.save()
 
@@ -468,4 +469,4 @@ async function ingestSipZip({ zipBuffer, aipDir, producerId, uploadedFile }) {
 	}
 }
 
-module.exports = { ingestSipZip }
+module.exports = { ingerirSipZip }
