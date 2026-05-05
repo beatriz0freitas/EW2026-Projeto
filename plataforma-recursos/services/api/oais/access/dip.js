@@ -1,10 +1,10 @@
-const { readAipEntries } = require('../aipStorage')
+const { lerEntradasAip } = require('../aipStorage')
 const { criarZip } = require('../../lib/simpleZip')
 
-async function buildDipZip({ resource, aipDir }) {
+async function construirDipZip({ resource, aipDir }) {
 	let entradas
 	try {
-		entradas = await readAipEntries(resource, aipDir)
+		entradas = await lerEntradasAip(resource, aipDir)
 	} catch {
 		return null
 	}
@@ -15,4 +15,4 @@ async function buildDipZip({ resource, aipDir }) {
 	}
 }
 
-module.exports = { buildDipZip }
+module.exports = { construirDipZip }
