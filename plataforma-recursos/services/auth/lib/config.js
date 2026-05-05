@@ -82,6 +82,10 @@ const config = {
 		loginRateLimitWindowMs: parsePositiveInt(process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS, 10 * 60 * 1000, 'AUTH_LOGIN_RATE_LIMIT_WINDOW_MS'),
 		loginRateLimitMaxAttempts: parsePositiveInt(process.env.AUTH_LOGIN_RATE_LIMIT_MAX_ATTEMPTS, 10, 'AUTH_LOGIN_RATE_LIMIT_MAX_ATTEMPTS'),
 	},
+
+	dataTransfer: {
+		jsonBodyLimit: nonEmptyString(process.env.AUTH_TRANSFER_JSON_BODY_LIMIT, '20mb', 'AUTH_TRANSFER_JSON_BODY_LIMIT'),
+	},
 }
 
 module.exports = {
