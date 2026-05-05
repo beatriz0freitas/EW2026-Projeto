@@ -18,8 +18,8 @@ services:
       - MONGO_INITDB_DATABASE=ew2026
     volumes:
       - mongo_data:/data/db
-      - ./data/fixtures.json:/docker-entrypoint-initdb.d/fixtures.json:ro
-      - ./data/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./data/povoamento/fixtures.json:/docker-entrypoint-initdb.d/fixtures.json:ro
+      - ./data/povoamento/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - ew2026-net
 
