@@ -1,4 +1,8 @@
 node_modules/
 .env
+__pycache__/
+.pytest_cache/
 data/aip/*
 !data/aip/.gitkeep
+data/recursos/*
+data/scripts/__pycache__/
