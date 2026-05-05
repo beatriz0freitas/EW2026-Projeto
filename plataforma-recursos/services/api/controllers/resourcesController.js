@@ -7,7 +7,7 @@ const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
 const { config } = require('../lib/config')
 const { validateMetadataResource } = require('../lib/metadataValidator')
-const { resolveResourceAipPath } = require('../lib/aipStorage')
+const { resolveResourceAipPath } = require('../oais/aipStorage')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 const { canViewResource, visibilityQuery } = require('../lib/resourceAccess')
 

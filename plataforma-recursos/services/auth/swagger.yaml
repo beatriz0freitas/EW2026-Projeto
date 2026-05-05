@@ -22,6 +22,10 @@ components:
       type: apiKey
       in: query
       name: token
+    internalToken:
+      type: apiKey
+      in: header
+      name: X-Internal-Token
   schemas:
     ErrorResponse:
       type: object
@@ -120,6 +124,24 @@ components:
         password:
           type: string
           example: Admin123
+    OAuthLoginRequest:
+      type: object
+      required: [provider, providerId, email, nome]
+      properties:
+        provider:
+          type: string
+          enum: [google, facebook]
+          example: google
+        providerId:
+          type: string
+          example: "1234567890"
+        email:
+          type: string
+          format: email
+          example: user@teste.com
+        nome:
+          type: string
+          example: Utilizador OAuth
     LoginResponse:
       type: object
       properties:
@@ -180,6 +202,18 @@ paths:
       responses:
         '200':
           description: Especificacao OpenAPI do servico Auth
+
+  /docs:
+    get:
+      tags: [Docs]
+      summary: Interface Swagger UI do servico auth
+      responses:
+        '200':
+          description: HTML do Swagger UI do servico Auth
+          content:
+            text/html:
+              schema:
+                type: string
 
   /health:
     get:
@@ -260,6 +294,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /sessions/oauth:
+    post:
+      tags: [Auth]
+      summary: Login/registo via OAuth (Google/Facebook)
+      description: Usado pela Interface após callback do provider. Cria o utilizador se ainda não existir e emite JWT + refresh cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthLoginRequest'
+      responses:
+        '200':
+          description: Login OAuth com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Campos obrigatórios em falta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /sessions/verify:
     get:
       tags: [Auth]
@@ -307,6 +366,7 @@ paths:
       description: Endpoint interno usado pela interface em chamadas server-side. Requer `X-Internal-Token` ou bearer token interno.
       security:
         - bearerAuth: []
+        - internalToken: []
       requestBody:
         required: true
         content:
@@ -484,6 +544,85 @@ paths:
           description: Utilizador desativado
         '400':
           description: Tentativa de desativar o proprio utilizador
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /internal/transfer/users:
+    get:
+      tags: [Internal]
+      summary: Exportar utilizadores para transferência entre serviços
+      description: Endpoint interno. Requer `X-Internal-Token` (ou Authorization Bearer com token interno).
+      security:
+        - internalToken: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dump de utilizadores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+        '401':
+          description: Token interno ausente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Token interno inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Internal]
+      summary: Importar utilizadores a partir de dump
+      description: Endpoint interno. Requer `X-Internal-Token` (ou Authorization Bearer com token interno). Aceita `{ users: [...] }`.
+      security:
+        - internalToken: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [users]
+              properties:
+                users:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+      responses:
+        '200':
+          description: Import concluído sem erros
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '207':
+          description: Import concluído com erros parciais
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Dump inválido
           content:
             application/json:
               schema:

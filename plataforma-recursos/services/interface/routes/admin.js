@@ -47,5 +47,6 @@ router.get('/export', routeAsync(adminController.exportData))
 router.get('/import', adminController.showImportForm)
 router.post('/import', processarUploadDump, routeAsync(adminController.importData))
 router.get('/data', adminController.showData)
+router.get('/audit', routeAsync(adminController.listAudit))
 
 module.exports = router
