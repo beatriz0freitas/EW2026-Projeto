@@ -76,6 +76,18 @@ async function exportAipFiles(resource, aipDir) {
 	}
 }
 
+async function readAipEntries(resource, aipDir) {
+	const resourceAipPath = resolveResourceAipPath(resource, aipDir)
+	const absolutePaths = await listFilesRecursively(resourceAipPath)
+
+	return Promise.all(
+		absolutePaths.map(async (absolutePath) => ({
+			caminho: path.relative(resourceAipPath, absolutePath).split(path.sep).join('/'),
+			conteudo: await fsp.readFile(absolutePath),
+		}))
+	)
+}
+
 async function restoreAipFiles({ aipDir, resourceId, files }) {
 	const resourceAipPath = buildResourceAipPath(aipDir, resourceId)
 
@@ -99,6 +111,7 @@ module.exports = {
 	buildResourceAipPath,
 	buildStoredAipFile,
 	exportAipFiles,
+	readAipEntries,
 	resolveResourceAipPath,
 	restoreAipFiles,
 }
