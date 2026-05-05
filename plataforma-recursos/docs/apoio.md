@@ -751,11 +751,12 @@ Mostra as últimas 5 notícias (ordenadas por `publicadoEm` descendente).
 
 ### Estado Inicial
 
-A plataforma começa com dataset vazio. Dados são preenchidos via:
+A plataforma começa com poucos dados de demonstração e pode ser preenchida por quatro vias simples:
 
-1. **Upload manual de SIPs** (interface ou API).
-2. **Import de dump** (POST `/api/import` com dados já estruturados).
-3. **Seed automático** (futura: script que carrega dataset padrão).
+1. **Seed automático de utilizadores** no arranque do MongoDB (`fixtures.json` + `init-mongo.js`).
+2. **Script simples de povoamento de recursos** para carregar conteúdos de `data/recursos` pela API `ingest/simples`.
+3. **Upload manual de SIPs** (interface ou API).
+4. **Import de dump** (POST `/api/import` com dados já estruturados).
 
 ### Dataset Mínimo para Demonstração
 
@@ -767,6 +768,17 @@ Para uma apresentação funcional, recomenda-se:
 - **Alguns ratings** para mostrar o ranking.
 
 ### Como Carregar Dataset
+
+Fluxo recomendado para demonstração local:
+
+```bash
+cd EW2026-Projeto/plataforma-recursos
+cp .env.example .env
+docker compose up -d --build
+pip install -r data/povoamento/requirements.txt
+TOKEN=$(curl -s -X POST http://localhost:16020/auth/sessions -H 'Content-Type: application/json' -d '{"username":"admin.teste","password":"Admin123"}' | python3 -c 'import sys, json; print(json.load(sys.stdin)["token"])')
+python3 data/povoamento/povoamento-recursos.py data/recursos --token "$TOKEN"
+```
 
 **Opção 1: Upload manual**
 
@@ -785,11 +797,24 @@ Para uma apresentação funcional, recomenda-se:
 # POST /api/import -F "dumpFile=@dump.json"
 ```
 
-**Opção 3: Script de seed (futura)**
+**Opção 3: Script de povoamento de recursos**
 
 ```bash
-# Carregar automaticamente recursos pré-compilados
+pip install -r data/povoamento/requirements.txt
+TOKEN=$(curl -s -X POST http://localhost:16020/auth/sessions -H 'Content-Type: application/json' -d '{"username":"admin.teste","password":"Admin123"}' | python3 -c 'import sys, json; print(json.load(sys.stdin)["token"])')
+python3 data/povoamento/povoamento-recursos.py data/recursos --token "$TOKEN"
 ```
+
+**Opção 4: Seed automático de utilizadores**
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+O seed automático segue a mesma ideia usada em exercícios anteriores: um ficheiro JSON com dados base e um `init-mongo.js` montado em `/docker-entrypoint-initdb.d/`.
+
+O script de povoamento de recursos foi simplificado para manter apenas a lógica efetivamente útil: autenticação, leitura dos ficheiros locais, metadados opcionais, validação de limites e envio para a rota simples de ingestão.
 
 ### Estrutura de SIP Exemplo
 
