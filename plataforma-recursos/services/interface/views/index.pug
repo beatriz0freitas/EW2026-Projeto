@@ -15,7 +15,7 @@ block content
 					a.w3-button.w3-border(href='/auth/login') Entrar
 			.etiquetas
 				if user
-					- const roleLabel = user.role === 'admin' ? 'Administrador' : user.role === 'produtor' ? 'Produtor' : 'Leitor'
+					- const roleLabel = user.role === 'admin' ? 'Administrador' : user.role === 'produtor' ? 'Produtor' : 'Consumidor'
 					span.etiqueta Sessão iniciada: #{roleLabel}
 				else
 					span.etiqueta Acesso público disponível

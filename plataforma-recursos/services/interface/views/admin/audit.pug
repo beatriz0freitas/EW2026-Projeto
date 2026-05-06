@@ -8,19 +8,19 @@ block content
 		header.admin-page-header
 			div
 				p.admin-eyebrow Administração
-				h1 Auditoria
-				p Revê ações feitas por utilizadores e serviços.
+				h1 Histórico de atividade
+				p Acompanha ações relevantes da plataforma feitas por utilizadores e serviços.
 			include _nav.pug
 
 		section.w3-white.secao-card
 			h2 Filtros
 			form.audit-filters(method='GET' action='/admin/audit')
 				div
-					label(for='action') Ação
+					label(for='action') Atividade
 					select#audit-action.w3-select(name='action')
 						option(value='') Todas
-						each action in options.actions || []
-							option(value=action selected=filters.action === action)= action
+						each action in actionOptions || []
+							option(value=action.valor selected=filters.action === action.valor)= action.etiqueta
 				div
 					label(for='status') Estado
 					select#status.w3-select(name='status')
@@ -55,11 +55,11 @@ block content
 		section.w3-white.secao-card
 			.audit-results-header
 				div
-					h2 Eventos
-					p.w3-text-grey #{pagination.total} registos encontrados.
+					h2 Atividades registadas
+					p.w3-text-grey #{pagination.total} entradas encontradas.
 			if !items.length
 				.empty-state
-					p Sem eventos para os filtros escolhidos.
+					p Sem atividade para os filtros escolhidos.
 			else
 				.w3-responsive
 					table.admin-table.audit-table
@@ -69,45 +69,45 @@ block content
 								th Ator
 								th Ação
 								th Alvo
-								th Pedido
+								th Resultado
 								th Estado
 						tbody
 							each item in items
 								- const createdAt = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-PT') : ''
-								- const actor = item.actor && item.actor.id ? item.actor.id : 'anónimo'
-								- const actorRole = item.actor && item.actor.role ? item.actor.role : ''
-								- const targetType = item.target && item.target.type ? item.target.type : ''
-								- const targetId = item.target && item.target.id ? item.target.id : ''
-								- const statusClass = item.status === 'success' ? 'audit-status audit-status--success' : 'audit-status audit-status--failure'
 								tr
 									td(data-label='Quando')
 										time(datetime=item.createdAt)= createdAt
-										if item.service
-											span.audit-muted= item.service
 									td(data-label='Ator')
-										strong= actor
-										if actorRole
-											span.audit-muted= actorRole
+										strong= item.atorPrincipal
+										if item.atorDetalhe
+											span.audit-muted= item.atorDetalhe
 									td(data-label='Ação')
-										code.audit-code= item.action
+										strong= item.acaoLegivel
+										if item.acaoCodigo
+											span.audit-muted= item.acaoCodigo
 									td(data-label='Alvo')
-										if targetType || targetId
-											span= targetType || 'alvo'
-											if targetId
-												span.audit-muted= targetId
-										else
-											span.audit-muted -
-									td(data-label='Pedido')
-										span.audit-method= item.method
-										span.audit-path= item.path
-										if item.requestId
-											span.audit-muted #{item.requestId}
+										span= item.alvoPrincipal
+										if item.alvoDetalhe
+											span.audit-muted= item.alvoDetalhe
+									td(data-label='Resultado')
+										span= item.resultadoTexto
+										if item.detalhesTecnicos.length
+											details.audit-details
+												summary Ver detalhes técnicos
+												ul.audit-details__list
+													each detalhe in item.detalhesTecnicos
+														li
+															strong= `${detalhe.etiqueta}: `
+															if detalhe.etiqueta === 'Metadados'
+																pre.audit-pre= detalhe.valor
+															else
+																span= detalhe.valor
 									td(data-label='Estado')
-										span(class=statusClass)= item.status === 'success' ? 'Sucesso' : 'Falha'
+										span(class=item.resultadoClasse)= item.resultadoTexto
 										span.audit-muted= item.statusCode
 
 				if pagination.totalPages > 1
-					nav.pagination(aria-label='Paginação de auditoria')
+					nav.pagination(aria-label='Paginação do histórico de atividade')
 						- const prevQuery = new URLSearchParams(queryBase.toString())
 						- prevQuery.set('page', String(Math.max(1, pagination.page - 1)))
 						- const nextQuery = new URLSearchParams(queryBase.toString())

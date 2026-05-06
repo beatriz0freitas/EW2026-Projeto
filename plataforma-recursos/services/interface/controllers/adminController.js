@@ -4,11 +4,149 @@ const { pipeline } = require('stream/promises')
 
 const {
 	construirFormularioFiltrosDados,
+	construirPrevisaoTransferencia,
 	construirQueryFiltrosDados,
 	construirResumoFiltrosDados,
 } = require('../lib/dataTransferFilters')
 const { authRequest, apiRequest, apiFetch } = require('../lib/http')
 const { apiErrorMessage } = require('../lib/web')
+
+const papeisUtilizador = {
+	admin: 'Administrador',
+	produtor: 'Produtor',
+	consumidor: 'Consumidor',
+}
+
+const tiposAlvo = {
+	resource: 'Recurso',
+	comment: 'Comentário',
+	post: 'Publicação',
+	news: 'Notícia',
+	data_dump: 'Dados',
+	user: 'Utilizador',
+	rating: 'Avaliação',
+	audit: 'Auditoria',
+}
+
+const acoesAuditoria = {
+	'resource.create': 'Criou recurso',
+	'resource.update': 'Atualizou recurso',
+	'resource.delete': 'Removeu recurso',
+	'resource.read': 'Consultou recurso',
+	'resource.download': 'Descarregou recurso',
+	'comment.create': 'Criou comentário',
+	'comment.delete': 'Removeu comentário',
+	'comment.read': 'Consultou comentário',
+	'post.create': 'Criou publicação',
+	'post.update': 'Atualizou publicação',
+	'post.delete': 'Removeu publicação',
+	'post.read': 'Consultou publicação',
+	'news.create': 'Criou notícia',
+	'news.delete': 'Removeu notícia',
+	'news.read': 'Consultou notícia',
+	'data.export': 'Exportou dados',
+	'data.import': 'Importou dados',
+	'rating.read': 'Consultou avaliação',
+	'rating.upsert': 'Registou avaliação',
+	'audit.read': 'Consultou histórico de atividade',
+	'http.get': 'Fez pedido GET',
+	'http.post': 'Fez pedido POST',
+	'http.patch': 'Fez pedido PATCH',
+	'http.delete': 'Fez pedido DELETE',
+}
+
+function capitalizar(texto = '') {
+	if (!texto) return ''
+	return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+function descreverAcao(codigo = '') {
+	const acaoConhecida = acoesAuditoria[codigo]
+	if (acaoConhecida) return acaoConhecida
+
+	const [dominio, verbo] = String(codigo).split('.')
+	if (!dominio || !verbo) return capitalizar(String(codigo || 'Atividade'))
+
+	const nomeDominio = tiposAlvo[dominio] || capitalizar(dominio.replace(/_/g, ' '))
+	const verbos = {
+		create: 'Criou',
+		update: 'Atualizou',
+		delete: 'Removeu',
+		read: 'Consultou',
+		download: 'Descarregou',
+		import: 'Importou',
+		export: 'Exportou',
+		upsert: 'Registou',
+	}
+
+	return verbos[verbo] ? `${verbos[verbo]} ${nomeDominio.toLowerCase()}` : capitalizar(String(codigo).replace(/[._]/g, ' '))
+}
+
+function descreverAtor(actor = {}) {
+	const nomeVisivel = String(actor?.nome || '').trim()
+	const idVisivel = String(actor?.id || '').trim()
+	const papelVisivel = papeisUtilizador[String(actor?.role || '').trim()] || String(actor?.role || '').trim()
+
+	return {
+		principal: nomeVisivel || idVisivel || 'Sistema',
+		detalhe: nomeVisivel && idVisivel && nomeVisivel !== idVisivel
+			? `${idVisivel}${papelVisivel ? ` · ${papelVisivel}` : ''}`
+			: papelVisivel || '',
+	}
+}
+
+function descreverAlvo(target = {}) {
+	const tipo = String(target?.type || '').trim()
+	const id = String(target?.id || '').trim()
+	const nomeTipo = tiposAlvo[tipo] || capitalizar(tipo.replace(/_/g, ' '))
+
+	if (!tipo && !id) {
+		return { principal: 'Sem alvo específico', detalhe: '' }
+	}
+
+	return {
+		principal: nomeTipo || 'Alvo',
+		detalhe: id || '',
+	}
+}
+
+function construirDetalhesTecnicos(item = {}) {
+	const detalhes = []
+	if (item.service) detalhes.push({ etiqueta: 'Serviço', valor: item.service })
+	if (item.method) detalhes.push({ etiqueta: 'Método', valor: item.method })
+	if (item.path) detalhes.push({ etiqueta: 'Caminho', valor: item.path })
+	if (item.requestId) detalhes.push({ etiqueta: 'Request ID', valor: item.requestId })
+	if (item.statusCode) detalhes.push({ etiqueta: 'Código HTTP', valor: String(item.statusCode) })
+	if (item.ip) detalhes.push({ etiqueta: 'IP', valor: item.ip })
+	if (item.userAgent) detalhes.push({ etiqueta: 'User-Agent', valor: item.userAgent })
+	if (item.metadata && Object.keys(item.metadata).length) {
+		detalhes.push({ etiqueta: 'Metadados', valor: JSON.stringify(item.metadata, null, 2) })
+	}
+	return detalhes
+}
+
+function prepararEventoAuditoria(item = {}) {
+	const ator = descreverAtor(item.actor)
+	const alvo = descreverAlvo(item.target)
+	const resultadoSucesso = item.status === 'success'
+
+	return {
+		...item,
+		acaoLegivel: descreverAcao(item.action),
+		acaoCodigo: item.action || '',
+		atorPrincipal: ator.principal,
+		atorDetalhe: ator.detalhe,
+		alvoPrincipal: alvo.principal,
+		alvoDetalhe: alvo.detalhe,
+		resultadoTexto: resultadoSucesso ? 'Sucesso' : 'Falha',
+		resultadoClasse: resultadoSucesso ? 'audit-status audit-status--success' : 'audit-status audit-status--failure',
+		detalhesTecnicos: construirDetalhesTecnicos(item),
+	}
+}
+
+function prepararAcaoFiltro(valor = '') {
+	return { valor, etiqueta: descreverAcao(valor) }
+}
 
 function renderImportWithError(req, res, message, status = 400) {
 	const filterForm = construirFormularioFiltrosDados(req.body || {})
@@ -17,6 +155,7 @@ function renderImportWithError(req, res, message, status = 400) {
 		title: 'Admin · Importar dados',
 		filterForm,
 		filterSummary: construirResumoFiltrosDados(filterForm),
+		transferPreview: construirPrevisaoTransferencia(filterForm, 'importar'),
 		dumpText,
 		importError: message,
 	})
@@ -132,10 +271,12 @@ async function exportData(req, res) {
 }
 
 function showImportForm(req, res) {
+	const filterForm = construirFormularioFiltrosDados(req.query || {})
 	res.render('admin/import', {
 		title: 'Admin · Importar dados',
-		filterForm: construirFormularioFiltrosDados(),
-		filterSummary: [],
+		filterForm,
+		filterSummary: construirResumoFiltrosDados(filterForm),
+		transferPreview: construirPrevisaoTransferencia(filterForm, 'importar'),
 		dumpText: '',
 	})
 }
@@ -163,6 +304,12 @@ async function importData(req, res) {
 
 	const form = new FormData()
 	for (const [key, value] of Object.entries(filterForm)) {
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				if (item !== undefined && item !== null && item !== '') form.append(key, String(item))
+			}
+			continue
+		}
 		if (value !== undefined && value !== null && value !== '') {
 			form.append(key, String(value))
 		}
@@ -206,16 +353,19 @@ async function importData(req, res) {
 		filterForm,
 		dumpText,
 		filterSummary: construirResumoFiltrosDados(filtrosAplicados),
+		transferPreview: construirPrevisaoTransferencia(filtrosAplicados, 'importar'),
 		importResults: results,
 		importOk: payload?.ok === true,
 	})
 }
 
 function showData(req, res) {
+	const filterForm = construirFormularioFiltrosDados(req.query || {})
 	res.render('admin/data', {
 		title: 'Admin · Dados',
-		filterForm: construirFormularioFiltrosDados(),
-		filterSummary: [],
+		filterForm,
+		filterSummary: construirResumoFiltrosDados(filterForm),
+		transferPreview: construirPrevisaoTransferencia(filterForm, 'exportar'),
 	})
 }
 
@@ -230,14 +380,14 @@ async function listAudit(req, res) {
 	const response = await apiRequest(`/audit?${params.toString()}`, { token: req.session.token, req })
 	if (!response.ok) {
 		return res.status(response.status || 500).render('error', {
-			title: 'Auditoria',
-			message: apiErrorMessage(response.data, 'Não foi possível obter os registos de auditoria.'),
+			title: 'Histórico de atividade',
+			message: apiErrorMessage(response.data, 'Não foi possível obter o histórico de atividade.'),
 		})
 	}
 
 	res.render('admin/audit', {
-		title: 'Admin · Auditoria',
-		items: response.data?.items || [],
+		title: 'Admin · Histórico de atividade',
+		items: (response.data?.items || []).map(prepararEventoAuditoria),
 		options: response.data?.options || { actions: [], services: [] },
 		pagination: {
 			page: response.data?.page || 1,
@@ -254,6 +404,7 @@ async function listAudit(req, res) {
 			from: String(req.query?.from || ''),
 			to: String(req.query?.to || ''),
 		},
+		actionOptions: (response.data?.options?.actions || []).sort().map(prepararAcaoFiltro),
 	})
 }
 

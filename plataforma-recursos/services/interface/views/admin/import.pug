@@ -7,7 +7,7 @@ block content
 			div
 				p.admin-eyebrow Administração
 				h1 Importar dados
-				p Usa um ficheiro exportado e, se necessário, limita o que entra.
+				p Escolhe primeiro o que queres deixar entrar. O resto do processo fica guiado e mais seguro.
 			include _nav.pug
 
 		section.w3-white.secao-card
@@ -54,8 +54,31 @@ block content
 											each e in r.errors
 												li= e.id + ': ' + e.message
 
-			form(method='POST' action='/admin/import' enctype='multipart/form-data')
+		section.w3-white.secao-card
+			h2 Preparar importação
+			p.w3-text-grey A importação usa a mesma lógica da exportação: entra tudo por defeito e os filtros servem apenas para restringir.
+			form(method='GET' action='/admin/import')
+				- const transferMode = 'importar'
 				include data-transfer-filters.pug
+				section.transfer-preview
+					h3 Resumo antes de importar
+					p.transfer-preview__main= transferPreview.principal
+					p.transfer-preview__hint= transferPreview.limite
+					if transferPreview.conteudos
+						p.transfer-preview__hint Tipos de conteúdo escolhidos: #{transferPreview.conteudos}.
+					if transferPreview.temFiltrosEspecificos
+						ul.transfer-preview__list
+							each entry in transferPreview.filtrosEspecificos
+								li
+									strong= entry.label + ': '
+									= entry.value
+					else
+						p.transfer-preview__hint Sem filtros específicos adicionais.
+				.conteudo-acoes
+					button.w3-button.w3-border(type='submit') Ver resumo
+
+			form(method='POST' action='/admin/import' enctype='multipart/form-data')
+				include data-transfer-hidden-fields.pug
 				.form-field(data-field='dumpFile')
 					label(for='dumpFile') Ficheiro exportado
 					input#dumpFile.w3-input.w3-border(
@@ -73,5 +96,5 @@ block content
 						placeholder='Opcional: cola aqui o conteúdo do ficheiro exportado...'
 					)= dumpText
 				.conteudo-acoes
-					button.w3-button.botao-principal(type='submit') Importar
+					button.w3-button.botao-principal(type='submit') Importar agora
 					a.w3-button.w3-border(href='/admin/data') Voltar aos dados
