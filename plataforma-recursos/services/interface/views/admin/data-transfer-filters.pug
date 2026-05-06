@@ -1,147 +1,80 @@
-- const hasAdvancedDataFilters = !!(filterForm.resourceType || filterForm.resourceYear || filterForm.resourceTheme || filterForm.resourceHashtag || filterForm.resourceVisibility || filterForm.resourceProducer || filterForm.resourceCreatedFrom || filterForm.resourceCreatedTo || filterForm.newsType || filterForm.newsEventType || filterForm.newsCreatedBy || filterForm.newsPublishedFrom || filterForm.newsPublishedTo)
+- const tiposSelecionados = Array.isArray(filterForm.selectedTypes) ? filterForm.selectedTypes : []
+- const temFiltrosAtivos = Boolean(tiposSelecionados.length || filterForm.resourceType || filterForm.resourceYear || filterForm.resourceTheme || filterForm.resourceHashtag || filterForm.resourceVisibility || filterForm.resourceProducer || filterForm.resourceCreatedFrom || filterForm.resourceCreatedTo || filterForm.newsCreatedBy || filterForm.newsPublishedFrom || filterForm.newsPublishedTo || filterForm.postAuthor || filterForm.postCreatedFrom || filterForm.postCreatedTo || filterForm.commentAuthor || filterForm.commentCreatedFrom || filterForm.commentCreatedTo || filterForm.ratingUser || filterForm.ratingStars || filterForm.ratingCreatedFrom || filterForm.ratingCreatedTo || filterForm.quantityLimit)
+- const mostrarRecursos = !tiposSelecionados.length || tiposSelecionados.includes('resources')
+- const mostrarNoticias = !tiposSelecionados.length || tiposSelecionados.includes('news')
+- const mostrarUtilizadores = !tiposSelecionados.length || tiposSelecionados.includes('users')
+- const mostrarPosts = !tiposSelecionados.length || tiposSelecionados.includes('posts')
+- const mostrarRatings = !tiposSelecionados.length || tiposSelecionados.includes('ratings')
+- const mostrarComentarios = !tiposSelecionados.length || tiposSelecionados.includes('comments')
+
 .transfer-filters
-	fieldset.transfer-scope
-		legend O que queres incluir
-		label.radio-card
-			input(type='radio' name='scope' value='all' checked=filterForm.scope === 'all')
-			span Tudo
-		label.radio-card
-			input(type='radio' name='scope' value='resources' checked=filterForm.scope === 'resources')
-			span Só recursos
-		label.radio-card
-			input(type='radio' name='scope' value='news' checked=filterForm.scope === 'news')
-			span Só notícias
+	input(type='hidden' name='scope' value='all')
+	section.transfer-step
+		article.transfer-default-card
+			h3= transferMode === 'importar' ? 'Por defeito entra todo o conteúdo do ficheiro.' : 'Por defeito sai todo o conteúdo da plataforma.'
+			p Se quiseres restringir a operação, abre a filtragem abaixo.
 
-	.transfer-grid.transfer-grid--short
-		.form-field
-			label(for='recentLimit') Número de itens mais recentes
-			input#recentLimit.w3-input.w3-border(
-				type='number'
-				name='recentLimit'
-				min='1'
-				step='1'
-				value=filterForm.recentLimit
-				placeholder='Ex.: 10'
-			)
-			p.field-feedback Aplica-se aos recursos e notícias principais.
+	section.transfer-step
+		details.form-advanced(open=temFiltrosAtivos)
+			summary Filtrar conteudo a exportar
+			.transfer-filter-groups
+				section.transfer-filter-group
+					h3 Tipo de conteúdo
+					p.w3-text-grey Escolhe um ou vários tipos. Se não escolheres nenhum, fica tudo incluído.
+					fieldset.transfer-type-grid
+						label.transfer-type-card
+							input(type='checkbox' name='selectedTypes' value='resources' checked=tiposSelecionados.includes('resources'))
+							strong Recursos
+						label.transfer-type-card
+							input(type='checkbox' name='selectedTypes' value='news' checked=tiposSelecionados.includes('news'))
+							strong Notícias
+						label.transfer-type-card
+							input(type='checkbox' name='selectedTypes' value='users' checked=tiposSelecionados.includes('users'))
+							strong Utilizadores
+						label.transfer-type-card
+							input(type='checkbox' name='selectedTypes' value='posts' checked=tiposSelecionados.includes('posts'))
+							strong Publicações
+						label.transfer-type-card
+							input(type='checkbox' name='selectedTypes' value='comments' checked=tiposSelecionados.includes('comments'))
+							strong Comentários
+						label.transfer-type-card
+							input(type='checkbox' name='selectedTypes' value='ratings' checked=tiposSelecionados.includes('ratings'))
+							strong Classificações
 
-	details.form-advanced.transfer-advanced(open=hasAdvancedDataFilters)
-		summary Filtros avançados
-		.transfer-filter-groups
-			section.transfer-filter-group
-				h3 Recursos
-				.transfer-grid
-					.form-field
-						label(for='resourceType') Tipo
-						input#resourceType.w3-input.w3-border(
-							type='text'
-							name='resourceType'
-							value=filterForm.resourceType
-							placeholder='Ex.: ficha'
-						)
-
-					.form-field
-						label(for='resourceYear') Ano
-						input#resourceYear.w3-input.w3-border(
-							type='number'
-							name='resourceYear'
-							min='0'
-							max='3000'
-							step='1'
-							value=filterForm.resourceYear
-							placeholder='Ex.: 2024'
-						)
-
-					.form-field
-						label(for='resourceTheme') Tema
-						input#resourceTheme.w3-input.w3-border(
-							type='text'
-							name='resourceTheme'
-							value=filterForm.resourceTheme
-							placeholder='Ex.: álgebra'
-						)
-
-					.form-field
-						label(for='resourceHashtag') Etiqueta
-						input#resourceHashtag.w3-input.w3-border(
-							type='text'
-							name='resourceHashtag'
-							value=filterForm.resourceHashtag
-							placeholder='Ex.: matemática'
-						)
-
-					.form-field
-						label(for='resourceVisibility') Visibilidade
-						select#resourceVisibility.w3-select(name='resourceVisibility')
-							option(value='' selected=!filterForm.resourceVisibility) Todas
-							option(value='publico' selected=filterForm.resourceVisibility === 'publico') Público
-							option(value='privado' selected=filterForm.resourceVisibility === 'privado') Privado
-
-					.form-field
-						label(for='resourceProducer') Produtor
-						input#resourceProducer.w3-input.w3-border(
-							type='text'
-							name='resourceProducer'
-							value=filterForm.resourceProducer
-							placeholder='Nome ou identificador'
-						)
-
-					.form-field
-						label(for='resourceCreatedFrom') Criado desde
-						input#resourceCreatedFrom.w3-input.w3-border(
-							type='date'
-							name='resourceCreatedFrom'
-							value=filterForm.resourceCreatedFrom
-						)
-
-					.form-field
-						label(for='resourceCreatedTo') Criado até
-						input#resourceCreatedTo.w3-input.w3-border(
-							type='date'
-							name='resourceCreatedTo'
-							value=filterForm.resourceCreatedTo
-						)
-
-			section.transfer-filter-group
-				h3 Notícias
-				.transfer-grid
-					.form-field
-						label(for='newsType') Origem
-						select#newsType.w3-select(name='newsType')
-							option(value='' selected=!filterForm.newsType) Todas
-							option(value='manual' selected=filterForm.newsType === 'manual') Criadas no painel
-							option(value='system' selected=filterForm.newsType === 'system') Automáticas
-
-					.form-field
-						label(for='newsEventType') Assunto
-						input#newsEventType.w3-input.w3-border(
-							type='text'
-							name='newsEventType'
-							value=filterForm.newsEventType
-							placeholder='Ex.: top 3 de recursos'
-						)
-
-					.form-field
-						label(for='newsCreatedBy') Autor
-						input#newsCreatedBy.w3-input.w3-border(
-							type='text'
-							name='newsCreatedBy'
-							value=filterForm.newsCreatedBy
-							placeholder='Ex.: administrador'
-						)
-
-					.form-field
-						label(for='newsPublishedFrom') Publicada desde
-						input#newsPublishedFrom.w3-input.w3-border(
-							type='date'
-							name='newsPublishedFrom'
-							value=filterForm.newsPublishedFrom
-						)
-
-					.form-field
-						label(for='newsPublishedTo') Publicada até
-						input#newsPublishedTo.w3-input.w3-border(
-							type='date'
-							name='newsPublishedTo'
-							value=filterForm.newsPublishedTo
-						)
+				section.transfer-filter-group
+					h3 Atributos
+					p.w3-text-grey Mostram-se apenas os atributos úteis para os tipos de conteúdo escolhidos.
+					.transfer-grid
+							.form-field
+								label(for='resourceType') Tipo
+								input#resourceType.w3-input.w3-border(type='text' name='resourceType' value=filterForm.resourceType placeholder='Ex.: ficha')
+							.form-field
+								label(for='resourceYear') Ano
+								input#resourceYear.w3-input.w3-border(type='number' name='resourceYear' min='0' max='3000' step='1' value=filterForm.resourceYear placeholder='Ex.: 2024')
+							.form-field
+								label(for='resourceTheme') Tema
+								input#resourceTheme.w3-input.w3-border(type='text' name='resourceTheme' value=filterForm.resourceTheme placeholder='Ex.: matemática')
+							.form-field
+								label(for='resourceHashtag') Etiqueta
+								input#resourceHashtag.w3-input.w3-border(type='text' name='resourceHashtag' value=filterForm.resourceHashtag placeholder='Ex.: exame')
+							.form-field
+								label(for='resourceVisibility') Visibilidade
+								select#resourceVisibility.w3-select(name='resourceVisibility')
+									option(value='' selected=!filterForm.resourceVisibility) Todas
+									option(value='publico' selected=filterForm.resourceVisibility === 'publico') Público
+									option(value='privado' selected=filterForm.resourceVisibility === 'privado') Privado
+							.form-field
+								label(for='resourceProducer') Autor
+								input#resourceProducer.w3-input.w3-border(type='text' name='resourceProducer' value=filterForm.resourceProducer placeholder='Nome ou identificador')
+							.form-field
+								label(for='resourceCreatedFrom') Data de publicação
+								input#resourceCreatedFrom.w3-input.w3-border(type='date' name='resourceCreatedFrom' value=filterForm.resourceCreatedFrom)
+							.form-field
+								label(for='ratingStars') Classificação
+								select#ratingStars.w3-select(name='ratingStars')
+									option(value='' selected=!filterForm.ratingStars) Todas
+									option(value='1' selected=filterForm.ratingStars === '1') 1
+									option(value='2' selected=filterForm.ratingStars === '2') 2
+									option(value='3' selected=filterForm.ratingStars === '3') 3
+									option(value='4' selected=filterForm.ratingStars === '4') 4
+									option(value='5' selected=filterForm.ratingStars === '5') 5
