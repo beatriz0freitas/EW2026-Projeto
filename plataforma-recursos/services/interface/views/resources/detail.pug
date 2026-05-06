@@ -5,6 +5,7 @@ block content
 	- const submissao = (resource && resource.metadata && resource.metadata.submissao) ? resource.metadata.submissao : {}
 	- const ficheiros = Array.isArray(submissao.ficheiros) ? submissao.ficheiros : []
 	- const vis = r.visibilidade || 'privado'
+	- const podeDescarregar = vis === 'publico' || user
 	section.pagina-detalhe
 		section.detalhe-topo
 			.etiquetas
@@ -14,7 +15,7 @@ block content
 			if r.subtitulo
 				p.w3-large= r.subtitulo
 			.conteudo-acoes
-				if vis === 'publico' || user
+				if podeDescarregar
 					a.w3-button.botao-principal(href=`/resources/${resource._id}/dip`) Descarregar recurso
 				else
 					a.w3-button.botao-principal(href='/auth/login') Entrar para descarregar
@@ -48,21 +49,38 @@ block content
 						each hashtag in r.hashtags
 							span.etiqueta.etiqueta--vermelha= hashtag
 				if ficheiros.length
-					h3 Ficheiros
-					ul.lista-cards
-						each ficheiro in ficheiros
-							li
-								strong= ficheiro.nomeOriginal || ficheiro.nomeNoPacote || 'ficheiro'
-								if ficheiro.tamanho
-									span.w3-text-grey.w3-small  · #{ficheiro.tamanho} bytes
+					h3 Ficheiros para download
+					if podeDescarregar
+						form.formulario-download(action=`/resources/${resource._id}/dip` method='get')
+							input(type='hidden' name='selection' value='manual')
+							ul.lista-cards.lista-ficheiros-download
+								each ficheiro, index in ficheiros
+									- const pacoteRaw = String(ficheiro.nomeNoPacote || ficheiro.nomeOriginal || '').replace(/^data\//, '')
+									- const pacote = submissao.modo === 'simples' && pacoteRaw && !pacoteRaw.includes('/') ? `ficheiros/${pacoteRaw}` : pacoteRaw
+									- const valor = pacote || `ficheiro-${index + 1}`
+									li
+										label.ficheiro-selecionavel
+											input(type='checkbox' name='file' value=valor checked)
+											span
+												strong= ficheiro.nomeOriginal || ficheiro.nomeNoPacote || 'ficheiro'
+												if ficheiro.tamanho
+													small #{ficheiro.tamanho} bytes
+							.conteudo-acoes
+								button.w3-button.botao-principal(type='submit') Transferir selecionados
+								a.w3-button.w3-border(href=`/resources/${resource._id}/dip`) Transferir tudo
+					else
+						ul.lista-cards
+							each ficheiro in ficheiros
+								li
+									strong= ficheiro.nomeOriginal || ficheiro.nomeNoPacote || 'ficheiro'
+									if ficheiro.tamanho
+										span.w3-text-grey.w3-small  · #{ficheiro.tamanho} bytes
 
 				.conteudo-acoes
 					if canManageResource
 						a.w3-button.w3-border(href=`/resources/${resource._id}/edit`) Editar recurso
 						form(action=`/resources/${resource._id}/delete` method='post')
 							button.w3-button.w3-red(type='submit' onclick="return confirm('Tem a certeza que pretende eliminar este recurso? Esta ação não pode ser revertida.');") Eliminar recurso
-					if user && (user.role === 'produtor' || user.role === 'admin')
-						a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar publicação sobre este recurso
 
 			aside.w3-white.secao-card.classificacao
 				h2 Classificação

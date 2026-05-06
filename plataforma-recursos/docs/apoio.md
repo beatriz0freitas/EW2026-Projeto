@@ -138,12 +138,14 @@ Guia detalhado do formato atual: [docs/oais-sip-aip-dip.md](oais-sip-aip-dip.md)
    - Se `privado`: só o produtor que submeteu ou um admin.
 4. Gera um ZIP DIP a partir da pasta AIP guardada em disco.
 5. Incrementa `downloadCount` no recurso e no registo AIP.
+6. Se forem indicados parâmetros `file`, inclui apenas esses ficheiros de consumo.
 
 **Dados devolvidos:**
 
 - O `Content-Disposition` define o nome do ficheiro.
 - O `Content-Type` é `application/zip`.
-- O DIP contém o AIP preservado, incluindo `bag/` e `sip.zip`.
+- O DIP contém `metadados.json` e os ficheiros de `bag/data/` selecionados ou, por omissão, todos os ficheiros de consumo.
+- O DIP não inclui a estrutura técnica do AIP (`bag/`, relatórios internos ou `sip.zip`).
 
 **Código relevante:**
 
@@ -279,13 +281,14 @@ data/aip/<resourceId>/
 O pacote enviado ao utilizador quando descarrega.
 
 **Implementação atual:**
-O DIP é um ZIP gerado no momento do download a partir da pasta AIP guardada em disco.
+O DIP é um ZIP gerado no momento do download a partir da pasta AIP guardada em disco. A versão entregue ao utilizador é amigável: inclui `metadados.json` e os ficheiros de consumo, podendo ser filtrada por seleção de ficheiros.
 
 **Por que esta opção:**
 
 - Cumpre a conversão AIP -> DIP pedida no enunciado.
 - Mantém a rastreabilidade do que foi ingerido.
-- Permite evoluir futuramente para DIPs filtrados, anonimizados, normalizados ou adaptados ao perfil do consumidor.
+- Evita expor detalhes técnicos de preservação ao consumidor.
+- Permite descarregar todos os ficheiros ou apenas os ficheiros escolhidos.
 
 ---
 

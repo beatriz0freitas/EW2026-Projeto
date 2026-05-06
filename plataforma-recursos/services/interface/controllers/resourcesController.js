@@ -197,7 +197,17 @@ async function createFromSip(req, res) {
 }
 
 async function downloadDip(req, res) {
-	const apiRes = await apiFetch(`/oais/access/${req.params.id}`, {
+	const params = new URLSearchParams()
+	const files = Array.isArray(req.query.file)
+		? req.query.file
+		: req.query.file
+			? [req.query.file]
+			: []
+	if (req.query.selection) params.set('selection', req.query.selection)
+	for (const file of files) params.append('file', file)
+
+	const query = params.toString()
+	const apiRes = await apiFetch(`/oais/access/${req.params.id}${query ? `?${query}` : ''}`, {
 		token: req.session?.token,
 		req,
 	})

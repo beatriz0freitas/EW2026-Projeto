@@ -1040,6 +1040,38 @@ footer.w3-container{
 	color:var(--accent-strong);
 }
 
+.lista-ficheiros-download li{
+	padding:0;
+}
+
+.ficheiro-selecionavel{
+	display:flex;
+	gap:12px;
+	align-items:flex-start;
+	width:100%;
+	padding:14px 16px;
+	cursor:pointer;
+}
+
+.ficheiro-selecionavel input{
+	width:18px;
+	height:18px;
+	margin-top:2px;
+	accent-color:var(--navy);
+	flex:0 0 auto;
+}
+
+.ficheiro-selecionavel span{
+	display:grid;
+	gap:4px;
+	min-width:0;
+}
+
+.ficheiro-selecionavel small{
+	color:var(--muted);
+	font-size:12px;
+}
+
 .filtros-recursos{
 	display:grid;
 	grid-template-columns:repeat(4, minmax(0, 1fr));

@@ -56,7 +56,7 @@ function carregarRouterOaisAccess({
 	})
 
 	require.cache[caminhoDip] = criarModuloFalso(caminhoDip, {
-		construirDipZip: async ({ resource }) => dipConstruido(resource),
+		construirDipZip: async (args) => dipConstruido(args.resource, args),
 	})
 
 	require.cache[caminhoAuth] = criarModuloFalso(caminhoAuth, {
@@ -196,6 +196,7 @@ test('rota OAIS de acesso exige autenticação para recurso privado', async () =
 test('rota OAIS de acesso devolve DIP ZIP e atualiza contadores', async () => {
 	const id = '507f1f77bcf86cd799439011'
 	const bufferDip = Buffer.from('zip-simulado')
+	let argsDip = null
 	const { router, chamadas, repor } = carregarRouterOaisAccess({
 		recursoPorId: async () => ({
 			_id: id,
@@ -206,15 +207,18 @@ test('rota OAIS de acesso devolve DIP ZIP e atualiza contadores', async () => {
 			sub: req.headers['x-user-sub'] || null,
 			role: req.headers['x-user-role'] || null,
 		}),
-		dipConstruido: async () => ({
-			buffer: bufferDip,
-			filename: `DIP-${id}.zip`,
-		}),
+		dipConstruido: async (resource, args) => {
+			argsDip = args
+			return {
+				buffer: bufferDip,
+				filename: `DIP-${id}.zip`,
+			}
+		},
 	})
 	const { servidor, baseUrl } = await criarServidor(router)
 
 	try {
-		const resposta = await pedido(baseUrl, `/api/oais/access/${id}`, {
+		const resposta = await pedido(baseUrl, `/api/oais/access/${id}?selection=manual&file=ficheiros/a.pdf`, {
 			headers: {
 				'x-user-sub': 'prod-1',
 				'x-user-role': 'produtor',
@@ -225,6 +229,7 @@ test('rota OAIS de acesso devolve DIP ZIP e atualiza contadores', async () => {
 		assert.equal(resposta.headers['content-type'], 'application/zip')
 		assert.equal(resposta.headers['content-disposition'], `attachment; filename="DIP-${id}.zip"`)
 		assert.deepEqual(resposta.buffer, bufferDip)
+		assert.deepEqual(argsDip.selecionados, 'ficheiros/a.pdf')
 		assert.equal(chamadas.resourceUpdateOne.length, 1)
 		assert.equal(chamadas.aipUpdateOne.length, 1)
 		assert.equal(chamadas.publishTop3, 1)
