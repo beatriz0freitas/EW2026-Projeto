@@ -99,6 +99,8 @@ services:
       - AUTH_URL=http://auth:16027
       - INTERFACE_URL=http://interface:16026
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:16020}
+      - GATEWAY_RATE_LIMIT_WINDOW_MS=${GATEWAY_RATE_LIMIT_WINDOW_MS:-900000}
+      - GATEWAY_RATE_LIMIT_MAX_REQUESTS=${GATEWAY_RATE_LIMIT_MAX_REQUESTS:-500}
     depends_on:
       - api
       - auth
