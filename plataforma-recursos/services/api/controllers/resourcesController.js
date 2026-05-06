@@ -7,7 +7,7 @@ const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
 const { config } = require('../lib/config')
 const { validateMetadataResource } = require('../lib/metadataValidator')
-const { resolveResourceAipPath } = require('../oais/aipStorage')
+const { resolverCaminhoAipRecurso } = require('../oais/aipStorage')
 const { getPagination, totalPages, jsonError, invalidId, isMongoId } = require('../lib/http')
 const { canViewResource, visibilityQuery } = require('../lib/resourceAccess')
 
@@ -175,7 +175,7 @@ module.exports.deleteById = async (req, res) => {
 			return jsonError(res, 403, 'acesso negado')
 		}
 
-		const resourceDir = resolveResourceAipPath(resource, config.storage.aipDir)
+		const resourceDir = resolverCaminhoAipRecurso(resource, config.storage.aipDir)
 		originalDir = resourceDir
 		try {
 			await fsp.access(resourceDir)

@@ -1,104 +1,117 @@
 const path = require('path')
 const fsp = require('fs/promises')
 
-function buildResourceAipPath(aipDir, resourceId) {
-	return path.resolve(path.join(aipDir, String(resourceId)))
+function construirCaminhoAipRecurso(pastaAip, recursoId) {
+	return path.resolve(path.join(pastaAip, String(recursoId)))
 }
 
-function resolveResourceAipPath(resource, aipDir) {
-	const storedPath = typeof resource?.aipPath === 'string' ? resource.aipPath.trim() : ''
-	if (storedPath) return path.resolve(storedPath)
-	return buildResourceAipPath(aipDir, resource?._id)
+function resolverCaminhoAipRecurso(recurso, pastaAip) {
+	const caminhoGuardado = typeof recurso?.aipPath === 'string' ? recurso.aipPath.trim() : ''
+	if (caminhoGuardado) return path.resolve(caminhoGuardado)
+	return construirCaminhoAipRecurso(pastaAip, recurso?._id)
 }
 
-function buildSipZipPath(resourceAipPath) {
-	return path.join(resourceAipPath, 'sip.zip')
+function construirCaminhoZipSip(caminhoAipRecurso) {
+	return path.join(caminhoAipRecurso, 'sip.zip')
 }
 
-function buildStoredAipFile({ resourceAipPath, originalName, mimeType, size }) {
-	const zipPath = buildSipZipPath(resourceAipPath)
+function construirFicheiroAipGuardado({ caminhoAipRecurso, nomeOriginal, mimeType, tamanho }) {
+	const caminhoZip = construirCaminhoZipSip(caminhoAipRecurso)
 	return {
-		originalName: originalName || 'sip.zip',
-		storageName: path.basename(zipPath),
-		path: zipPath,
+		originalName: nomeOriginal || 'sip.zip',
+		storageName: path.basename(caminhoZip),
+		path: caminhoZip,
 		mimeType: mimeType || 'application/zip',
-		size: Number(size) || 0,
+		size: Number(tamanho) || 0,
 	}
 }
 
-function assertSafeRelativePath(relativePath) {
-	const normalized = path.normalize(relativePath)
-	if (!relativePath || normalized.startsWith('..') || path.isAbsolute(normalized)) {
-		throw new Error(`invalid AIP relative path: ${relativePath}`)
+function validarCaminhoRelativoSeguro(caminhoRelativo) {
+	const caminhoNormalizado = path.normalize(caminhoRelativo)
+	if (!caminhoRelativo || caminhoNormalizado.startsWith('..') || path.isAbsolute(caminhoNormalizado)) {
+		throw new Error(`caminho relativo AIP inválido: ${caminhoRelativo}`)
 	}
-	return normalized
+	return caminhoNormalizado
 }
 
-async function listFilesRecursively(rootDir) {
-	const files = []
+async function listarFicheirosRecursivamente(pastaRaiz) {
+	const ficheiros = []
 
-	async function walk(currentDir) {
-		const entries = await fsp.readdir(currentDir, { withFileTypes: true })
-		for (const entry of entries) {
-			const absolutePath = path.join(currentDir, entry.name)
-			if (entry.isDirectory()) {
-				await walk(absolutePath)
+	async function percorrer(pastaAtual) {
+		const entradas = await fsp.readdir(pastaAtual, { withFileTypes: true })
+		for (const entrada of entradas) {
+			const caminhoAbsoluto = path.join(pastaAtual, entrada.name)
+			if (entrada.isDirectory()) {
+				await percorrer(caminhoAbsoluto)
 				continue
 			}
-			if (entry.isFile()) {
-				files.push(absolutePath)
+			if (entrada.isFile()) {
+				ficheiros.push(caminhoAbsoluto)
 			}
 		}
 	}
 
-	await walk(rootDir)
-	return files
+	await percorrer(pastaRaiz)
+	return ficheiros
 }
 
-async function exportAipFiles(resource, aipDir) {
-	const resourceAipPath = resolveResourceAipPath(resource, aipDir)
-	const absolutePaths = await listFilesRecursively(resourceAipPath)
-	const files = await Promise.all(
-		absolutePaths.map(async (absolutePath) => {
-			const relativePath = path.relative(resourceAipPath, absolutePath).split(path.sep).join('/')
-			const content = await fsp.readFile(absolutePath)
+async function exportarFicheirosAip(recurso, pastaAip) {
+	const caminhoAipRecurso = resolverCaminhoAipRecurso(recurso, pastaAip)
+	const caminhosAbsolutos = await listarFicheirosRecursivamente(caminhoAipRecurso)
+	const ficheiros = await Promise.all(
+		caminhosAbsolutos.map(async (caminhoAbsoluto) => {
+			const caminhoRelativo = path.relative(caminhoAipRecurso, caminhoAbsoluto).split(path.sep).join('/')
+			const conteudo = await fsp.readFile(caminhoAbsoluto)
 			return {
-				path: relativePath,
-				contentBase64: content.toString('base64'),
+				path: caminhoRelativo,
+				contentBase64: conteudo.toString('base64'),
 			}
 		})
 	)
 
 	return {
-		resourceId: String(resource._id),
-		aipPath: resourceAipPath,
-		files,
+		resourceId: String(recurso._id),
+		aipPath: caminhoAipRecurso,
+		files: ficheiros,
 	}
 }
 
-async function restoreAipFiles({ aipDir, resourceId, files }) {
-	const resourceAipPath = buildResourceAipPath(aipDir, resourceId)
+async function lerEntradasAip(recurso, pastaAip) {
+	const caminhoAipRecurso = resolverCaminhoAipRecurso(recurso, pastaAip)
+	const caminhosAbsolutos = await listarFicheirosRecursivamente(caminhoAipRecurso)
 
-	await fsp.rm(resourceAipPath, { recursive: true, force: true })
-	await fsp.mkdir(resourceAipPath, { recursive: true })
+	return Promise.all(
+		caminhosAbsolutos.map(async (caminhoAbsoluto) => ({
+			caminho: path.relative(caminhoAipRecurso, caminhoAbsoluto).split(path.sep).join('/'),
+			conteudo: await fsp.readFile(caminhoAbsoluto),
+		}))
+	)
+}
+
+async function reporFicheirosAip({ pastaAip, recursoId, files }) {
+	const caminhoAipRecurso = construirCaminhoAipRecurso(pastaAip, recursoId)
+
+	await fsp.rm(caminhoAipRecurso, { recursive: true, force: true })
+	await fsp.mkdir(caminhoAipRecurso, { recursive: true })
 
 	for (const file of files || []) {
-		const safeRelativePath = assertSafeRelativePath(file.path)
+		const caminhoRelativoSeguro = validarCaminhoRelativoSeguro(file.path)
 		if (typeof file.contentBase64 !== 'string') {
-			throw new Error(`missing content for AIP file: ${file.path}`)
+			throw new Error(`conteúdo em falta para ficheiro AIP: ${file.path}`)
 		}
-		const targetPath = path.join(resourceAipPath, safeRelativePath)
-		await fsp.mkdir(path.dirname(targetPath), { recursive: true })
-		await fsp.writeFile(targetPath, Buffer.from(file.contentBase64, 'base64'))
+		const caminhoDestino = path.join(caminhoAipRecurso, caminhoRelativoSeguro)
+		await fsp.mkdir(path.dirname(caminhoDestino), { recursive: true })
+		await fsp.writeFile(caminhoDestino, Buffer.from(file.contentBase64, 'base64'))
 	}
 
-	return resourceAipPath
+	return caminhoAipRecurso
 }
 
 module.exports = {
-	buildResourceAipPath,
-	buildStoredAipFile,
-	exportAipFiles,
-	resolveResourceAipPath,
-	restoreAipFiles,
+	construirCaminhoAipRecurso,
+	construirFicheiroAipGuardado,
+	exportarFicheirosAip,
+	lerEntradasAip,
+	resolverCaminhoAipRecurso,
+	reporFicheirosAip,
 }

@@ -2,7 +2,7 @@ const express = require('express')
 
 const Aip = require('../../models/Aip')
 const Resource = require('../../models/Resource')
-const { buildDipZip } = require('./dip')
+const { construirDipZip } = require('./dip')
 const { optionalAuth } = require('../../middleware/auth')
 const { config } = require('../../lib/config')
 const { jsonError, isMongoId } = require('../../lib/http')
@@ -49,7 +49,7 @@ router.get('/access/:id', optionalAuth, async (req, res) => {
 	}
 
 	// 3) Converter o AIP preservado num DIP em ZIP
-	const dip = await buildDipZip({ resource, aipDir })
+	const dip = await construirDipZip({ resource, aipDir })
 	if (!dip) {
 		return jsonError(res, 404, {
 			code: 'AIP_FILE_NOT_FOUND',

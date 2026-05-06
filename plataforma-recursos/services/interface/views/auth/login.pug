@@ -1,28 +1,49 @@
 extends ../layout
 
 block content
-	section.w3-card.w3-white.cartao-autenticacao
-		h1 Entrar
-		form(action='/auth/login' method='post')
-			label(for='email') Email
-			input#email.w3-input(type='email' name='email' autocomplete='email' required)
+	section.auth-split-shell
+		article.w3-card.w3-white.auth-split-card
+			div.auth-split-card__brand
+				span.auth-brand__name EW2026 - Plataforma de Recursos
 
-			label(for='password') Palavra-passe
-			input#password.w3-input(type='password' name='password' autocomplete='current-password' required)
+			div.auth-split-card__content
+				section.auth-split-panel.auth-split-panel--login
+					span.auth-panel__tag Entrar
+					h1.auth-split-panel__title Já tem conta? Inicie sessão.
+					p.auth-split-panel__intro Aceda com a sua conta para consultar, publicar e gerir recursos educativos.
+					form(action='/auth/login' method='post').auth-split-form
+						label(for='identificador') Utilizador *
+						input#identificador.w3-input(type='text' name='identificador' autocomplete='username' required)
 
-			button.w3-button.botao-principal(type='submit') Iniciar sessão
+						label(for='password') Password *
+						input#password.w3-input(type='password' name='password' autocomplete='current-password' required)
 
-		p.w3-small
-			| Ainda não tem conta? #[a(href='/auth/register') Crie uma conta.]
+						div.auth-split-form__meta
+							label.auth-check
+								input(type='checkbox' name='memorizar' value='1')
+								span Memorizar dados
+							a.auth-inline-link(href='/auth/password-help') Não sei a password
 
-		if oauthProviders && (oauthProviders.facebook || oauthProviders.google)
-			div.w3-margin-top.w3-center
-				p Ou entrar com:
-				if oauthProviders.facebook
-					a.w3-button.w3-blue.w3-margin-right(href='/auth/facebook')
-						i.fa.fa-facebook.w3-margin-right
-						| Facebook
-				if oauthProviders.google
-					a.w3-button.w3-red(href='/auth/google')
-						i.fa.fa-google.w3-margin-right
-						| Google
+						button.w3-button.botao-principal.auth-split-form__submit(type='submit') Entrar
+
+				div.auth-split-card__divider(role='presentation')
+
+				section.auth-split-panel.auth-split-panel--register
+					span.auth-panel__tag.auth-panel__tag--accent Registar
+					h2.auth-split-panel__title Não tem conta? Registe-se.
+					p.auth-split-panel__intro Crie a sua conta e junte-se à comunidade da plataforma.
+					a.auth-split-panel__cta(href='/auth/register') Criar conta
+
+					div.auth-social-block
+						h3 Entrar com outras contas
+						p.auth-social-block__intro Autenticação social disponível com Google e Facebook.
+						div.auth-social-block__icons
+							each provider in providersSociais
+								if provider.ativo
+									a.auth-social-icon(class=`is-${provider.id}` href=provider.href title=`Entrar com ${provider.nome}` aria-label=`Entrar com ${provider.nome}`)
+										span.auth-social-icon__badge= provider.sigla
+										span.auth-social-icon__label= provider.nome
+								else
+									span.auth-social-icon.auth-social-icon--disabled(class=`is-${provider.id}` title=`${provider.nome} indisponível` aria-disabled='true')
+										span.auth-social-icon__badge= provider.sigla
+										span.auth-social-icon__label= provider.nome

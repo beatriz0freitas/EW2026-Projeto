@@ -1,10 +1,10 @@
 const { authRequest } = require('../lib/http')
 const { config } = require('../lib/config')
 
-const oauthProviders = {
-	google: config.oauth.google.enabled,
-	facebook: config.oauth.facebook.enabled,
-}
+const providersSociais = [
+	{ id: 'facebook', nome: 'Facebook', href: '/auth/facebook', ativo: config.oauth.facebook.enabled, sigla: 'f' },
+	{ id: 'google', nome: 'Google', href: '/auth/google', ativo: config.oauth.google.enabled, sigla: 'G' },
+]
 
 function getSetCookieHeader(headers) {
 	if (!headers) return ''
@@ -47,15 +47,16 @@ async function handleOAuthCallback(req, res, provider, providerId, email, nome) 
 
 function showLogin(req, res) {
 	if (req.session.token) return res.redirect('/')
-	res.render('auth/login', { title: 'Entrar', oauthProviders })
+	res.render('auth/login', { title: 'Entrar', providersSociais })
 }
 
 async function login(req, res) {
 	try {
-		const { email, password } = req.body
+		const { identificador, email, password } = req.body
+		const loginId = String(identificador || email || '').trim()
 		const loginResponse = await authRequest('/sessions', {
 			method: 'POST',
-			body: { email, password },
+			body: { email: loginId, username: loginId, password },
 		})
 
 		if (!loginResponse.ok || !loginResponse.data?.token) {
@@ -77,7 +78,12 @@ async function login(req, res) {
 
 function showRegister(req, res) {
 	if (req.session.token) return res.redirect('/')
-	res.render('auth/register', { title: 'Registar' })
+	res.render('auth/register', { title: 'Registar', providersSociais })
+}
+
+function showPasswordHelp(req, res) {
+	req.flashError('A recuperação de palavra-passe ainda não está automatizada. Contacte um administrador da plataforma.')
+	res.redirect('/auth/login')
 }
 
 async function register(req, res) {
@@ -118,6 +124,7 @@ module.exports = {
 	showLogin,
 	login,
 	showRegister,
+	showPasswordHelp,
 	register,
 	logout,
 }
