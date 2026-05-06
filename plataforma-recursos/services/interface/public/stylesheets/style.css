@@ -700,12 +700,63 @@ footer.w3-container{
 }
 
 .file-list__item{
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:12px;
 	padding:9px 12px;
 	border-radius:8px;
 	background:#fff;
 	border:1px solid var(--border);
 	color:var(--text);
 	font-size:13px;
+}
+
+.file-list__details{
+	min-width:0;
+	overflow-wrap:anywhere;
+}
+
+.file-input-row{
+	display:flex;
+	align-items:stretch;
+	gap:8px;
+}
+
+.file-input-row input{
+	min-width:0;
+	flex:1 1 auto;
+}
+
+.file-clear-button,
+.file-list__remove{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	width:34px;
+	height:34px;
+	flex:0 0 auto;
+	border:1px solid var(--border);
+	border-radius:8px;
+	background:#fff;
+	color:var(--accent-strong);
+	font-size:22px;
+	line-height:1;
+	font-weight:800;
+	cursor:pointer;
+}
+
+.file-clear-button:hover,
+.file-clear-button:focus,
+.file-list__remove:hover,
+.file-list__remove:focus{
+	border-color:rgba(215,38,61,0.35);
+	background:var(--accent-soft);
+	color:var(--accent-strong);
+}
+
+.file-clear-button[hidden]{
+	display:none;
 }
 
 .file-list__item--more{

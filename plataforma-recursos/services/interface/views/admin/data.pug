@@ -12,12 +12,11 @@ block content
 
 		section.w3-white.secao-card
 			h2 Exportar
-			p.w3-text-grey A exportação inclui tudo por defeito. Usa os filtros apenas quando quiseres reduzir o resultado.
+			p.w3-text-grey Por defeito, a exportação descarrega uma cópia completa. Abre os filtros apenas se quiseres exportar uma seleção menor.
 			form(method='GET' action='/admin/data')
-				- const transferMode = 'exportar'
 				include data-transfer-filters.pug
 				section.transfer-preview
-					h3 Resumo antes de exportar
+					h3 Pré-visualização da exportação
 					p.transfer-preview__main= transferPreview.principal
 					p.transfer-preview__hint= transferPreview.limite
 					if transferPreview.conteudos
@@ -31,11 +30,11 @@ block content
 					else
 						p.transfer-preview__hint Sem filtros específicos adicionais.
 				.conteudo-acoes
-					button.w3-button.w3-border(type='submit') Ver resumo
-					button.w3-button.botao-principal(type='submit' formaction='/admin/export') Exportar agora
-					a.w3-button.w3-border(href='/admin/export') Exportação completa
+					button.w3-button.w3-border(type='submit') Atualizar pré-visualização
+					button.w3-button.botao-principal(type='submit' formaction='/admin/export') Exportar seleção
+					a.w3-button.w3-border(href='/admin/export') Exportar tudo
 
 		section.w3-white.secao-card
 			h2 Importar
-			p.w3-text-grey Repõe dados a partir de um ficheiro criado na exportação, com a mesma lógica de filtros do que entra.
+			p.w3-text-grey Repõe dados a partir de um ficheiro JSON criado na exportação. A importação lê o conteúdo do ficheiro e mostra o resultado no fim.
 			a.w3-button.w3-border(href='/admin/import') Ir para importação

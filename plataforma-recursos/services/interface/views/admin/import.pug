@@ -7,31 +7,25 @@ block content
 			div
 				p.admin-eyebrow Administração
 				h1 Importar dados
-				p Escolhe primeiro o que queres deixar entrar. O resto do processo fica guiado e mais seguro.
+				p Carrega um ficheiro JSON exportado anteriormente para repor os dados na plataforma.
 			include _nav.pug
 
 		section.w3-white.secao-card
-			p.w3-text-grey O caminho recomendado é carregar o ficheiro descarregado na exportação. O campo de texto é apenas uma alternativa para ficheiros pequenos.
+			h2 Ficheiro de importação
+			p.w3-text-grey Usa preferencialmente o ficheiro descarregado na exportação. O campo de texto é apenas uma alternativa para ficheiros pequenos.
 
 			if importError
 				div.w3-panel.w3-pale-red.w3-leftbar.w3-border-red
 					p= importError
 
 			if importResults
+				h3 Resultado da importação
 				if importOk
 					div.w3-panel.w3-pale-green.w3-leftbar.w3-border-green
 						p Importação concluída com sucesso.
 				else
 					div.w3-panel.w3-pale-yellow.w3-leftbar.w3-border-yellow
 						p Importação concluída com alguns avisos.
-
-				if filterSummary && filterSummary.length
-					h3 Filtros aplicados
-					ul.lista-cards
-						each entry in filterSummary
-							li
-								strong= entry.label + ': '
-								= entry.value
 
 				table.w3-table-all.w3-striped.admin-table
 					thead
@@ -54,38 +48,16 @@ block content
 											each e in r.errors
 												li= e.id + ': ' + e.message
 
-		section.w3-white.secao-card
-			h2 Preparar importação
-			p.w3-text-grey A importação usa a mesma lógica da exportação: entra tudo por defeito e os filtros servem apenas para restringir.
-			form(method='GET' action='/admin/import')
-				- const transferMode = 'importar'
-				include data-transfer-filters.pug
-				section.transfer-preview
-					h3 Resumo antes de importar
-					p.transfer-preview__main= transferPreview.principal
-					p.transfer-preview__hint= transferPreview.limite
-					if transferPreview.conteudos
-						p.transfer-preview__hint Tipos de conteúdo escolhidos: #{transferPreview.conteudos}.
-					if transferPreview.temFiltrosEspecificos
-						ul.transfer-preview__list
-							each entry in transferPreview.filtrosEspecificos
-								li
-									strong= entry.label + ': '
-									= entry.value
-					else
-						p.transfer-preview__hint Sem filtros específicos adicionais.
-				.conteudo-acoes
-					button.w3-button.w3-border(type='submit') Ver resumo
-
 			form(method='POST' action='/admin/import' enctype='multipart/form-data')
-				include data-transfer-hidden-fields.pug
 				.form-field(data-field='dumpFile')
 					label(for='dumpFile') Ficheiro exportado
-					input#dumpFile.w3-input.w3-border(
-						type='file'
-						name='dumpFile'
-						accept='.json,application/json'
-					)
+					.file-input-row
+						input#dumpFile.w3-input.w3-border(
+							type='file'
+							name='dumpFile'
+							accept='.json,application/json'
+						)
+						button.file-clear-button(type='button' data-clear-file='dumpFile' aria-label='Remover ficheiro selecionado') ×
 					p.field-feedback Usa preferencialmente o ficheiro descarregado pela exportação.
 				details.form-advanced
 					summary Colar JSON manualmente

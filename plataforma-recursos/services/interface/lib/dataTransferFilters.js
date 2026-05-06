@@ -20,9 +20,9 @@ const ETIQUETAS_TIPO_CONTEUDO = {
 	resources: 'Recursos',
 	news: 'Notícias',
 	users: 'Utilizadores',
-	posts: 'Posts',
-	comments: 'Comments',
-	ratings: 'Ratings',
+	posts: 'Publicações',
+	comments: 'Comentários',
+	ratings: 'Classificações',
 }
 
 const ETIQUETAS_ESCOPO_FRASE = {
