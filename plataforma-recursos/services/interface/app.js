@@ -1,6 +1,7 @@
 const path = require('path')
 const express = require('express')
 const session = require('express-session')
+const helmet = require('helmet')
 const passport = require('passport')
 const swaggerUi = require('swagger-ui-express')
 const YAML = require('yamljs')
@@ -17,6 +18,11 @@ const app = express()
 
 app.set('view engine', 'pug')
 app.set('views', path.join(__dirname, 'views'))
+
+app.use(helmet({
+	contentSecurityPolicy: false,
+	crossOriginEmbedderPolicy: false,
+}))
 
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
