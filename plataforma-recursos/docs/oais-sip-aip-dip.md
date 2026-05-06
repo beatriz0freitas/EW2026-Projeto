@@ -195,7 +195,7 @@ Documento `aips`, simplificado:
 
 ## Geração do DIP
 
-O DIP não é o ficheiro submetido devolvido diretamente. No download, a API lê o AIP preservado em disco e gera um ZIP de disseminação.
+O DIP não é o ficheiro submetido devolvido diretamente. No download, a API lê o AIP preservado em disco e gera um ZIP de disseminação amigável para o consumidor.
 
 ```text
 GET /api/oais/access/:resourceId
@@ -204,23 +204,27 @@ verifica recurso e permissões
     ↓
 lê data/aip/<resourceId>/
     ↓
-gera DIP-<resourceId>.zip
+gera DIP-<resourceId>.zip com metadados e ficheiros de consumo
     ↓
 incrementa downloadCount em resources e aips
 ```
 
-O ZIP do DIP contém o conteúdo arquivístico disponível no AIP:
+O ZIP do DIP já não expõe a estrutura técnica completa do AIP. Por omissão, contém todos os ficheiros de `bag/data/` e um `metadados.json` gerado pelo sistema:
 
 ```text
 DIP-<resourceId>.zip
-├── bag/
-│   ├── manifest.json
-│   ├── bagit.txt
-│   ├── checksums.txt
-│   └── data/
-│       └── ...
-└── sip.zip
+├── metadados.json
+└── ficheiros/
+    └── ...
 ```
+
+O utilizador pode descarregar apenas alguns ficheiros através da interface, ou diretamente pela API:
+
+```text
+GET /api/oais/access/:resourceId?file=ficheiros/aula.pdf&file=ficheiros/anexo.txt
+```
+
+O AIP continua a preservar `bag/` e `sip.zip`; essa estrutura apenas deixa de ser exposta no DIP público.
 
 ## Rotas da API
 
@@ -360,4 +364,3 @@ POST /resources/:id/delete    remoção do recurso
 - `services/api/controllers/resourcesController.js`: listar, consultar, editar e remover recursos.
 - `services/api/models/Aip.js`: rastreabilidade do AIP.
 - `services/api/models/Resource.js`: recurso pesquisável e ligação ao AIP em disco.
-

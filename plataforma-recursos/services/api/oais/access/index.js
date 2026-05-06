@@ -48,8 +48,13 @@ router.get('/access/:id', optionalAuth, async (req, res) => {
 		}
 	}
 
-	// 3) Converter o AIP preservado num DIP em ZIP
-	const dip = await construirDipZip({ resource, aipDir })
+	// 3) Converter o AIP preservado num DIP amigável em ZIP
+	const selecaoManual = req.query.selection === 'manual'
+	const dip = await construirDipZip({
+		resource,
+		aipDir,
+		selecionados: selecaoManual ? (req.query.file || []) : req.query.file,
+	})
 	if (!dip) {
 		return jsonError(res, 404, {
 			code: 'AIP_FILE_NOT_FOUND',
