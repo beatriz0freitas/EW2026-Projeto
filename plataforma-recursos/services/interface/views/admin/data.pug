@@ -7,19 +7,35 @@ block content
 			div
 				p.admin-eyebrow Administração
 				h1 Dados
-				p Exporta uma seleção ou importa um ficheiro anterior.
+				p Gere exportações e importações com um percurso mais seguro e guiado.
 			include _nav.pug
 
 		section.w3-white.secao-card
 			h2 Exportar
-			p.w3-text-grey Descarrega um ficheiro com os dados que queres guardar ou transferir.
-			form(method='GET' action='/admin/export')
+			p.w3-text-grey A exportação inclui tudo por defeito. Usa os filtros apenas quando quiseres reduzir o resultado.
+			form(method='GET' action='/admin/data')
+				- const transferMode = 'exportar'
 				include data-transfer-filters.pug
+				section.transfer-preview
+					h3 Resumo antes de exportar
+					p.transfer-preview__main= transferPreview.principal
+					p.transfer-preview__hint= transferPreview.limite
+					if transferPreview.conteudos
+						p.transfer-preview__hint Tipos de conteúdo escolhidos: #{transferPreview.conteudos}.
+					if transferPreview.temFiltrosEspecificos
+						ul.transfer-preview__list
+							each entry in transferPreview.filtrosEspecificos
+								li
+									strong= entry.label + ': '
+									= entry.value
+					else
+						p.transfer-preview__hint Sem filtros específicos adicionais.
 				.conteudo-acoes
-					button.w3-button.botao-principal(type='submit') Descarregar seleção
+					button.w3-button.w3-border(type='submit') Ver resumo
+					button.w3-button.botao-principal(type='submit' formaction='/admin/export') Exportar agora
 					a.w3-button.w3-border(href='/admin/export') Exportação completa
 
 		section.w3-white.secao-card
 			h2 Importar
-			p.w3-text-grey Repõe dados a partir de um ficheiro criado na exportação.
+			p.w3-text-grey Repõe dados a partir de um ficheiro criado na exportação, com a mesma lógica de filtros do que entra.
 			a.w3-button.w3-border(href='/admin/import') Ir para importação

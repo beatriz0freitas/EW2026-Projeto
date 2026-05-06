@@ -1,0 +1,7 @@
+each value, key in filterForm
+	if Array.isArray(value)
+		each item in value
+			if item
+				input(type='hidden' name=key value=item)
+	else if value
+		input(type='hidden' name=key value=value)

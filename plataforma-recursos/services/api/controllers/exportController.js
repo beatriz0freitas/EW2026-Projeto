@@ -6,7 +6,14 @@ const Rating = require('../models/Rating')
 const Comment = require('../models/Comment')
 const { config } = require('../lib/config')
 const { construirCaminhoAipRecurso, construirFicheiroAipGuardado, exportarFicheirosAip, reporFicheirosAip } = require('../oais/aipStorage')
-const { construirFiltrosTransferencia, construirDumpFiltrado } = require('../transfer/filters')
+const {
+	construirFiltrosTransferencia,
+	construirDumpFiltrado,
+	construirConsultaMongoColecao,
+	construirOpcoesMongoColecao,
+	haFiltrosAtivosNaColecao,
+	scopeIncluiColecaoRaiz,
+} = require('../transfer/filters')
 const { jsonError } = require('../lib/http')
 const { exportUsersForTransfer, importUsersForTransfer } = require('../transfer/authClient')
 
@@ -34,13 +41,7 @@ function extrairDumpDoPedido(req) {
 	return req.body
 }
 
-function filtrarNoticiasDerivadasInvalidas(news, resources) {
-	const recursosPublicos = new Set(
-		resources
-			.filter((resource) => resource?.metadata?.resource?.visibilidade === 'publico')
-			.map((resource) => String(resource._id))
-	)
-
+function filtrarNoticiasDerivadasInvalidas(news, recursosPublicos) {
 	return news.filter((item) => {
 		if (item?.eventType !== 'system.top3') return true
 		const entries = Array.isArray(item?.payload?.items) ? item.payload.items : []
@@ -48,37 +49,132 @@ function filtrarNoticiasDerivadasInvalidas(news, resources) {
 	})
 }
 
+function combinarConsultas(...consultas) {
+	const validas = consultas.filter((consulta) => consulta && Object.keys(consulta).length)
+	if (!validas.length) return {}
+	if (validas.length === 1) return validas[0]
+	return { $and: validas }
+}
+
+function aplicarOpcoesConsulta(consulta, opcoes = {}) {
+	if (opcoes.sort) consulta.sort(opcoes.sort)
+	if (opcoes.limit) consulta.limit(opcoes.limit)
+	return consulta
+}
+
+async function consultarColecao(Model, nomeColecao, filtros, consultaExtra = null) {
+	const consultaBase = construirConsultaMongoColecao(nomeColecao, filtros)
+	const consultaFinal = combinarConsultas(consultaBase, consultaExtra)
+	const opcoes = construirOpcoesMongoColecao(nomeColecao, filtros)
+	return aplicarOpcoesConsulta(Model.find(consultaFinal).lean(), opcoes)
+}
+
+function extrairIds(itens, campo = '_id') {
+	return itens
+		.map((item) => item?.[campo])
+		.filter((valor) => valor !== undefined && valor !== null)
+		.map((valor) => String(valor))
+}
+
+function criarFiltroIds(campo, ids) {
+	if (!Array.isArray(ids) || !ids.length) return null
+	return { [campo]: { $in: ids } }
+}
+
+async function construirIdsRecursosPublicos() {
+	const recursos = await Resource.find({ 'metadata.resource.visibilidade': 'publico' }).select({ _id: 1 }).lean()
+	return new Set(recursos.map((resource) => String(resource._id)))
+}
+
+async function exportarEntradasAip(resourceIds) {
+	const idsUnicos = [...new Set((resourceIds || []).filter(Boolean).map((id) => String(id)))]
+	const entradas = []
+
+	for (const recursoId of idsUnicos) {
+		try {
+			entradas.push(await exportarFicheirosAip({ _id: recursoId }, config.storage.aipDir))
+		} catch (err) {
+			console.error(`[export] erro ao incluir AIP do recurso ${recursoId}:`, err)
+			throw new Error(`AIP_EXPORT_FAILED:${recursoId}`)
+		}
+	}
+
+	return entradas
+}
+
 module.exports.exportAll = async (req, res) => {
 	try {
 		const filtros = construirFiltrosTransferencia(req.query)
-		const incluirUsers = filtros.scope === 'all' || filtros.scope === 'users'
-		const [resources, aips, newsRaw, posts, ratings, comments, users] = await Promise.all([
-			Resource.find().lean(),
-			Aip.find().lean(),
-			NewsItem.find().lean(),
-			Post.find().lean(),
-			Rating.find().lean(),
-			Comment.find().lean(),
+		const tiposSelecionados = Array.isArray(filtros.selectedTypes) ? filtros.selectedTypes : []
+		const selecionaDiretamente = (tipo) => tiposSelecionados.length ? tiposSelecionados.includes(tipo) : filtros.scope === tipo
+		const incluirResources = scopeIncluiColecaoRaiz('resources', filtros.scope, filtros.selectedTypes)
+		const incluirNews = scopeIncluiColecaoRaiz('news', filtros.scope, filtros.selectedTypes)
+		const incluirUsers = scopeIncluiColecaoRaiz('users', filtros.scope, filtros.selectedTypes)
+		const scopePostsDireto = selecionaDiretamente('posts')
+		const scopeRatingsDireto = selecionaDiretamente('ratings')
+		const scopeCommentsDireto = selecionaDiretamente('comments')
+		const scopeAipDireto = selecionaDiretamente('aip')
+		const recursosFiltrados = incluirResources && haFiltrosAtivosNaColecao('resources', filtros)
+		const postsFiltrados = haFiltrosAtivosNaColecao('posts', filtros)
+
+		const [resources, users] = await Promise.all([
+			incluirResources ? consultarColecao(Resource, 'resources', filtros) : Promise.resolve([]),
 			incluirUsers ? exportUsersForTransfer() : Promise.resolve([]),
 		])
-		const news = filtrarNoticiasDerivadasInvalidas(newsRaw, resources)
 
-		const dumpFiltrado = construirDumpFiltrado({ resources, news, users, posts, ratings, comments }, filtros)
-		const resourceIdsFiltrados = new Set(dumpFiltrado.resources.map((resource) => String(resource._id)))
-		const aipsFiltrados = aips.filter((aipDoc) => resourceIdsFiltrados.has(String(aipDoc.recursoId)))
-		const aip = []
+		const resourceIds = extrairIds(resources)
+		const filtroPostsPorResources = !scopePostsDireto && recursosFiltrados
+		const filtroRatingsPorResources = !scopeRatingsDireto && recursosFiltrados
+		const filtroAipsPorResources = !scopeAipDireto && recursosFiltrados
 
-		for (const resource of dumpFiltrado.resources) {
-			try {
-				aip.push(await exportarFicheirosAip(resource, config.storage.aipDir))
-			} catch (err) {
-				console.error(`[export] erro ao incluir AIP do recurso ${resource._id}:`, err)
-				return jsonError(res, 500, {
-					code: 'AIP_EXPORT_FAILED',
-					message: `falha ao exportar ficheiros AIP do recurso ${resource._id}`,
-				})
-			}
-		}
+		const posts = scopePostsDireto || incluirResources
+			? await consultarColecao(
+				Post,
+				'posts',
+				filtros,
+				filtroPostsPorResources ? criarFiltroIds('resourceId', resourceIds) || { _id: null } : null
+			)
+			: []
+
+		const postIds = extrairIds(posts)
+		const filtroCommentsPorPosts = !scopeCommentsDireto && (postsFiltrados || filtroPostsPorResources)
+		const ratings = scopeRatingsDireto || incluirResources
+			? await consultarColecao(
+				Rating,
+				'ratings',
+				filtros,
+				filtroRatingsPorResources ? criarFiltroIds('resourceId', resourceIds) || { _id: null } : null
+			)
+			: []
+
+		const comments = scopeCommentsDireto || incluirResources || scopePostsDireto
+			? await consultarColecao(
+				Comment,
+				'comments',
+				filtros,
+				filtroCommentsPorPosts ? criarFiltroIds('postId', postIds) || { _id: null } : null
+			)
+			: []
+
+		const aips = scopeAipDireto || incluirResources
+			? await consultarColecao(
+				Aip,
+				'aips',
+				filtros,
+				filtroAipsPorResources ? criarFiltroIds('recursoId', resourceIds) || { _id: null } : null
+			)
+			: []
+
+		const newsRaw = incluirNews ? await consultarColecao(NewsItem, 'news', filtros) : []
+		const recursosPublicos = incluirNews ? await construirIdsRecursosPublicos() : new Set()
+		const news = incluirNews ? filtrarNoticiasDerivadasInvalidas(newsRaw, recursosPublicos) : []
+
+		const dumpFiltrado = construirDumpFiltrado({ resources, news, users, posts, ratings, comments, aips }, filtros)
+		const idsParaExportarAip = dumpFiltrado.resources.length
+			? extrairIds(dumpFiltrado.resources)
+			: extrairIds(dumpFiltrado.aips, 'recursoId')
+		const aip = await exportarEntradasAip(idsParaExportarAip)
+		const dumpFinal = construirDumpFiltrado({ ...dumpFiltrado, aip }, filtros)
 
 		res.setHeader('Content-Disposition', `attachment; filename="ew2026-export-${Date.now()}.json"`)
 		res.setHeader('Content-Type', 'application/json')
@@ -86,16 +182,23 @@ module.exports.exportAll = async (req, res) => {
 			version: '2',
 			exportedAt: new Date().toISOString(),
 			filtersApplied: filtros,
-			resources: dumpFiltrado.resources,
-			aips: aipsFiltrados,
-			news: dumpFiltrado.news,
-			users: dumpFiltrado.users,
-			posts: dumpFiltrado.posts,
-			ratings: dumpFiltrado.ratings,
-			comments: dumpFiltrado.comments,
-			aip,
+			resources: dumpFinal.resources,
+			aips: dumpFinal.aips,
+			news: dumpFinal.news,
+			users: dumpFinal.users,
+			posts: dumpFinal.posts,
+			ratings: dumpFinal.ratings,
+			comments: dumpFinal.comments,
+			aip: dumpFinal.aip,
 		})
 	} catch (err) {
+		if (String(err?.message || '').startsWith('AIP_EXPORT_FAILED:')) {
+			const recursoId = String(err.message).split(':')[1] || 'desconhecido'
+			return jsonError(res, 500, {
+				code: 'AIP_EXPORT_FAILED',
+				message: `falha ao exportar ficheiros AIP do recurso ${recursoId}`,
+			})
+		}
 		console.error('[export] erro:', err)
 		jsonError(res, 500, 'erro interno ao exportar')
 	}
@@ -137,10 +240,6 @@ module.exports.importAll = async (req, res) => {
 
 	const importedResourceIds = new Set()
 	const dumpFiltrado = construirDumpFiltrado(dump, filtros)
-	const resourceIdsFiltrados = new Set(dumpFiltrado.resources.map((resource) => String(resource._id)))
-	const aipsFiltrados = Array.isArray(dump.aips)
-		? dump.aips.filter((aipDoc) => resourceIdsFiltrados.has(String(aipDoc.recursoId)))
-		: []
 
 	async function upsertAll(Model, docs, key) {
 		if (!Array.isArray(docs)) return
@@ -172,16 +271,18 @@ module.exports.importAll = async (req, res) => {
 		}
 	}
 
-	async function restoreAllAip(resources, aipEntries) {
-		if (!Array.isArray(resources) || !resources.length) return
+	async function restoreAllAip(resources, aipDocs, aipEntries) {
+		const resourceIds = new Set([
+			...((Array.isArray(resources) ? resources : []).map((resource) => String(resource._id))),
+			...((Array.isArray(aipDocs) ? aipDocs : []).map((aipDoc) => String(aipDoc.recursoId))),
+		])
 
-		const entriesById = new Map(
-			Array.isArray(aipEntries) ? aipEntries.map((entry) => [String(entry.resourceId), entry]) : []
-		)
+		if (!resourceIds.size) return
 
-		for (const resource of resources) {
-			const resourceId = String(resource._id)
-			if (!importedResourceIds.has(resourceId)) continue
+		const entriesById = new Map(Array.isArray(aipEntries) ? aipEntries.map((entry) => [String(entry.resourceId), entry]) : [])
+
+		for (const resourceId of resourceIds) {
+			if (importedResourceIds.size && !importedResourceIds.has(resourceId) && !entriesById.has(resourceId)) continue
 
 			const entry = entriesById.get(resourceId)
 			if (!entry) {
@@ -207,7 +308,7 @@ module.exports.importAll = async (req, res) => {
 	}
 
 	await upsertAll(Resource, dumpFiltrado.resources, 'resources')
-	await upsertAll(Aip, aipsFiltrados, 'aips')
+	await upsertAll(Aip, dumpFiltrado.aips, 'aips')
 	await upsertAll(NewsItem, dumpFiltrado.news, 'news')
 	if (Array.isArray(dumpFiltrado.users) && dumpFiltrado.users.length) {
 		try {
@@ -222,7 +323,7 @@ module.exports.importAll = async (req, res) => {
 	await upsertAll(Post, dumpFiltrado.posts, 'posts')
 	await upsertAll(Rating, dumpFiltrado.ratings, 'ratings')
 	await upsertAll(Comment, dumpFiltrado.comments, 'comments')
-	await restoreAllAip(dumpFiltrado.resources, dumpFiltrado.aip)
+	await restoreAllAip(dumpFiltrado.resources, dumpFiltrado.aips, dumpFiltrado.aip)
 
 	const totalErrors = Object.values(results).reduce((sum, result) => sum + result.errors.length, 0)
 

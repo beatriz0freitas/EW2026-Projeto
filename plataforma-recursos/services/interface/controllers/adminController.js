@@ -4,6 +4,7 @@ const { pipeline } = require('stream/promises')
 
 const {
 	construirFormularioFiltrosDados,
+	construirPrevisaoTransferencia,
 	construirQueryFiltrosDados,
 	construirResumoFiltrosDados,
 } = require('../lib/dataTransferFilters')
@@ -154,6 +155,7 @@ function renderImportWithError(req, res, message, status = 400) {
 		title: 'Admin · Importar dados',
 		filterForm,
 		filterSummary: construirResumoFiltrosDados(filterForm),
+		transferPreview: construirPrevisaoTransferencia(filterForm, 'importar'),
 		dumpText,
 		importError: message,
 	})
@@ -269,10 +271,12 @@ async function exportData(req, res) {
 }
 
 function showImportForm(req, res) {
+	const filterForm = construirFormularioFiltrosDados(req.query || {})
 	res.render('admin/import', {
 		title: 'Admin · Importar dados',
-		filterForm: construirFormularioFiltrosDados(),
-		filterSummary: [],
+		filterForm,
+		filterSummary: construirResumoFiltrosDados(filterForm),
+		transferPreview: construirPrevisaoTransferencia(filterForm, 'importar'),
 		dumpText: '',
 	})
 }
@@ -300,6 +304,12 @@ async function importData(req, res) {
 
 	const form = new FormData()
 	for (const [key, value] of Object.entries(filterForm)) {
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				if (item !== undefined && item !== null && item !== '') form.append(key, String(item))
+			}
+			continue
+		}
 		if (value !== undefined && value !== null && value !== '') {
 			form.append(key, String(value))
 		}
@@ -343,16 +353,19 @@ async function importData(req, res) {
 		filterForm,
 		dumpText,
 		filterSummary: construirResumoFiltrosDados(filtrosAplicados),
+		transferPreview: construirPrevisaoTransferencia(filtrosAplicados, 'importar'),
 		importResults: results,
 		importOk: payload?.ok === true,
 	})
 }
 
 function showData(req, res) {
+	const filterForm = construirFormularioFiltrosDados(req.query || {})
 	res.render('admin/data', {
 		title: 'Admin · Dados',
-		filterForm: construirFormularioFiltrosDados(),
-		filterSummary: [],
+		filterForm,
+		filterSummary: construirResumoFiltrosDados(filterForm),
+		transferPreview: construirPrevisaoTransferencia(filterForm, 'exportar'),
 	})
 }
 
