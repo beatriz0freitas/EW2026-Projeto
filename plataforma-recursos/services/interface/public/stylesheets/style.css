@@ -2178,6 +2178,40 @@ footer.w3-container{
 	color:var(--danger);
 }
 
+.audit-details{
+	margin-top:8px;
+}
+
+.audit-details summary{
+	cursor:pointer;
+	color:var(--info);
+	font-size:13px;
+	font-weight:700;
+}
+
+.audit-details__list{
+	margin:8px 0 0;
+	padding-left:18px;
+	color:var(--muted);
+	font-size:13px;
+}
+
+.audit-details__list li{
+	margin-bottom:6px;
+	word-break:break-word;
+}
+
+.audit-pre{
+	margin:6px 0 0;
+	padding:10px;
+	border-radius:8px;
+	background:var(--surface-soft);
+	color:var(--text);
+	font-size:12px;
+	white-space:pre-wrap;
+	word-break:break-word;
+}
+
 @media (max-width: 960px){
 	.resource-form-layout{
 		grid-template-columns:1fr;
