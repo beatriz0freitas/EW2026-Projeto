@@ -77,10 +77,10 @@ block content
 								tr
 									td(data-label='Quando')
 										time(datetime=item.createdAt)= createdAt
-										td(data-label='Ator')
-											strong= item.atorPrincipal
-											if item.atorDetalhe
-												span.audit-muted= item.atorDetalhe
+									td(data-label='Ator')
+										strong= item.atorPrincipal
+										if item.atorDetalhe
+											span.audit-muted= item.atorDetalhe
 									td(data-label='Ação')
 										strong= item.acaoLegivel
 										if item.acaoCodigo
