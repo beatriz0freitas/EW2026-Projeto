@@ -71,6 +71,7 @@
 	};
 
 	let hasTriedSubmit = false;
+	let selectedResourceFiles = [];
 
 	function getFieldWrapper(name) {
 		return document.querySelector(`[data-field="${name}"]`);
@@ -112,6 +113,40 @@
 		}
 		const digits = value >= 10 || unitIndex === 0 ? 0 : 1;
 		return `${value.toFixed(digits)} ${units[unitIndex]}`;
+	}
+
+	function replaceFiles(input, files) {
+		if (!input) return false;
+		if (typeof DataTransfer === 'undefined') {
+			input.value = '';
+			return false;
+		}
+
+		const dataTransfer = new DataTransfer();
+		for (const file of files) dataTransfer.items.add(file);
+		input.files = dataTransfer.files;
+		return true;
+	}
+
+	function sameFile(a, b) {
+		return a.name === b.name
+			&& a.size === b.size
+			&& a.lastModified === b.lastModified;
+	}
+
+	function syncResourceFileInput(files) {
+		selectedResourceFiles = files;
+		replaceFiles(fields.ficheiros, selectedResourceFiles);
+	}
+
+	function addResourceFiles(files) {
+		const nextFiles = [...selectedResourceFiles];
+		for (const file of files) {
+			if (!nextFiles.some((existing) => sameFile(existing, file))) {
+				nextFiles.push(file);
+			}
+		}
+		syncResourceFileInput(nextFiles);
 	}
 
 	function isValidDateLike(value) {
@@ -259,24 +294,28 @@
 		if (!ficheirosLista) return;
 		ficheirosLista.innerHTML = '';
 
-		const visibleFiles = files.slice(0, 5);
-		for (const file of visibleFiles) {
+		files.forEach((file, index) => {
 			const item = document.createElement('li');
 			item.className = 'file-list__item';
-			item.textContent = `${file.name} (${formatBytes(file.size || 0)})`;
-			ficheirosLista.appendChild(item);
-		}
+			const details = document.createElement('span');
+			details.className = 'file-list__details';
+			details.textContent = `${file.name} (${formatBytes(file.size || 0)})`;
 
-		if (files.length > visibleFiles.length) {
-			const item = document.createElement('li');
-			item.className = 'file-list__item file-list__item--more';
-			item.textContent = `+${files.length - visibleFiles.length} ficheiro(s) adicionais`;
+			const removeButton = document.createElement('button');
+			removeButton.className = 'file-list__remove';
+			removeButton.type = 'button';
+			removeButton.dataset.removeFileIndex = String(index);
+			removeButton.setAttribute('aria-label', `Remover ${file.name}`);
+			removeButton.textContent = '×';
+
+			item.appendChild(details);
+			item.appendChild(removeButton);
 			ficheirosLista.appendChild(item);
-		}
+		});
 	}
 
 	function validateFicheiros(strict) {
-		const files = Array.from(fields.ficheiros?.files || []);
+		const files = selectedResourceFiles;
 		const total = files.length;
 		const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
 
@@ -355,6 +394,7 @@
 	function fillExample(name) {
 		if (name === 'clear') {
 			form.reset();
+			selectedResourceFiles = [];
 			if (ficheirosLista) ficheirosLista.innerHTML = '';
 			hasTriedSubmit = false;
 			refreshValidation({ strict: false });
@@ -382,7 +422,25 @@
 	}
 
 	if (fields.ficheiros) {
-		fields.ficheiros.addEventListener('change', refreshValidation);
+		fields.ficheiros.addEventListener('change', () => {
+			addResourceFiles(Array.from(fields.ficheiros.files || []));
+			refreshValidation();
+		});
+	}
+
+	if (ficheirosLista) {
+		ficheirosLista.addEventListener('click', (event) => {
+			const button = event.target.closest('[data-remove-file-index]');
+			if (!button || !fields.ficheiros) return;
+
+			const index = Number(button.dataset.removeFileIndex);
+			const files = [...selectedResourceFiles];
+			if (!Number.isInteger(index) || index < 0 || index >= files.length) return;
+
+			files.splice(index, 1);
+			syncResourceFileInput(files);
+			refreshValidation();
+		});
 	}
 
 	form.addEventListener('invalid', () => {

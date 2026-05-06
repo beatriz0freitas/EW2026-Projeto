@@ -6,7 +6,6 @@ const {
 	construirFormularioFiltrosDados,
 	construirPrevisaoTransferencia,
 	construirQueryFiltrosDados,
-	construirResumoFiltrosDados,
 } = require('../lib/dataTransferFilters')
 const { authRequest, apiRequest, apiFetch } = require('../lib/http')
 const { apiErrorMessage } = require('../lib/web')
@@ -149,13 +148,9 @@ function prepararAcaoFiltro(valor = '') {
 }
 
 function renderImportWithError(req, res, message, status = 400) {
-	const filterForm = construirFormularioFiltrosDados(req.body || {})
 	const dumpText = String(req.body?.dumpText || '').trim()
 	return res.status(status).render('admin/import', {
 		title: 'Admin · Importar dados',
-		filterForm,
-		filterSummary: construirResumoFiltrosDados(filterForm),
-		transferPreview: construirPrevisaoTransferencia(filterForm, 'importar'),
 		dumpText,
 		importError: message,
 	})
@@ -271,19 +266,14 @@ async function exportData(req, res) {
 }
 
 function showImportForm(req, res) {
-	const filterForm = construirFormularioFiltrosDados(req.query || {})
 	res.render('admin/import', {
 		title: 'Admin · Importar dados',
-		filterForm,
-		filterSummary: construirResumoFiltrosDados(filterForm),
-		transferPreview: construirPrevisaoTransferencia(filterForm, 'importar'),
 		dumpText: '',
 	})
 }
 
 async function importData(req, res) {
 	const dumpText = String(req.body.dumpText || '').trim()
-	const filterForm = construirFormularioFiltrosDados(req.body)
 	const hasDumpFile = !!req.file?.buffer?.length
 
 	if (!hasDumpFile && !dumpText) {
@@ -303,18 +293,6 @@ async function importData(req, res) {
 	}
 
 	const form = new FormData()
-	for (const [key, value] of Object.entries(filterForm)) {
-		if (Array.isArray(value)) {
-			for (const item of value) {
-				if (item !== undefined && item !== null && item !== '') form.append(key, String(item))
-			}
-			continue
-		}
-		if (value !== undefined && value !== null && value !== '') {
-			form.append(key, String(value))
-		}
-	}
-
 	if (hasDumpFile) {
 		form.append(
 			'dumpFile',
@@ -345,15 +323,9 @@ async function importData(req, res) {
 	}
 
 	const results = payload?.results || {}
-	const filtrosAplicados = construirFormularioFiltrosDados(
-		payload?.filtersApplied || payload?.selection || filterForm
-	)
 	res.render('admin/import', {
 		title: 'Admin · Importar dados',
-		filterForm,
 		dumpText,
-		filterSummary: construirResumoFiltrosDados(filtrosAplicados),
-		transferPreview: construirPrevisaoTransferencia(filtrosAplicados, 'importar'),
 		importResults: results,
 		importOk: payload?.ok === true,
 	})
@@ -364,7 +336,6 @@ function showData(req, res) {
 	res.render('admin/data', {
 		title: 'Admin · Dados',
 		filterForm,
-		filterSummary: construirResumoFiltrosDados(filterForm),
 		transferPreview: construirPrevisaoTransferencia(filterForm, 'exportar'),
 	})
 }

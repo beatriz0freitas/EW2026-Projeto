@@ -138,7 +138,9 @@ block content
 							.field-label-row
 								label(for='sip') Ficheiro ZIP preparado
 								span.field-badge.field-badge--required Obrigatório
-							input#sip.w3-input(type='file' name='sip' accept='.zip,application/zip' required)
+							.file-input-row
+								input#sip.w3-input(type='file' name='sip' accept='.zip,application/zip' required)
+								button.file-clear-button(type='button' data-clear-file='sip' aria-label='Remover ficheiro selecionado') ×
 							p.field-feedback(data-default-text='Aceita ficheiros .zip preparados para importação.') Aceita ficheiros .zip preparados para importação.
 						p.w3-margin-top
 							button.w3-button.w3-border(type='submit') Importar ZIP

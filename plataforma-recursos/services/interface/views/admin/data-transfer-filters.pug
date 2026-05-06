@@ -11,12 +11,12 @@
 	input(type='hidden' name='scope' value='all')
 	section.transfer-step
 		article.transfer-default-card
-			h3= transferMode === 'importar' ? 'Por defeito entra todo o conteúdo do ficheiro.' : 'Por defeito sai todo o conteúdo da plataforma.'
-			p Se quiseres restringir a operação, abre a filtragem abaixo.
+			h3 Por defeito sai todo o conteúdo da plataforma.
+			p Se quiseres descarregar apenas uma parte dos dados, abre a filtragem abaixo.
 
 	section.transfer-step
 		details.form-advanced(open=temFiltrosAtivos)
-			summary Filtrar conteudo a exportar
+			summary Filtrar conteúdo a exportar
 			.transfer-filter-groups
 				section.transfer-filter-group
 					h3 Tipo de conteúdo
