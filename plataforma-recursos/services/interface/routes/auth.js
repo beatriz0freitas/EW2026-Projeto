@@ -56,6 +56,7 @@ if (config.oauth.facebook.enabled) {
 
 router.get('/login', authController.showLogin)
 router.post('/login', routeAsync(authController.login))
+router.get('/password-help', authController.showPasswordHelp)
 router.get('/register', authController.showRegister)
 router.post('/register', routeAsync(authController.register))
 router.get('/logout', authController.logout)
