@@ -1,22 +1,49 @@
 extends ../layout
 
 block content
-	section.w3-card.w3-white.cartao-autenticacao
-		h1 Registar
-		form(action='/auth/register' method='post')
-			label(for='nome') Nome
-			input#nome.w3-input(type='text' name='nome' autocomplete='name' required)
+	section.auth-split-shell
+		article.w3-card.w3-white.auth-split-card
+			div.auth-split-card__brand
+				span.auth-brand__name EW2026 - Plataforma de Recursos
 
-			label(for='email') Email
-			input#email.w3-input(type='email' name='email' autocomplete='email' required)
+			div.auth-split-card__content
+				section.auth-split-panel.auth-split-panel--register-main
+					span.auth-panel__tag.auth-panel__tag--accent Registar
+					h1.auth-split-panel__title Crie a sua conta.
+					p.auth-split-panel__intro Complete o registo para publicar, comentar e gerir recursos na plataforma.
+					form(action='/auth/register' method='post').auth-split-form.auth-split-form--register
+						label(for='nome') Nome *
+						input#nome.w3-input(type='text' name='nome' autocomplete='name' required)
 
-			label(for='password') Palavra-passe
-			input#password.w3-input(type='password' name='password' minlength='6' autocomplete='new-password' required)
+						label(for='email-registo') Email *
+						input#email-registo.w3-input(type='email' name='email' autocomplete='email' required)
 
-			label(for='filiacao') Filiação (opcional)
-			input#filiacao.w3-input(type='text' name='filiacao' autocomplete='organization')
+						label(for='password-registo') Password *
+						input#password-registo.w3-input(type='password' name='password' minlength='6' autocomplete='new-password' required)
 
-			button.w3-button.botao-principal(type='submit') Criar conta
+						label(for='filiacao') Filiação (opcional)
+						input#filiacao.w3-input(type='text' name='filiacao' autocomplete='organization')
 
-		p.w3-small
-			| Já tem conta? #[a(href='/auth/login') Entre na sua conta.]
+						button.w3-button.botao-principal.auth-split-form__submit(type='submit') Criar conta
+
+				div.auth-split-card__divider(role='presentation')
+
+				section.auth-split-panel.auth-split-panel--login-side
+					span.auth-panel__tag Entrar
+					h2.auth-split-panel__title Já tem conta? Inicie sessão.
+					p.auth-split-panel__intro Se já está registado, volte à página de entrada para autenticar-se.
+					a.auth-split-panel__cta.auth-split-panel__cta--secondary(href='/auth/login') Iniciar sessão
+
+					div.auth-social-block
+						h3 Entrar com outras contas
+						p.auth-social-block__intro Autenticação social disponível com Google e Facebook.
+						div.auth-social-block__icons
+							each provider in providersSociais
+								if provider.ativo
+									a.auth-social-icon(class=`is-${provider.id}` href=provider.href title=`Entrar com ${provider.nome}` aria-label=`Entrar com ${provider.nome}`)
+										span.auth-social-icon__badge= provider.sigla
+										span.auth-social-icon__label= provider.nome
+								else
+									span.auth-social-icon.auth-social-icon--disabled(class=`is-${provider.id}` title=`${provider.nome} indisponível` aria-disabled='true')
+										span.auth-social-icon__badge= provider.sigla
+										span.auth-social-icon__label= provider.nome

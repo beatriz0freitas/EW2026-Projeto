@@ -1,109 +1,66 @@
-'use strict'
+const JSZip = require('jszip')
 
-function criarTabelaCrc32() {
-	const tabela = []
-	for (let n = 0; n < 256; n++) {
-		let c = n
-		for (let k = 0; k < 8; k++) {
-			c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1)
-		}
-		tabela[n] = c >>> 0
+const TAMANHO_MAXIMO_ENTRADA = 100 * 1024 * 1024
+
+function normalizarCaminhoZip(caminho) {
+	const texto = String(caminho || '').trim().replace(/\\+/g, '/')
+	if (!texto) throw new Error('caminho ZIP em falta')
+	if (texto.startsWith('/') || texto.startsWith('../') || texto.includes('/../') || texto === '..') {
+		throw new Error(`caminho ZIP inválido: ${caminho}`)
 	}
-	return tabela
+
+	const partes = texto
+		.split('/')
+		.map((parte) => parte.trim())
+		.filter(Boolean)
+
+	if (!partes.length || partes.some((parte) => parte === '.' || parte === '..')) {
+		throw new Error(`caminho ZIP inválido: ${caminho}`)
+	}
+
+	return partes.join('/')
 }
 
-const TABELA_CRC32 = criarTabelaCrc32()
+function normalizarConteudo(conteudo) {
+	const buffer = Buffer.isBuffer(conteudo)
+		? conteudo
+		: Buffer.from(String(conteudo || ''), 'utf8')
 
-function calcularCrc32(conteudo) {
-	let crc = 0xffffffff
-	for (const byte of conteudo) {
-		crc = TABELA_CRC32[(crc ^ byte) & 0xff] ^ (crc >>> 8)
+	if (buffer.length > TAMANHO_MAXIMO_ENTRADA) {
+		throw new Error('ficheiro demasiado grande para o ZIP simples')
 	}
-	return (crc ^ 0xffffffff) >>> 0
+
+	return buffer
 }
 
-function obterDataDos(data = new Date()) {
-	const ano = Math.max(1980, data.getFullYear())
-	const mes = data.getMonth() + 1
-	const dia = data.getDate()
-	const horas = data.getHours()
-	const minutos = data.getMinutes()
-	const segundos = Math.floor(data.getSeconds() / 2)
-
-	return {
-		hora: (horas << 11) | (minutos << 5) | segundos,
-		data: ((ano - 1980) << 9) | (mes << 5) | dia,
+async function criarZip(entradas) {
+	if (!Array.isArray(entradas) || !entradas.length) {
+		throw new Error('é necessário indicar pelo menos uma entrada para o ZIP')
 	}
-}
 
-function criarZipSemCompressao(entradas) {
-	const partesLocais = []
-	const partesCentrais = []
-	const dataDos = obterDataDos()
-	let deslocamento = 0
+	const zip = new JSZip()
+	const caminhosUsados = new Set()
 
 	for (const entrada of entradas) {
-		const nome = Buffer.from(entrada.caminho, 'utf8')
-		const conteudo = Buffer.isBuffer(entrada.conteudo)
-			? entrada.conteudo
-			: Buffer.from(String(entrada.conteudo || ''), 'utf8')
-		const crc32 = calcularCrc32(conteudo)
-		const tamanho = conteudo.length
-
-		if (tamanho > 0xffffffff || deslocamento > 0xffffffff) {
-			throw new Error('ficheiro demasiado grande para o ZIP simples')
+		const caminho = normalizarCaminhoZip(entrada?.caminho)
+		if (caminhosUsados.has(caminho)) {
+			throw new Error(`entrada ZIP duplicada: ${caminho}`)
 		}
+		caminhosUsados.add(caminho)
 
-		const cabecalhoLocal = Buffer.alloc(30)
-		cabecalhoLocal.writeUInt32LE(0x04034b50, 0)
-		cabecalhoLocal.writeUInt16LE(20, 4)
-		cabecalhoLocal.writeUInt16LE(0x0800, 6)
-		cabecalhoLocal.writeUInt16LE(0, 8)
-		cabecalhoLocal.writeUInt16LE(dataDos.hora, 10)
-		cabecalhoLocal.writeUInt16LE(dataDos.data, 12)
-		cabecalhoLocal.writeUInt32LE(crc32, 14)
-		cabecalhoLocal.writeUInt32LE(tamanho, 18)
-		cabecalhoLocal.writeUInt32LE(tamanho, 22)
-		cabecalhoLocal.writeUInt16LE(nome.length, 26)
-		cabecalhoLocal.writeUInt16LE(0, 28)
-
-		partesLocais.push(cabecalhoLocal, nome, conteudo)
-
-		const cabecalhoCentral = Buffer.alloc(46)
-		cabecalhoCentral.writeUInt32LE(0x02014b50, 0)
-		cabecalhoCentral.writeUInt16LE(20, 4)
-		cabecalhoCentral.writeUInt16LE(20, 6)
-		cabecalhoCentral.writeUInt16LE(0x0800, 8)
-		cabecalhoCentral.writeUInt16LE(0, 10)
-		cabecalhoCentral.writeUInt16LE(dataDos.hora, 12)
-		cabecalhoCentral.writeUInt16LE(dataDos.data, 14)
-		cabecalhoCentral.writeUInt32LE(crc32, 16)
-		cabecalhoCentral.writeUInt32LE(tamanho, 20)
-		cabecalhoCentral.writeUInt32LE(tamanho, 24)
-		cabecalhoCentral.writeUInt16LE(nome.length, 28)
-		cabecalhoCentral.writeUInt16LE(0, 30)
-		cabecalhoCentral.writeUInt16LE(0, 32)
-		cabecalhoCentral.writeUInt16LE(0, 34)
-		cabecalhoCentral.writeUInt16LE(0, 36)
-		cabecalhoCentral.writeUInt32LE(0, 38)
-		cabecalhoCentral.writeUInt32LE(deslocamento, 42)
-
-		partesCentrais.push(cabecalhoCentral, nome)
-		deslocamento += cabecalhoLocal.length + nome.length + conteudo.length
+		zip.file(caminho, normalizarConteudo(entrada?.conteudo), {
+			binary: true,
+			compression: 'STORE',
+		})
 	}
 
-	const diretorioCentral = Buffer.concat(partesCentrais)
-	const fim = Buffer.alloc(22)
-	fim.writeUInt32LE(0x06054b50, 0)
-	fim.writeUInt16LE(0, 4)
-	fim.writeUInt16LE(0, 6)
-	fim.writeUInt16LE(entradas.length, 8)
-	fim.writeUInt16LE(entradas.length, 10)
-	fim.writeUInt32LE(diretorioCentral.length, 12)
-	fim.writeUInt32LE(deslocamento, 16)
-	fim.writeUInt16LE(0, 20)
-
-	return Buffer.concat([...partesLocais, diretorioCentral, fim])
+	return zip.generateAsync({
+		type: 'nodebuffer',
+		compression: 'STORE',
+		platform: 'UNIX',
+		mimeType: 'application/zip',
+		streamFiles: false,
+	})
 }
 
-module.exports = { criarZipSemCompressao }
+module.exports = { criarZip }

@@ -2,7 +2,7 @@ const crypto = require('crypto')
 const path = require('path')
 
 const { validateMetadataResource } = require('../../lib/metadataValidator')
-const { criarZipSemCompressao } = require('../../lib/simpleZip')
+const { criarZip } = require('../../lib/simpleZip')
 
 function limparTexto(valor) {
 	return String(valor || '').trim()
@@ -155,7 +155,7 @@ async function construirSipSimples({ body, ficheiros }) {
 	const manifestoBuffer = Buffer.from(`${manifesto}\n`, 'utf8')
 	const bagitBuffer = Buffer.from('BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n', 'utf8')
 
-	const zipBuffer = criarZipSemCompressao([
+	const zipBuffer = await criarZip([
 		{ caminho: 'bagit.txt', conteudo: bagitBuffer },
 		{ caminho: 'manifest.json', conteudo: manifestBuffer },
 		{ caminho: 'checksums.txt', conteudo: manifestoBuffer },

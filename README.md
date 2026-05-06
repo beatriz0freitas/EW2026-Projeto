@@ -1,8 +1,6 @@
-# EW2026 — Plataforma de Gestão e Disponibilização de Recursos Educativos
+# EW2026 - Plataforma de Recursos
 
-Fluxo geral da arquitetura:
-
-Cliente -> Gateway -> (Interface / API / Auth) -> MongoDB + storage AIP em disco
+Projeto de gestão e disponibilização de recursos educativos com arquitetura composta por `gateway`, `interface`, `api`, `auth`, `mongodb` e storage AIP em disco.
 
 ---
 
@@ -12,106 +10,224 @@ Cliente -> Gateway -> (Interface / API / Auth) -> MongoDB + storage AIP em disco
 
 - Docker
 - Docker Compose v2 (`docker compose`)
+- Python 3
+- `pip` para instalar a dependência do script de povoamento
 
 Verificação rápida:
 
 ```bash
 docker --version
 docker compose version
+python3 --version
+pip --version
 ```
 
 ---
 
-## Configuração do ambiente (.env)
+## Preparação inicial
 
-Entrar na pasta do projeto executável:
+Entrar na pasta do projeto:
 
 ```bash
-cd plataforma-recursos
+cd EW2026-Projeto/plataforma-recursos
 ```
 
-Criar o `.env` a partir do exemplo:
+Criar o ficheiro `.env` a partir do exemplo:
 
 ```bash
 cp .env.example .env
 ```
 
-Gerar 3 segredos fortes e diferentes (recomendado):
+Gerar segredos fortes para preencher o `.env`:
 
 ```bash
 openssl rand -hex 32
 openssl rand -hex 32
 openssl rand -hex 32
+openssl rand -hex 32
 ```
 
-Preencher o `.env` com os valores gerados:
+Preencher pelo menos estas variáveis:
 
 ```env
 JWT_SECRET=<valor-1>
-SESSION_SECRET=<valor-2>
-INTERNAL_SERVICE_TOKEN=<valor-3>
+JWT_REFRESH_SECRET=<valor-2>
+SESSION_SECRET=<valor-3>
+INTERNAL_SERVICE_TOKEN=<valor-4>
 ```
 
 Para que serve cada valor:
 
-- `JWT_SECRET`: assinatura de tokens no serviço Auth.
+- `JWT_SECRET`: assinatura dos access tokens no serviço Auth.
+- `JWT_REFRESH_SECRET`: assinatura dos refresh tokens.
 - `SESSION_SECRET`: assinatura de sessão no serviço Interface.
 - `INTERNAL_SERVICE_TOKEN`: autenticação entre serviços (API <-> Auth) para endpoints internos e notícias automáticas.
 
 ---
 
-## Como correr o trabalho
+## Execução
 
-Levantar os serviços:
+### 1. Levantar os serviços
 
 ```bash
 docker compose up -d --build
 ```
 
-Ver estado:
+### 2. Verificar estado
 
 ```bash
 docker compose ps
 ```
 
-Ver logs:
+### 3. Ver logs, se necessário
 
 ```bash
-docker compose logs -f api auth interface gateway
+docker compose logs -f mongodb api auth interface gateway nginx
 ```
 
-Parar os serviços:
+### 4. Abrir a aplicação
+
+No browser:
+
+```text
+http://localhost:16020
+```
+
+### 5. Parar os serviços
 
 ```bash
 docker compose down
 ```
 
-Abrir no browser:
+---
 
-`http://localhost:16020`
+## Utilizadores de demonstração
+
+Os utilizadores de demonstração são carregados automaticamente pelo MongoDB no arranque inicial, a partir de:
+
+- `data/povoamento/fixtures.json`
+- `data/povoamento/init-mongo.js`
+
+Isto acontece apenas quando a coleção `users` ainda está vazia.
 
 ---
 
-## Como consultar o Swagger
+## Povoamento de recursos
 
-Com os serviços levantados, a documentação Swagger fica acessível via Gateway:
+### Instalar a dependência do script
 
-- Hub (seleção de serviço): `http://localhost:16020/docs`
-- Gateway: `http://localhost:16020/gateway/docs`
-- API: `http://localhost:16020/api/docs`
-- Auth: `http://localhost:16020/auth/docs`
-- Interface: `http://localhost:16020/interface/docs`
+```bash
+pip install -r data/povoamento/requirements.txt
+```
+
+### 1. Obter um token JWT
+
+O script de povoamento aceita apenas `--token`.
+
+Podes obter um token com `curl` através do endpoint de login:
+
+```bash
+curl -s -X POST http://localhost:16020/auth/sessions \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin.teste","password":"Admin123"}'
+```
+
+Se o login correr bem, a resposta inclui um campo `token`.
+
+Também podes obter o token no Swagger de `http://localhost:16020/auth/docs` fazendo login manualmente e copiando o valor devolvido.
+
+O script usa estas convenções fixas para manter a simplicidade:
+
+- URL da plataforma: `http://localhost:16020`
+- ficheiro de metadados: `metadata.csv`
+- tipo por omissão: `artigo`
+- visibilidade por omissão: `publico`
+
+### 2. Comando mínimo para povoar recursos
+
+```bash
+python3 data/povoamento/povoamento-recursos.py data/recursos --token <TOKEN>
+```
+
+### 3. Simular sem enviar nada
+
+```bash
+python3 data/povoamento/povoamento-recursos.py data/recursos --token <TOKEN> --dry-run
+```
+
+### 4. Processar apenas alguns recursos
+
+```bash
+python3 data/povoamento/povoamento-recursos.py data/recursos --token <TOKEN> --only "ficheiro-a.pdf,recurso-02"
+```
+
+---
+
+## Estrutura esperada para `data/recursos`
+
+O script aceita dois formatos.
+
+### Opção A: um ficheiro = um recurso
+
+```text
+data/recursos/
+  ficha-a.pdf
+  ficha-b.pdf
+```
+
+### Opção B: uma subpasta = um recurso
+
+```text
+data/recursos/
+  recurso-01/
+    artigo.pdf
+    anexo.docx
+  recurso-02/
+    slides.pdf
+```
+
+---
+
+## Metadados opcionais com `metadata.csv`
+
+Se existir um ficheiro `metadata.csv` na raiz do diretório de input, os seus valores são usados por recurso.
+
+Exemplo:
+
+```csv
+key,titulo,tipo,visibilidade,tema,ano,hashtags
+ficha-a.pdf,Título Personalizado,artigo,publico,Ciência,2024,ia
+recurso-01,Slides de Segurança,slides,privado,Segurança,2025,seguranca,aula
+```
 
 Notas:
 
-- Em endpoints protegidos, usar token Bearer válido na UI do Swagger.
-- Aceder sempre pelos URLs do Gateway para manter o mesmo fluxo da arquitetura.
+- `key` deve ser o nome do ficheiro ou da subpasta;
+- se `titulo` não existir, o script gera o título a partir do nome do item;
+- `tipo`, `visibilidade`, `tema`, `ano` e `hashtags` podem ser definidos diretamente no CSV.
+- se `tipo` ou `visibilidade` não existirem no CSV, o script usa `artigo` e `publico`.
 
 ---
 
-## Portas dos serviços
+## Flags disponíveis no script
 
-- Gateway: `16020` (porta pública)
-- API: `16025`
-- Interface: `16026`
-- Auth: `16027`
+| Flag                      | Efeito                                             |
+| ------------------------- | -------------------------------------------------- |
+| `--token`               | Usa um token JWT já obtido                        |
+| `--only`                | Processa apenas certos items                       |
+| `--dry-run`             | Simula sem enviar                                  |
+
+---
+
+## Swagger
+
+Com a stack a correr, a documentação Swagger fica acessível em:
+
+- `http://localhost:16020/docs`
+- `http://localhost:16020/api/docs`
+- `http://localhost:16020/auth/docs`
+- `http://localhost:16020/interface/docs`
+
+---
+
+**Universidade do Minho | Escola de Engenharia**
