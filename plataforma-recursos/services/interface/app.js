@@ -43,7 +43,7 @@ app.use(
 	})
 )
 
-app.use(passport.initialize());
+app.use(passport.initialize())
 
 app.use((req, res, next) => {
 	res.locals.user = req.session.user || null
@@ -90,7 +90,7 @@ app.use((req, res) => {
 })
 
 app.use((err, req, res, next) => {
-	console.error('[interface] unexpected error:', err)
+	console.error('[interface] erro inesperado:', err)
 	res.status(500).render('error', {
 		title: 'Erro interno',
 		message: 'Ocorreu um erro inesperado. Tente novamente.',
@@ -98,5 +98,5 @@ app.use((err, req, res, next) => {
 })
 
 app.listen(config.port, () => {
-	console.log(`[interface] listening on :${config.port}`)
+	console.log(`[interface] à escuta em :${config.port}`)
 })
