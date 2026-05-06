@@ -23,6 +23,7 @@ function denyInternalRoute(req, res) {
 router.use('/login', interfaceAuthPagesProxy)
 router.use('/register', interfaceAuthPagesProxy)
 router.use('/logout', interfaceAuthPagesProxy)
+router.use('/password-help', interfaceAuthPagesProxy)
 router.use('/google', interfaceAuthPagesProxy)
 router.use('/facebook', interfaceAuthPagesProxy)
 
