@@ -6,9 +6,14 @@ block content
 	- const submitText = typeof submitLabel !== 'undefined' ? submitLabel : 'Publicar'
 	- const p = typeof post !== 'undefined' && post ? post : {}
 	- const availableResources = typeof resources !== 'undefined' && Array.isArray(resources) ? resources : []
-	section.w3-card.w3-white.secao-card.cartao-autenticacao
-		h1= headingText
-		form(action=formAction method='post')
+	section.page-hero.page-hero--compact
+		.page-hero__content
+			p.page-eyebrow Comunidade
+			h1= headingText
+			p.page-hero__lead Cria uma publicação objetiva, ligada a um recurso e fácil de acompanhar pela comunidade.
+
+	section.section-card.cartao-autenticacao
+		form.formulario-compacto(action=formAction method='post')
 			label(for='titulo') Título
 			input#titulo.w3-input(type='text' name='titulo' maxlength='160' required value=(p.titulo || ''))
 
@@ -27,4 +32,6 @@ block content
 				p.w3-text-grey Não existem recursos disponíveis para associar.
 				input#resourceId(type='hidden' name='resourceId' value='')
 
-			button.w3-button.botao-principal(type='submit' disabled=!availableResources.length)= submitText
+			.conteudo-acoes
+				button.w3-button.botao-principal(type='submit' disabled=!availableResources.length)= submitText
+				a.w3-button.w3-border(href=(p._id ? `/posts/${p._id}` : '/posts')) Cancelar

@@ -5,23 +5,24 @@ block content
 	- const canManagePost = !!(user && (user.role === 'admin' || (uid && String(post.autorId) === uid)))
 	- const commentsCountLabel = comments.length === 1 ? '1 comentário' : `${comments.length} comentários`
 	section.pagina-detalhe
-		section.detalhe-topo
-			.etiquetas
-				span.etiqueta Publicação
-				span.etiqueta.etiqueta--vermelha por #{post.autorNome || 'desconhecido'}
-			h1= post.titulo
-			if post.resource
-				p
-					| Recurso associado: 
-					a(href=`/resources/${post.resource._id}`)= post.resource.titulo
-					if post.resource.tipo
-						span.w3-text-grey  · #{post.resource.tipo}
-			.conteudo-acoes
-				a.w3-button.botao-claro(href='/posts') Voltar às publicações
-				if canManagePost
-					a.w3-button.botao-principal(href=`/posts/${post._id}/edit`) Editar publicação
+		section.page-hero.page-hero--compact
+			.page-hero__content
+				.chips-linha
+					span.etiqueta Publicação
+					span.etiqueta.etiqueta--vermelha por #{post.autorNome || 'desconhecido'}
+				h1= post.titulo
+				if post.resource
+					p.page-hero__lead
+						| Recurso associado: 
+						a(href=`/resources/${post.resource._id}`)= post.resource.titulo
+						if post.resource.tipo
+							span.w3-text-grey  · #{post.resource.tipo}
+				.page-actions
+					a.w3-button.botao-claro(href='/posts') Voltar às publicações
+					if canManagePost
+						a.w3-button.botao-principal(href=`/posts/${post._id}/edit`) Editar publicação
 
-		article.w3-white.secao-card.post-detail-card
+		article.section-card.post-detail-card
 			.post-detail-card__header
 				.post-card__avatar= (post.autorNome || 'autor').trim().charAt(0).toUpperCase() || 'A'
 				div
@@ -38,7 +39,7 @@ block content
 					form(action=`/posts/${post._id}/delete` method='post')
 						button.w3-button.w3-red(type='submit' onclick="return confirm('Tem a certeza que pretende remover esta publicação?');") Remover publicação
 
-		section.w3-white.secao-card.comments-section
+		section.section-card.comments-section
 			.cabecalho-secao
 				div
 					h2 Comentários

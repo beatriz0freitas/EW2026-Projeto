@@ -42,6 +42,7 @@ async function list(req, res) {
 	res.render('posts/list', {
 		title: 'Publicações',
 		items: response.data?.items || [],
+		totalPosts: Number(response.data?.total || (response.data?.items || []).length),
 	})
 }
 
