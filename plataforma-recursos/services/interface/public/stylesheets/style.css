@@ -120,9 +120,10 @@ label{display:block;margin-bottom:8px;font-weight:700}
 .auth-split-card{width:min(100%,1060px);padding:0;overflow:hidden;border-radius:34px}
 .auth-split-card__brand{padding:26px 30px;font-weight:800;letter-spacing:.02em}
 .auth-brand__name{font-size:1rem}
-.auth-split-card__content{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));min-height:560px}
+.auth-split-card__content{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);min-height:560px}
 .auth-split-panel{padding:34px;display:flex;flex-direction:column;justify-content:center;gap:14px}
-.auth-split-card__divider{width:1px;justify-self:center}
+.auth-split-card__divider{width:1px;justify-self:center;align-self:stretch}
+.auth-split-form--single{grid-template-columns:1fr}
 .auth-split-form__meta{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;grid-column:1 / -1}
 .auth-check{display:inline-flex;align-items:center;gap:10px;margin:0;font-weight:600}
 .auth-inline-link{font-weight:700}
