@@ -6,23 +6,37 @@ block content
 	- const ficheiros = Array.isArray(submissao.ficheiros) ? submissao.ficheiros : []
 	- const vis = r.visibilidade || 'privado'
 	- const podeDescarregar = vis === 'publico' || user
+	- const postsCount = Array.isArray(posts) ? posts.length : 0
 	section.pagina-detalhe
-		section.detalhe-topo
-			.etiquetas
-				span.etiqueta #{r.tipo || 'recurso'}
-				span.etiqueta.etiqueta--vermelha #{vis}
-			h1= r.titulo || 'Recurso'
-			if r.subtitulo
-				p.w3-large= r.subtitulo
-			.conteudo-acoes
-				if podeDescarregar
-					a.w3-button.botao-principal(href=`/resources/${resource._id}/dip`) Descarregar recurso
-				else
-					a.w3-button.botao-principal(href='/auth/login') Entrar para descarregar
-				a.w3-button.w3-border(href='/resources') Voltar à lista
+		section.page-hero.page-hero--compact
+			.page-hero__content
+				.chips-linha
+					span.etiqueta= r.tipo || 'Recurso'
+					span.etiqueta.etiqueta--vermelha #{vis === 'publico' ? 'Público' : 'Privado'}
+				h1= r.titulo || 'Recurso'
+				if r.subtitulo
+					p.page-hero__lead= r.subtitulo
+				else if r.descricao
+					p.page-hero__lead= r.descricao.length > 180 ? `${r.descricao.slice(0, 180)}...` : r.descricao
+				.page-actions
+					if podeDescarregar
+						a.w3-button.botao-principal(href=`/resources/${resource._id}/dip`) Descarregar recurso
+					else
+						a.w3-button.botao-principal(href='/auth/login') Entrar para descarregar
+					a.w3-button.w3-border(href='/resources') Voltar à lista
+			.hero-metrics
+				article.metric-card
+					span.metric-card__label Avaliação média
+					strong.metric-card__value #{rating.media}
+				article.metric-card
+					span.metric-card__label Votos
+					strong.metric-card__value #{rating.total}
+				article.metric-card
+					span.metric-card__label Conversas
+					strong.metric-card__value= postsCount
 
 		section.detalhe-conteudo
-			article.w3-white.secao-card
+			article.section-card
 				h2 Informação do recurso
 				if r.descricao
 					p= r.descricao
@@ -82,7 +96,7 @@ block content
 						form(action=`/resources/${resource._id}/delete` method='post')
 							button.w3-button.w3-red(type='submit' onclick="return confirm('Tem a certeza que pretende eliminar este recurso? Esta ação não pode ser revertida.');") Eliminar recurso
 
-			aside.w3-white.secao-card.classificacao
+			aside.section-card.classificacao
 				h2 Classificação
 				p.w3-text-grey Avaliação média: #{rating.media} (#{rating.total} votos)
 
@@ -97,11 +111,11 @@ block content
 				else
 					p.w3-text-grey Inicia sessão para classificar este recurso.
 
-		section.w3-white.secao-card.feed-section.feed-section--resource
+		section.section-card.feed-section.feed-section--resource
 			.cabecalho-secao
 				div
 					h2 Publicações sobre este recurso
-					p.w3-text-grey Conversas ligadas diretamente a este material.
+					p.w3-text-grey Comentários e publicações ligadas diretamente a este material.
 				if user && (user.role === 'produtor' || user.role === 'admin')
 					a.w3-button.w3-border(href=`/posts/new?resourceId=${resource._id}`) Criar publicação
 			if !posts || !posts.length

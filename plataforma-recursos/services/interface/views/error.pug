@@ -1,9 +1,12 @@
 extends layout
 
 block content
-	section.w3-card.w3-white.w3-padding.w3-margin-top
-		h1= title || 'Erro'
-		p= message || 'Ocorreu um erro.'
-		p
-			a.w3-button.w3-border(href='/') Voltar à página inicial
+	section.page-hero.page-hero--compact.page-hero--error
+		.page-hero__content
+			p.page-eyebrow Estado da plataforma
+			h1= title || 'Erro'
+			p.page-hero__lead= message || 'Ocorreu um erro.'
+			.page-actions
+				a.w3-button.botao-principal(href='/') Voltar ao início
+				a.w3-button.w3-border(href='/resources') Ir para recursos
 
