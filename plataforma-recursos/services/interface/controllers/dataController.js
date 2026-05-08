@@ -30,29 +30,29 @@ function obterConfigTransferencia(user = {}) {
 
 	if (role === 'produtor') {
 		return {
-			allowedTransferTypes: ['resources'],
+			allowedTransferTypes: ['resources', 'news', 'posts', 'comments', 'ratings'],
 			allowImport: true,
 			lockResourceVisibility: '',
 			showResourceProducerFilter: false,
 			pageTitle: 'Os meus recursos e recursos visíveis',
 			eyebrow: 'Transferência de recursos',
-			intro: 'Exporta em lote os recursos públicos e os teus recursos privados. Também podes importar lotes de recursos que ficam associados ao teu utilizador.',
-			exportDescription: 'A exportação global respeita as tuas permissões: só saem recursos públicos ou recursos teus.',
-			defaultTransferTitle: 'Por defeito saem apenas recursos que podes consultar ou gerir.',
+			intro: 'Exporta em lote os recursos públicos e os teus recursos privados, juntamente com publicações, comentários, classificações e notícias relacionadas quando forem seguras.',
+			exportDescription: 'A exportação global respeita as tuas permissões: só saem recursos públicos ou recursos teus e conteúdo relacionado que não exponha dados indevidos.',
+			defaultTransferTitle: 'Por defeito saem recursos visíveis e conteúdo relacionado seguro.',
 			defaultTransferText: 'Se precisares, aplica filtros para reduzir a seleção exportada.',
 		}
 	}
 
 	return {
-		allowedTransferTypes: ['resources'],
+		allowedTransferTypes: ['resources', 'news', 'posts', 'comments', 'ratings'],
 		allowImport: false,
 		lockResourceVisibility: 'publico',
 		showResourceProducerFilter: false,
 		pageTitle: 'Recursos públicos',
 		eyebrow: 'Transferência de recursos',
-		intro: 'Descarrega de uma só vez os recursos públicos disponíveis na plataforma.',
-		exportDescription: 'A exportação global respeita as tuas permissões: apenas recursos públicos ficam incluídos.',
-		defaultTransferTitle: 'Por defeito saem todos os recursos públicos.',
+		intro: 'Descarrega de uma só vez os recursos públicos disponíveis na plataforma, com publicações, comentários, classificações e notícias relacionadas quando fizer sentido e for seguro.',
+		exportDescription: 'A exportação global respeita as tuas permissões: apenas recursos públicos e conteúdo relacionado visível ficam incluídos.',
+		defaultTransferTitle: 'Por defeito saem todos os recursos públicos e o respetivo contexto visível.',
 		defaultTransferText: 'Se quiseres, aplica filtros para afinar a exportação antes de descarregar o ficheiro.',
 	}
 }
@@ -60,6 +60,10 @@ function obterConfigTransferencia(user = {}) {
 function construirFilterForm(req) {
 	const config = obterConfigTransferencia(req.session?.user)
 	const filterForm = construirFormularioFiltrosDados(req.query || {})
+
+	if (!Array.isArray(req.query?.selectedTypes) && !req.query?.selectedTypes && config.allowedTransferTypes.length && config.allowedTransferTypes.length < 6) {
+		filterForm.selectedTypes = [...config.allowedTransferTypes]
+	}
 
 	if (config.allowedTransferTypes.length === 1) {
 		filterForm.selectedTypes = [...config.allowedTransferTypes]
