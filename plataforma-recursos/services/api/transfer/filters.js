@@ -502,7 +502,7 @@ function construirDumpFiltrado(dumpFonte, filtros) {
 	const idsPorColecao = {}
 
 	for (const nomeColecao of ORDEM_COLECOES) {
-		const definicaoColecao = DEFINICOES_COLECOES[nomeColecao]
+		const definicaoColecao = DEFINICOES_COLECOES[nomeColecao] || {}
 		let itens = dumpNormalizado[nomeColecao]
 
 		if (definicaoColecao.raiz && !colecaoRaizIncluida(nomeColecao, filtros)) {
