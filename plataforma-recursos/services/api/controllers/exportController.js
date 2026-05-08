@@ -17,6 +17,7 @@ const {
 const {
 	obterCapacidadesTransferencia,
 	restringirFiltrosTransferenciaPorPerfil,
+	filtrarNoticiasRelacionadasARecursos,
 } = require('../transfer/permissions')
 const { jsonError } = require('../lib/http')
 const { exportUsersForTransfer, importUsersForTransfer } = require('../transfer/authClient')
@@ -125,13 +126,14 @@ module.exports.exportAll = async (req, res) => {
 		const incluirResources = tiposPermitidos.has('resources') && scopeIncluiColecaoRaiz('resources', filtros.scope, filtros.selectedTypes)
 		const incluirNews = tiposPermitidos.has('news') && scopeIncluiColecaoRaiz('news', filtros.scope, filtros.selectedTypes)
 		const incluirUsers = tiposPermitidos.has('users') && scopeIncluiColecaoRaiz('users', filtros.scope, filtros.selectedTypes)
+		const scopeNewsDireto = selecionaDiretamente('news')
 		const scopePostsDireto = selecionaDiretamente('posts')
 		const scopeRatingsDireto = selecionaDiretamente('ratings')
 		const scopeCommentsDireto = selecionaDiretamente('comments')
 		const scopeAipDireto = selecionaDiretamente('aip')
 		const recursosFiltrados = incluirResources && haFiltrosAtivosNaColecao('resources', filtros)
 		const postsFiltrados = haFiltrosAtivosNaColecao('posts', filtros)
-		const precisaRecursosVisiveis = incluirResources || scopePostsDireto || scopeRatingsDireto || scopeCommentsDireto || scopeAipDireto
+		const precisaRecursosVisiveis = incluirResources || scopeNewsDireto || scopePostsDireto || scopeRatingsDireto || scopeCommentsDireto || scopeAipDireto
 
 		const [resources, users] = await Promise.all([
 			precisaRecursosVisiveis
@@ -192,7 +194,10 @@ module.exports.exportAll = async (req, res) => {
 
 		const newsRaw = incluirNews ? await consultarColecao(NewsItem, 'news', filtros) : []
 		const recursosPublicos = incluirNews ? await construirIdsRecursosPublicos() : new Set()
-		const news = incluirNews ? filtrarNoticiasDerivadasInvalidas(newsRaw, recursosPublicos) : []
+		const newsSeguras = incluirNews ? filtrarNoticiasDerivadasInvalidas(newsRaw, recursosPublicos) : []
+		const news = incluirNews
+			? filtrarNoticiasRelacionadasARecursos(newsSeguras, resourceIds, req.user)
+			: []
 
 		const dumpFiltrado = construirDumpFiltrado({ resources: resourcesSelecionados, news, users, posts, ratings, comments, aips }, filtros)
 		const idsParaExportarAip = dumpFiltrado.resources.length
