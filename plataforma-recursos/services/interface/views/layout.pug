@@ -6,7 +6,6 @@ html(lang='pt')
 		meta(name='theme-color' content='#071b3a')
 		title #{title || 'Plataforma de Recursos'}
 		link(rel='stylesheet' href='/stylesheets/style.css')
-		link(rel='stylesheet' href='/stylesheets/theme.css')
 	body.app-body
 		a.skip-link(href='#main-content') Saltar para o conteúdo
 		- const roleLabel = user ? (user.role === 'admin' ? 'Administrador' : user.role === 'produtor' ? 'Produtor' : 'Consumidor') : 'Visitante'
