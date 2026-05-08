@@ -27,6 +27,8 @@ html(lang='pt')
 							a.app-nav__link(class=isActivePath('/') ? 'is-active' : '' href='/') Início
 							a.app-nav__link(class=isActivePath('/resources') ? 'is-active' : '' href='/resources') Recursos
 							a.app-nav__link(class=isActivePath('/posts') ? 'is-active' : '' href='/posts') Comunidade
+							if user
+								a.app-nav__link(class=isActivePath('/data') ? 'is-active' : '' href='/data') Transferências
 							if user && user.role === 'admin'
 								a.app-nav__link(class=isActivePath('/admin') ? 'is-active' : '' href='/admin/users') Administração
 						.app-session
@@ -65,6 +67,8 @@ html(lang='pt')
 						a(href='/') Início
 						a(href='/resources') Recursos
 						a(href='/posts') Comunidade
+						if user
+							a(href='/data') Transferências
 						if user && user.role === 'admin'
 							a(href='/admin/users') Administração
 		script(src='/javascripts/interface-publica.js')

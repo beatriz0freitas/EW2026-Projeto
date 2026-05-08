@@ -1,0 +1,44 @@
+extends ../layout
+
+block content
+	section.admin-page
+		header.admin-page-header
+			div
+				p.admin-eyebrow= transferConfig.eyebrow
+				h1= transferConfig.pageTitle
+				p= transferConfig.intro
+
+		section.w3-white.secao-card
+			h2 Exportar
+			p.w3-text-grey= transferConfig.exportDescription
+			form(method='GET' action='/data')
+				- var allowedTransferTypes = transferConfig.allowedTransferTypes
+				- var lockResourceVisibility = transferConfig.lockResourceVisibility
+				- var showResourceProducerFilter = transferConfig.showResourceProducerFilter
+				- var defaultTransferTitle = transferConfig.defaultTransferTitle
+				- var defaultTransferText = transferConfig.defaultTransferText
+				include ../admin/data-transfer-filters.pug
+				section.transfer-preview
+					h3 Pré-visualização da exportação
+					p.transfer-preview__main= transferPreview.principal
+					p.transfer-preview__hint= transferPreview.limite
+					if transferPreview.conteudos
+						p.transfer-preview__hint Tipos de conteúdo escolhidos: #{transferPreview.conteudos}.
+					if transferPreview.temFiltrosEspecificos
+						ul.transfer-preview__list
+							each entry in transferPreview.filtrosEspecificos
+							li
+								strong= entry.label + ': '
+								= entry.value
+					else
+						p.transfer-preview__hint Sem filtros específicos adicionais.
+				.conteudo-acoes
+					button.w3-button.w3-border(type='submit') Atualizar pré-visualização
+					button.w3-button.botao-principal(type='submit' formaction='/data/export') Exportar seleção
+					a.w3-button.w3-border(href='/data/export') Exportar agora
+
+		if transferConfig.allowImport
+			section.w3-white.secao-card
+				h2 Importar
+				p.w3-text-grey Repõe dados a partir de um ficheiro JSON criado numa exportação compatível com o teu perfil.
+				a.w3-button.w3-border(href='/data/import') Ir para importação

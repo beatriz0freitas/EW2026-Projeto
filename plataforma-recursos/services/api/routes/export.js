@@ -34,12 +34,12 @@ const processarUploadDump = createSingleMemoryUpload({
 
 
 // GET /api/export
-router.get('/export', requireLevel('admin'), exportController.exportAll)
+router.get('/export', requireLevel('consumidor'), exportController.exportAll)
 
 
 // POST /api/import
 // Recebe o dump JSON produzido pelo GET /api/export
 
-router.post('/import', requireLevel('admin'), processarUploadDump, exportController.importAll)
+router.post('/import', requireLevel('produtor'), processarUploadDump, exportController.importAll)
 
 module.exports = router
