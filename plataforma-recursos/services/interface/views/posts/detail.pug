@@ -12,7 +12,7 @@ block content
 			h1= post.titulo
 			if post.resource
 				p
-					| Recurso associado: 
+					| Recurso associado:
 					a(href=`/resources/${post.resource._id}`)= post.resource.titulo
 					if post.resource.tipo
 						span.w3-text-grey  · #{post.resource.tipo}

@@ -6,7 +6,7 @@ Legenda:
 - ⚠️ Parcial / com ressalvas
 - ❌ Em falta
 
-Atualizado em: 2026-05-04
+Atualizado em: 2026-05-09
 
 Validação desta atualização:
 
@@ -15,7 +15,7 @@ Validação desta atualização:
 - ✅ Estado do backlog ajustado ao comportamento atualmente implementado.
 - ✅ Templates Pug compiladas sem erro.
 - ✅ JavaScript verificado com `node --check`.
-- ✅ `git diff --check` sem problemas de whitespace.
+- ✅ `git diff --check` sem problemas de whitespace na última validação registada.
 - ✅ Docker Compose reconstruído e páginas `/`, `/resources` e CSS servidos com HTTP 200.
 
 ---
@@ -153,42 +153,6 @@ Validação desta atualização:
 - ✅ Rate limiting no login implementado em POST `/auth/sessions` (in-memory por janela temporal).
 - ✅ Helmet implementado.
 
-## Gateway (services/gateway)
-
-- ✅ Reverse proxy funcional: `/api` -> API, `/auth` -> Auth, `/` -> Interface.
-- ✅ Regras especificas para `/auth/login`, `/auth/register` e `/auth/logout` irem para Interface.
-- ✅ Handler central de 502 bad gateway em `lib/proxy.js`.
-- ✅ `proxyTimeout` configurado (60s).
-- ✅ Config centralizada em `services/gateway/lib/config.js` com validacao de `PORT`/URLs.
-- ✅ Exposicao de documentacao Swagger dos servicos:
-	- `/docs` -> Hub Swagger agregado
-	- `/api/docs` -> API Swagger UI
-	- `/auth/docs` -> Auth Swagger UI
-	- `/interface/docs` -> Interface Swagger UI
-- ✅ CORS explicito no gateway implementado.
-- ✅ Helmet no gateway implementado.
-- ❌ Rate limiting global nao implementado.
-- ⚠️ Sem circuit breaker (apenas timeout e erro 502).
-
-## Nginx (infra/nginx)
-
-- ✅ `nginx` exposto ao exterior e a encaminhar trafego para o `gateway`.
-- ✅ Compressao `gzip` ativa para respostas textuais comuns.
-- ✅ Limite de upload (`client_max_body_size`) definido na borda.
-- ✅ Gateway deixou de estar publicado diretamente no host e ficou apenas acessivel na rede Docker.
-
-## Interface (services/interface)
-
-- ✅ App Express com Pug, sessao, flash messages e rotas montadas.
-- ✅ Login/registo/logout funcionais.
-- ✅ Home com noticias recentes.
-- ✅ Recursos: listagem, filtros (tipo/ano/tema/hashtag), detalhe, upload SIP, download DIP, ratings.
-- ✅ Posts: listar, criar, detalhe, editar, apagar, comentar e remover comentario.
-- ✅ Admin: utilizadores, noticias, export e import de dump.
-- ✅ Interceptor 401 com renovacao automatica via refresh-server.
-- ✅ Home mostra lista resumida de recursos recentes.
-- ✅ Pagina de detalhe de recurso apresenta posts associados por `resourceId`.
-
 ### Gateway (`services/gateway`)
 
 - ✅ Reverse proxy funcional: `/api`, `/auth` e interface.
@@ -198,7 +162,7 @@ Validação desta atualização:
 - ✅ Hub Swagger agregado em `/docs`.
 - ✅ CORS explícito no gateway implementado.
 - ✅ Helmet no gateway implementado.
-- ❌ Rate limiting global não implementado.
+- ✅ Rate limiting global implementado.
 - ⚠️ Sem circuit breaker.
 
 ### Nginx (`infra/nginx`)
@@ -219,8 +183,8 @@ Validação desta atualização:
 - ✅ Interceptor 401 com renovação automática via refresh-server.
 - ✅ Detalhe de recurso apresenta posts associados por `resourceId`.
 - ✅ UI revista para uma experiência mais intuitiva, contrastante e consistente.
-- ❌ Helmet não implementado na interface.
-- ❌ CORS não implementado na interface (aceitável para SSR, mas ausente)
+- ✅ Helmet implementado na interface.
+- ⚠️ CORS dedicado na interface não é necessário no fluxo SSR atual; CORS público fica no gateway/API.
 
 ---
 
@@ -228,9 +192,8 @@ Validação desta atualização:
 
 ### Hardening transversal
 
-- ❌ Adicionar Helmet na interface.
-- ❌ Rate limiting global no gateway.
- 
+- ✅ Helmet na interface.
+- ✅ Rate limiting global no gateway.
 
 ### Auth — melhorias de segurança
 
@@ -248,8 +211,8 @@ Validação desta atualização:
 
 ### Qualidade de entrega
 
-- ❌ Criar testes mínimos unitários para ingest e geração de SIP.
-- ❌ Criar testes de integração para auth/permissões/OAIS.
+- ✅ Criados testes unitários para ingest, geração de SIP, DIP, validação e filtros.
+- ✅ Criados testes de integração leves para auth/permissões/OAIS na API.
 - ⚠️ Aumentar dataset para dezenas de entradas reais.
 
 ---
@@ -263,7 +226,8 @@ Validação desta atualização:
 - Notícias automáticas: ✅ funcional.
 - Interface end-to-end: ✅ funcional.
 - UI final com azul escuro, vermelho e branco: ✅ implementada.
-- Helmet e CORS na interface : ❌ ainda em falta.
-- Rate limiting global no gateway: ❌ ainda em falta.
-- Testes automáticos: ❌ ainda em falta.
+- Helmet na interface: ✅ implementado.
+- CORS/API e gateway: ✅ configurados nos serviços de fronteira.
+- Rate limiting global no gateway: ✅ implementado.
+- Testes automáticos da API: ✅ implementados.
 - Dataset de demonstração com dezenas de recursos: ⚠️ ainda insuficiente.
