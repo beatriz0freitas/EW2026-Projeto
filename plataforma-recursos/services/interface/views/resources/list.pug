@@ -7,9 +7,8 @@ block content
 	- if (filters?.tema) activeFilterChips.push(`Tema: ${filters.tema}`)
 	- if (filters?.hashtag) activeFilterChips.push(`Etiqueta: ${filters.hashtag}`)
 	- const resourceItems = Array.isArray(items) ? items : []
+	- const ratingRanking = Array.isArray(topRatedResources) ? topRatedResources : []
 	- const visibleTypes = new Set(resourceItems.map((item) => item?.metadata?.resource?.tipo).filter(Boolean)).size
-	- const catalogThemes = Array.isArray(filterOptions?.temas) ? filterOptions.temas.length : 0
-	- const catalogTags = Array.isArray(filterOptions?.hashtags) ? filterOptions.hashtags.length : 0
 	section.pagina-listagem
 		section.page-hero.page-hero--compact.page-hero--single
 			.page-hero__content
@@ -20,22 +19,6 @@ block content
 					if user && (user.role === 'produtor' || user.role === 'admin')
 						a.w3-button.botao-principal(href='/resources/new') Submeter recurso
 					a.w3-button.w3-border(href='/posts') Ver publicações
-			.hero-metrics
-				article.metric-card.metric-card--accent
-					span.metric-card__label Recursos encontrados
-					strong.metric-card__value= pagination.total
-				article.metric-card
-					span.metric-card__label Tipos visíveis
-					strong.metric-card__value= visibleTypes
-				article.metric-card
-					span.metric-card__label Temas catalogados
-					strong.metric-card__value= catalogThemes
-				article.metric-card.metric-card--accent
-					span.metric-card__label Etiquetas disponíveis
-					strong.metric-card__value= catalogTags
-				article.metric-card
-					span.metric-card__label Filtros ativos
-					strong.metric-card__value= activeFiltersCount
 
 		section.section-card
 			- const f = filters || {}
@@ -82,6 +65,28 @@ block content
 				.filtros-acoes
 					button.w3-button.botao-principal(type='submit') Filtrar
 					a.w3-button.w3-border(href='/resources') Limpar
+
+		section.section-card
+			.cabecalho-secao
+				div
+					h2 Ranking de classificações
+					p.w3-text-grey Recursos com melhor avaliação média entre os conteúdos visíveis.
+			if !ratingRanking.length
+				.empty-state
+					p Ainda não existem classificações suficientes para apresentar um ranking.
+			else
+				ol.rating-ranking-list
+					each item, index in ratingRanking
+						li.rating-ranking-item
+							span.rating-ranking-item__position #{index + 1}
+							div.rating-ranking-item__content
+								strong
+									a(href=`/resources/${item._id}`)= item.titulo
+								if item.tipo
+									span.rating-ranking-item__meta= item.tipo
+							div.rating-ranking-item__score
+								strong #{item.media.toFixed(1)}
+								span #{item.total} voto#{item.total === 1 ? '' : 's'}
 
 		section.section-card
 			.cabecalho-secao
