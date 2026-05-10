@@ -11,11 +11,12 @@ block content
 				span.etiqueta.etiqueta--vermelha por #{post.autorNome || 'desconhecido'}
 			h1= post.titulo
 			if post.resource
-				p
-					| Recurso associado:
-					a(href=`/resources/${post.resource._id}`)= post.resource.titulo
+				div.post-resource-highlight
+					span.post-resource-highlight__label Recurso associado
+					strong.post-resource-highlight__title= post.resource.titulo
 					if post.resource.tipo
-						span.w3-text-grey  · #{post.resource.tipo}
+						span.post-resource-highlight__meta= post.resource.tipo
+					a.w3-button.botao-claro(href=`/resources/${post.resource._id}`) Abrir recurso
 			.conteudo-acoes
 				a.w3-button.botao-claro(href='/posts') Voltar às publicações
 				if canManagePost
