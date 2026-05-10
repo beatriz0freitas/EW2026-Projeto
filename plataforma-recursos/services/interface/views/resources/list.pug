@@ -19,6 +19,28 @@ block content
 					if user && (user.role === 'produtor' || user.role === 'admin')
 						a.w3-button.botao-principal(href='/resources/new') Submeter recurso
 					a.w3-button.w3-border(href='/posts') Ver publicações
+		
+		section.section-card
+			.cabecalho-secao
+				div
+					h2 Ranking de classificações
+					p.w3-text-grey Recursos com melhor avaliação média entre os conteúdos visíveis.
+			if !ratingRanking.length
+				.empty-state
+					p Ainda não existem classificações suficientes para apresentar um ranking.
+			else
+				ol.rating-ranking-list
+					each item, index in ratingRanking
+						li.rating-ranking-item
+							span.rating-ranking-item__position #{index + 1}
+							div.rating-ranking-item__content
+								strong
+									a(href=`/resources/${item._id}`)= item.titulo
+								if item.tipo
+									span.rating-ranking-item__meta= item.tipo
+							div.rating-ranking-item__score
+								strong #{item.media.toFixed(1)}
+								span #{item.total} voto#{item.total === 1 ? '' : 's'}
 
 		section.section-card
 			- const f = filters || {}
@@ -65,28 +87,6 @@ block content
 				.filtros-acoes
 					button.w3-button.botao-principal(type='submit') Filtrar
 					a.w3-button.w3-border(href='/resources') Limpar
-
-		section.section-card
-			.cabecalho-secao
-				div
-					h2 Ranking de classificações
-					p.w3-text-grey Recursos com melhor avaliação média entre os conteúdos visíveis.
-			if !ratingRanking.length
-				.empty-state
-					p Ainda não existem classificações suficientes para apresentar um ranking.
-			else
-				ol.rating-ranking-list
-					each item, index in ratingRanking
-						li.rating-ranking-item
-							span.rating-ranking-item__position #{index + 1}
-							div.rating-ranking-item__content
-								strong
-									a(href=`/resources/${item._id}`)= item.titulo
-								if item.tipo
-									span.rating-ranking-item__meta= item.tipo
-							div.rating-ranking-item__score
-								strong #{item.media.toFixed(1)}
-								span #{item.total} voto#{item.total === 1 ? '' : 's'}
 
 		section.section-card
 			.cabecalho-secao
