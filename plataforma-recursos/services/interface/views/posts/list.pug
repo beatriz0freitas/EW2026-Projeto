@@ -56,9 +56,11 @@ block content
 											time(datetime=post.createdAt)= new Date(post.createdAt).toLocaleString('pt-PT')
 									h2
 										a(href=`/posts/${post._id}`)= post.titulo
+									if post.resourceId
+										div.post-resource-callout
+											span.post-resource-callout__label Recurso associado
+											a.post-resource-callout__link(href=`/resources/${post.resourceId}`) Ver recurso
 									if resumo
 										p= resumo
 									.post-card__footer
-										if post.resourceId
-											span.etiqueta Recurso associado
 										a.w3-button.botao-claro.post-card__button(href=`/posts/${post._id}`) Abrir conversa
