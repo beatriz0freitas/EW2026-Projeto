@@ -12,7 +12,7 @@ const MAPA_SCOPE_COLECOES = {
 	posts: ['posts'],
 	ratings: ['ratings'],
 	comments: ['comments'],
-	aip: ['aips', 'aip'],
+	aip: ['aips', 'aip']
 }
 
 const ORDEM_COLECOES = ['resources', 'news', 'users', 'posts', 'ratings', 'comments', 'aips', 'aip']

@@ -33,7 +33,7 @@ app.use(
 )
 
 app.use(explicitCors)
-app.use(express.json({ limit: config.dataTransfer.jsonBodyLimitLegado }))
+app.use(express.json({ limit: config.dataTransfer.jsonBodyLimit }))
 app.use(cookieParser())
 
 app.use((req, res, next) => {
