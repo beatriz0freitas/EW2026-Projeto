@@ -77,7 +77,7 @@ function construirMetadataAtualizada(metadataAtual, metadataRecebida) {
 			if (Number.isInteger(ano)) {
 				resource.ano = ano
 			} else {
-				resource.ano = origem.ano 
+				resource.ano = origem.ano
 			}
 		}
 	}

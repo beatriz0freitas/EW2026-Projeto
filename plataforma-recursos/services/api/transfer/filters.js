@@ -11,7 +11,8 @@ const MAPA_SCOPE_COLECOES = {
 	users: ['users'],
 	posts: ['posts'],
 	ratings: ['ratings'],
-	comments: ['comments']
+	comments: ['comments'],
+	aip: ['aips', 'aip'],
 }
 
 const ORDEM_COLECOES = ['resources', 'news', 'users', 'posts', 'ratings', 'comments', 'aips', 'aip']
@@ -42,7 +43,22 @@ const DEFINICOES_COLECOES = {
 		campoId: '_id',
 		camposData: ['createdAt'],
 		ignorarDependenciaQuandoScopeDireto: true,
-	}
+	},
+	aips: {
+		raiz: true,
+		dependeDe: 'resources',
+		campoReferencia: 'recursoId',
+		campoId: '_id',
+		camposData: ['dataIngestao'],
+		ignorarDependenciaQuandoScopeDireto: true,
+	},
+	aip: {
+		raiz: true,
+		dependeDe: 'resources',
+		campoReferencia: 'resourceId',
+		camposData: [],
+		ignorarDependenciaQuandoScopeDireto: true,
+	},
 }
 
 function normalizarTexto(valor) {

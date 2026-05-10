@@ -108,11 +108,11 @@ module.exports.remove = async (id) => {
 	if (!user) return null
 
 	const ts = Date.now()
-	const update = { 
+	const update = {
 		ativo: false,
-		email: `del_${ts}_${user.email}` 
+		email: `del_${ts}_${user.email}`
 	}
-	
+
 	if (user.googleId) update.googleId = `del_${ts}_${user.googleId}`
 	if (user.facebookId) update.facebookId = `del_${ts}_${user.facebookId}`
 

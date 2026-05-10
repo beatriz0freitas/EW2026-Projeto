@@ -75,14 +75,14 @@ Optei por JWT com refresh token porque funciona bem numa arquitetura distribuíd
 - Não foi escolhida uma arquitetura monolítica porque dificultaria evolução e depuração.
 - Não foi colocada toda a lógica de segurança na interface porque isso seria frágil e facilmente contornável.
 - Não foi feita uma transformação semântica complexa do conteúdo do DIP, mas o download já passa pela conversão AIP -> DIP, garantindo que o pacote servido vem do arquivo preservado.
-- Não foram introduzidos provedores externos de autenticação porque o enunciado pode ser cumprido com autenticação local simples e direta.
+- Os provedores externos de autenticação foram mantidos opcionais: a autenticação local cumpre o fluxo principal e Google/Facebook só aparecem quando as credenciais estão configuradas.
 - Não foram adicionadas otimizações prematuras ou padrões excessivos porque o foco foi cumprir o essencial com estabilidade.
 
 ## 5) Limitações atuais
 
-- faltam testes mínimos de unidade e integração;
-- faltam algumas medidas de hardening transversal;
-- a validação de metadados ainda pode ser reforçada;
+- a cobertura de testes pode crescer nos serviços `auth`, `gateway` e `interface`;
+- algumas medidas de hardening operacional podem ser afinadas para produção;
+- a validação de metadados pode continuar a ser reforçada;
 - o dataset de demonstração ainda pode crescer.
 
 ---
