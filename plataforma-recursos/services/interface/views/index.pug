@@ -9,7 +9,7 @@ block content
 		.page-hero__content
 			p.page-eyebrow EW2026
 			h1 Plataforma de Recursos Educativos
-			p.page-hero__lead Explora materiais preservados, percebe rapidamente o contexto de cada recurso e participa sem te perder na navegação.
+			p.page-hero__lead Descobre, valoriza e partilha recursos educativos. Encontra conteúdos relevantes, acompanha o que merece atenção e explora materiais que apoiam a aprendizagem.
 			if user && (user.role === 'produtor' || user.role === 'admin')
 				.page-actions
 					a.w3-button.botao-principal(href='/resources/new') Submeter novo recurso
@@ -29,26 +29,6 @@ block content
 				article.metric-card.metric-card--accent
 					span.metric-card__label Atualizações no mural
 					strong.metric-card__value= totalStats.newsTotal || latestNews.length
-
-	section.shortcuts-grid
-		a.shortcut-card(href='/resources')
-			span.shortcut-card__kicker Catálogo
-			strong Recursos
-			p Pesquisa simples e leitura rápida dos metadados essenciais.
-		a.shortcut-card(href='/posts')
-			span.shortcut-card__kicker Comunidade
-			strong Publicações
-			p Conversas ligadas aos recursos para perceber uso, dúvidas e contexto.
-		if user && user.role === 'admin'
-			a.shortcut-card(href='/admin/users')
-				span.shortcut-card__kicker Gestão
-				strong Administração
-				p Painel central para utilizadores, notícias, dados e histórico.
-		else
-			a.shortcut-card(href=user ? '/posts' : '/auth/login')
-				span.shortcut-card__kicker Conta
-				strong #{user ? 'Continua a participar' : 'Entrar na plataforma'}
-				p #{user ? `Perfil ${pageRoleLabel.toLowerCase()} com acesso rápido a comentários, classificações e publicações.` : 'Autentica-te para comentar, classificar e publicar.'}
 
 	if latestNews.length
 		section.section-card.portal-section.portal-section--news
