@@ -3,7 +3,6 @@ extends ../layout
 block content
 	- const postCountLabel = items.length === 1 ? '1 publicação' : `${items.length} publicações`
 	- const linkedPosts = items.filter((post) => post && post.resourceId).length
-	- const uniqueAuthors = new Set(items.map((post) => post?.autorId || post?.autorNome).filter(Boolean)).size
 	- const recentPosts = items.filter((post) => post?.createdAt && (Date.now() - new Date(post.createdAt).getTime()) <= 1000 * 60 * 60 * 24 * 7).length
 	section.pagina-listagem
 		section.page-hero.page-hero--compact.page-hero--single
@@ -15,19 +14,6 @@ block content
 					a.w3-button.botao-claro(href='/resources') Ver recursos
 					if user && (user.role === 'produtor' || user.role === 'admin')
 						a.w3-button.botao-principal(href='/posts/new') Criar nova publicação
-			.hero-metrics
-				article.metric-card.metric-card--accent
-					span.metric-card__label Publicações registadas
-					strong.metric-card__value= totalPosts || items.length
-				article.metric-card
-					span.metric-card__label Conversas ligadas a recursos
-					strong.metric-card__value= linkedPosts
-				article.metric-card
-					span.metric-card__label Autores no feed
-					strong.metric-card__value= uniqueAuthors
-				article.metric-card.metric-card--accent
-					span.metric-card__label Últimos 7 dias
-					strong.metric-card__value= recentPosts
 
 		section.section-card.feed-section
 			.feed-section__top

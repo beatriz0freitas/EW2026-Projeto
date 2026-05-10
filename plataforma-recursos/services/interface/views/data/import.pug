@@ -1,13 +1,16 @@
 extends ../layout
 
 block content
-	section.page-hero.page-hero--compact
-		.page-hero__content
-			span.etiqueta.etiqueta--vermelha= transferConfig.eyebrow
-			h1 Importar dados
-			p.page-hero__lead Usa um ficheiro JSON exportado anteriormente para repor recursos dentro das tuas permissões.
+	section.pagina-listagem
+		section.page-hero.page-hero--compact.page-hero--single
+			.page-hero__content
+				p.page-eyebrow= transferConfig.eyebrow
+				h1 Importar dados
+				p.page-hero__lead Usa um ficheiro JSON exportado anteriormente para repor recursos dentro das tuas permissões.
+				.page-actions
+					a.w3-button.botao-claro(href='/data') Voltar a Dados
 
-	section.section-card.portal-section
+		section.section-card.portal-section
 			if importError
 				div.w3-panel.w3-pale-red.w3-leftbar.w3-border-red
 					p= importError
@@ -63,4 +66,3 @@ block content
 					)= dumpText
 				.conteudo-acoes
 					button.w3-button.botao-principal(type='submit') Importar agora
-					a.w3-button.w3-border(href='/data') Voltar a Dados

@@ -1,6 +1,4 @@
-# Relatório do Projeto
-
-## Plataforma de Recursos Educativos EW2026
+# EW2026 - Plataforma de Recursos Educativos
 
 ---
 
@@ -103,16 +101,16 @@ Cada serviço expõe a sua documentação OpenAPI própria. O `gateway` disponib
 
 O domínio principal gira em torno de recursos educativos e da sua preservação. As entidades principais são:
 
-| Entidade | Descrição |
-|----------|-----------|
-| `User` | Utilizador autenticável, com role `admin`, `produtor` ou `consumidor`. Gerido pelo serviço `auth`. |
-| `Resource` | Recurso educativo com metadados, produtor, visibilidade e contadores de download. |
-| `Aip` | Registo arquivístico associado ao recurso, com validações por camada, estado, checksum e localização em disco. |
-| `Post` | Publicação social associada a um recurso. |
-| `Comment` | Comentário num post. |
-| `Rating` | Avaliação (1–5 estrelas) de um recurso por utilizador. |
-| `NewsItem` | Notícia manual ou gerada automaticamente pelo sistema. |
-| `AuditLog` | Registo de auditoria de ações realizadas na plataforma. |
+| Entidade     | Descrição                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `User`     | Utilizador autenticável, com role `admin`, `produtor` ou `consumidor`. Gerido pelo serviço `auth`.        |
+| `Resource` | Recurso educativo com metadados, produtor, visibilidade e contadores de download.                                   |
+| `Aip`      | Registo arquivístico associado ao recurso, com validações por camada, estado, checksum e localização em disco. |
+| `Post`     | Publicação social associada a um recurso.                                                                         |
+| `Comment`  | Comentário num post.                                                                                               |
+| `Rating`   | Avaliação (1–5 estrelas) de um recurso por utilizador.                                                           |
+| `NewsItem` | Notícia manual ou gerada automaticamente pelo sistema.                                                             |
+| `AuditLog` | Registo de auditoria de ações realizadas na plataforma.                                                           |
 
 ### Hierarquia de Perfis
 
@@ -124,17 +122,17 @@ produtor (2)  → pode criar/editar/apagar os seus recursos, criar posts e comen
 consumidor (1) → leitura de recursos públicos, avaliações
 ```
 
-| Operação | Admin | Produtor | Consumidor |
-|----------|-------|----------|------------|
-| Ler recursos públicos | ✓ | ✓ | ✓ |
-| Ler recursos privados próprios | ✓ | ✓ | — |
-| Criar recursos | ✓ | ✓ | — |
-| Editar/apagar recursos próprios | ✓ | ✓ | — |
-| Editar/apagar recursos alheios | ✓ | — | — |
-| Criar posts e comentários | ✓ | ✓ | — |
-| Avaliar recursos | ✓ | ✓ | ✓ |
-| Gerir utilizadores | ✓ | — | — |
-| Exportar/importar dados | ✓ | — | — |
+| Operação                       | Admin | Produtor | Consumidor |
+| -------------------------------- | ----- | -------- | ---------- |
+| Ler recursos públicos           | ✓    | ✓       | ✓         |
+| Ler recursos privados próprios  | ✓    | ✓       | —         |
+| Criar recursos                   | ✓    | ✓       | —         |
+| Editar/apagar recursos próprios | ✓    | ✓       | —         |
+| Editar/apagar recursos alheios   | ✓    | —       | —         |
+| Criar posts e comentários       | ✓    | ✓       | —         |
+| Avaliar recursos                 | ✓    | ✓       | ✓         |
+| Gerir utilizadores               | ✓    | —       | —         |
+| Exportar/importar dados          | ✓    | —       | —         |
 
 A visibilidade dos recursos é uma regra central: recursos públicos são acessíveis a qualquer pessoa; recursos privados exigem autenticação e só são acessíveis ao produtor responsável ou a administradores. Esta regra é aplicada na listagem, no detalhe e no download do DIP.
 
@@ -182,11 +180,11 @@ O `manifest.json` contém os metadados e a lista de ficheiros:
 
 O ingest valida o SIP por quatro camadas sequenciais:
 
-| Camada | Verificações |
-|--------|-------------|
-| **Estrutura** | ZIP válido, existência de `manifest.json` e pasta `data/`, ficheiros declarados presentes |
-| **Metadados** | Campos obrigatórios (`titulo`, `tipo`), tipo na enumeração permitida, visibilidade válida, formatos de data |
-| **Segurança** | Proteção contra zip-slip, extensões permitidas, limites de tamanho (50 MB por ficheiro, 100 MB total), nomes de ficheiro sem caracteres perigosos |
+| Camada                  | Verificações                                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Estrutura**     | ZIP válido, existência de `manifest.json` e pasta `data/`, ficheiros declarados presentes                                                          |
+| **Metadados**     | Campos obrigatórios (`titulo`, `tipo`), tipo na enumeração permitida, visibilidade válida, formatos de data                                      |
+| **Segurança**    | Proteção contra zip-slip, extensões permitidas, limites de tamanho (50 MB por ficheiro, 100 MB total), nomes de ficheiro sem caracteres perigosos     |
 | **Consistência** | Correspondência entre `manifest.json` e ficheiros reais, verificação de checksums SHA-256 quando presentes, correspondência de tamanhos declarados |
 
 Tipos de recurso aceites: `artigo`, `tese`, `slides`, `teste`, `relatorio`, `aplicacao`, `problema`, `outro`.
@@ -268,6 +266,7 @@ Existem dois tipos de notícias:
 - **De sistema** — geradas automaticamente e publicadas via `POST /api/news/system` (endpoint interno protegido por token).
 
 Notícias automáticas implementadas:
+
 - `system.new_submission` — publicada quando um novo recurso público é ingerido com sucesso.
 - `system.top3` — top 3 de recursos mais requisitados, calculado com base em downloads e ratings; só é republicada quando o ranking muda.
 - `system.total_users` — publicada pelo serviço `auth` quando o total de utilizadores se altera.
@@ -323,17 +322,17 @@ A interface comunica com `auth` e `api` exclusivamente por HTTP. O interceptor d
 
 O módulo `lib/metadataValidator.js` centraliza a validação do contrato de metadados `metadata.resource`, aplicado de forma consistente na submissão simples, no ingest de SIP ZIP e na atualização via PATCH. Os limites de campo são:
 
-| Campo | Tipo | Obrigatório | Limite |
-|-------|------|-------------|--------|
-| `tipo` | string (enum) | Sim | máx 80 caracteres |
-| `titulo` | string | Sim | máx 200 caracteres |
-| `visibilidade` | enum | Sim | `publico` ou `privado` |
-| `subtitulo` | string | Não | máx 200 caracteres |
-| `descricao` | string | Não | máx 2000 caracteres |
-| `tema` | string | Não | máx 120 caracteres |
-| `ano` | inteiro | Não | 0–3000 |
-| `dataCriacao` | string (data) | Não | ISO 8601 |
-| `hashtags` | array | Não | máx 20 entradas, cada uma máx 80 caracteres, sem espaços |
+| Campo            | Tipo          | Obrigatório | Limite                                                      |
+| ---------------- | ------------- | ------------ | ----------------------------------------------------------- |
+| `tipo`         | string (enum) | Sim          | máx 80 caracteres                                          |
+| `titulo`       | string        | Sim          | máx 200 caracteres                                         |
+| `visibilidade` | enum          | Sim          | `publico` ou `privado`                                  |
+| `subtitulo`    | string        | Não         | máx 200 caracteres                                         |
+| `descricao`    | string        | Não         | máx 2000 caracteres                                        |
+| `tema`         | string        | Não         | máx 120 caracteres                                         |
+| `ano`          | inteiro       | Não         | 0–3000                                                     |
+| `dataCriacao`  | string (data) | Não         | ISO 8601                                                    |
+| `hashtags`     | array         | Não         | máx 20 entradas, cada uma máx 80 caracteres, sem espaços |
 
 ### Observabilidade
 
@@ -431,21 +430,21 @@ Devolve resultado com contadores e erros por coleção
 
 O projeto inclui testes unitários e de integração ligeiros em `services/api/testes/`, usando o módulo nativo `node:test` do Node.js:
 
-| Ficheiro | Cobertura |
-|----------|-----------|
-| `metadataValidator.test.js` | Validação centralizada de metadados |
-| `resourceAccess.test.js` | Lógica de visibilidade e controlo de acesso a recursos |
-| `validateMiddleware.test.js` | Middlewares de validação de body e query |
-| `uploadMiddleware.test.js` | Upload single e múltiplo com limites e tipos |
-| `rateLimitApi.test.js` | Rate limiting da API |
-| `autorizacao.test.js` | Middlewares `requireLevel` e `optionalAuth` |
-| `simpleZip.test.js` | Criação de ZIPs e validação de caminhos |
-| `pacoteSimples.test.js` | Construção automática de SIP BagIt |
-| `aipStorage.test.js` | Operações sobre ficheiros AIP em disco |
-| `dip.test.js` | Geração do DIP a partir do AIP |
-| `transferFilters.test.js` | Filtros de exportação/importação |
-| `oaisAccess.test.js` | Rota de acesso OAIS (mocks de módulos) |
-| `oaisIngest.test.js` | Rota de ingestão OAIS (mocks de módulos) |
+| Ficheiro                       | Cobertura                                               |
+| ------------------------------ | ------------------------------------------------------- |
+| `metadataValidator.test.js`  | Validação centralizada de metadados                   |
+| `resourceAccess.test.js`     | Lógica de visibilidade e controlo de acesso a recursos |
+| `validateMiddleware.test.js` | Middlewares de validação de body e query              |
+| `uploadMiddleware.test.js`   | Upload single e múltiplo com limites e tipos           |
+| `rateLimitApi.test.js`       | Rate limiting da API                                    |
+| `autorizacao.test.js`        | Middlewares `requireLevel` e `optionalAuth`         |
+| `simpleZip.test.js`          | Criação de ZIPs e validação de caminhos             |
+| `pacoteSimples.test.js`      | Construção automática de SIP BagIt                   |
+| `aipStorage.test.js`         | Operações sobre ficheiros AIP em disco                |
+| `dip.test.js`                | Geração do DIP a partir do AIP                        |
+| `transferFilters.test.js`    | Filtros de exportação/importação                    |
+| `oaisAccess.test.js`         | Rota de acesso OAIS (mocks de módulos)                 |
+| `oaisIngest.test.js`         | Rota de ingestão OAIS (mocks de módulos)              |
 
 Os testes de rota usam mocking manual do cache de módulos do Node.js para isolar dependências externas (MongoDB, auth, filesystem) sem frameworks adicionais.
 
