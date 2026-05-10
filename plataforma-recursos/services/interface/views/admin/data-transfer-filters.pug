@@ -7,19 +7,30 @@
 - const mostrarPosts = !tiposSelecionados.length || tiposSelecionados.includes('posts')
 - const mostrarRatings = !tiposSelecionados.length || tiposSelecionados.includes('ratings')
 - const mostrarComentarios = !tiposSelecionados.length || tiposSelecionados.includes('comments')
+- const mostrarCartaoDefault = typeof showDefaultTransferCard === 'undefined' ? true : !!showDefaultTransferCard
+- const contadorFiltrosEspecificos = [filterForm.resourceType, filterForm.resourceYear, filterForm.resourceTheme, filterForm.resourceHashtag, filterForm.resourceVisibility, filterForm.resourceProducer, filterForm.resourceCreatedFrom, filterForm.resourceCreatedTo, filterForm.newsCreatedBy, filterForm.newsPublishedFrom, filterForm.newsPublishedTo, filterForm.postAuthor, filterForm.postCreatedFrom, filterForm.postCreatedTo, filterForm.commentAuthor, filterForm.commentCreatedFrom, filterForm.commentCreatedTo, filterForm.ratingUser, filterForm.ratingStars, filterForm.ratingCreatedFrom, filterForm.ratingCreatedTo, filterForm.quantityLimit].filter(Boolean).length
+- const contadorFiltrosAtivos = contadorFiltrosEspecificos + (tiposSelecionados.length ? 1 : 0)
+- const textoResumoFiltros = contadorFiltrosAtivos ? `${contadorFiltrosAtivos} filtro${contadorFiltrosAtivos > 1 ? 's' : ''} ativo${contadorFiltrosAtivos > 1 ? 's' : ''}` : 'Sem filtros ativos'
 
 .transfer-filters
 	input(type='hidden' name='scope' value='all')
 	if typeof lockResourceVisibility !== 'undefined' && lockResourceVisibility
 		input(type='hidden' name='resourceVisibility' value=lockResourceVisibility)
-	section.transfer-step
-		article.transfer-default-card
+	if mostrarCartaoDefault
+		section.transfer-step
+			article.transfer-default-card
 				h3= typeof defaultTransferTitle !== 'undefined' && defaultTransferTitle ? defaultTransferTitle : 'Por defeito sai todo o conteúdo da plataforma.'
-			p= typeof defaultTransferText !== 'undefined' && defaultTransferText ? defaultTransferText : 'Se quiseres descarregar apenas uma parte dos dados, abre a filtragem abaixo.'
+				p= typeof defaultTransferText !== 'undefined' && defaultTransferText ? defaultTransferText : 'Se quiseres descarregar apenas uma parte dos dados, abre a filtragem abaixo.'
 
-	section.transfer-step
-		details.form-advanced(open=temFiltrosAtivos)
-			summary Filtrar conteúdo a exportar
+	section.transfer-step.transfer-step--filters
+		details.form-advanced.transfer-dropdown(data-filter-dropdown)
+			summary.transfer-dropdown__summary
+				span.transfer-dropdown__summary-copy
+					strong Filtrar conteúdo a exportar
+					span.transfer-dropdown__summary-text Abre apenas se quiseres restringir a exportação.
+				span.transfer-dropdown__summary-aside
+					span.transfer-dropdown__status(data-filter-toggle-status)= textoResumoFiltros
+					span.transfer-dropdown__icon(aria-hidden='true')
 			.transfer-filter-groups
 				section.transfer-filter-group
 					h3 Tipo de conteúdo

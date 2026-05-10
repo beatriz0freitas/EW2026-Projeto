@@ -1,14 +1,13 @@
 extends ../layout
 
 block content
-	section.admin-page
-		header.admin-page-header
-			div
-				p.admin-eyebrow= transferConfig.eyebrow
-				h1 Importar dados
-				p Usa um ficheiro JSON exportado anteriormente para repor recursos dentro das tuas permissões.
+	section.page-hero.page-hero--compact
+		.page-hero__content
+			span.etiqueta.etiqueta--vermelha= transferConfig.eyebrow
+			h1 Importar dados
+			p.page-hero__lead Usa um ficheiro JSON exportado anteriormente para repor recursos dentro das tuas permissões.
 
-		section.w3-white.secao-card
+	section.section-card.portal-section
 			h2 Ficheiro de importação
 			p.w3-text-grey Usa preferencialmente o ficheiro descarregado na exportação. O campo de texto é apenas uma alternativa para ficheiros pequenos.
 
@@ -67,4 +66,4 @@ block content
 					)= dumpText
 				.conteudo-acoes
 					button.w3-button.botao-principal(type='submit') Importar agora
-					a.w3-button.w3-border(href='/data') Voltar à exportação
+					a.w3-button.w3-border(href='/data') Voltar a Dados
