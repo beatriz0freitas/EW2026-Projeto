@@ -61,13 +61,13 @@ button:disabled,.w3-disabled{opacity:.55;cursor:not-allowed;pointer-events:none}
 .app-brand__subtitle{font-size:.85rem;color:var(--muted)}
 .app-nav-toggle{display:none;margin-left:auto;width:48px;height:48px;padding:0;border-radius:14px;align-items:center;justify-content:center;gap:4px;flex-direction:column;box-shadow:var(--shadow-soft);border:1px solid var(--border);background:var(--surface)}
 .app-nav-toggle__line{width:18px;height:2px;border-radius:999px;background:var(--navy)}
-.app-header__panel{margin-left:auto;display:flex;align-items:center;gap:18px;min-width:0;flex:1}
-.app-nav{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:nowrap;min-width:0}
-.app-nav__link{display:inline-flex;align-items:center;justify-content:center;flex:1 1 0;padding:11px 16px;border-radius:999px;border:1px solid transparent;font-weight:700;color:var(--muted);text-align:center;white-space:nowrap}
+.app-header__panel{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:18px;min-width:0;flex:1}
+.app-nav{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex:1 1 auto;flex-wrap:nowrap;min-width:0}
+.app-nav__link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;padding:11px 16px;border-radius:999px;border:1px solid transparent;font-weight:700;color:var(--muted);text-align:center;white-space:nowrap}
 .app-nav__link:hover,.app-nav__link.is-active{background:var(--accent-soft);border-color:rgba(215,38,61,0.18);color:var(--accent-strong);box-shadow:var(--shadow-soft)}
 .app-session{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex:0 0 auto;flex-wrap:wrap}
 .app-header__panel--auth{flex:0 1 auto;margin-left:auto}
-.app-nav--auth{flex:0 1 auto;justify-content:flex-start}
+.app-nav--auth{flex:0 1 auto;justify-content:flex-end}
 .app-nav--auth .app-nav__link{flex:0 0 auto;min-width:120px}
 .app-user-pill{display:inline-flex;flex-direction:column;padding:10px 14px;border-radius:16px;box-shadow:var(--shadow-soft);line-height:1.25;background:var(--surface);border:1px solid rgba(215,38,61,0.14);color:var(--navy)}
 .app-user-pill small{font-size:.78rem}
@@ -131,8 +131,17 @@ button:disabled,.w3-disabled{opacity:.55;cursor:not-allowed;pointer-events:none}
 .news-card__marker{flex:0 0 52px;display:grid;place-items:center;width:52px;height:52px;border-radius:18px;font-weight:800;box-shadow:0 14px 24px rgba(7,27,58,0.18);background:linear-gradient(135deg,var(--navy),var(--accent));color:#fff}
 .news-card__main{flex:1;display:grid;gap:14px}
 .news-rank-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.rating-ranking-list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
 .news-rank-list li,.meta-item,.ficheiro-selecionavel,.file-list__item,.comment-item,.validation-item,.transfer-step,.transfer-filter-group,.transfer-preview,.audit-details,.quick-guide li,.stat-pill,.form-advanced{background:var(--surface-soft);border:1px solid var(--border)}
 .news-rank-list li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;border-radius:16px}
+.rating-ranking-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border-radius:18px;background:var(--surface-soft);border:1px solid var(--border)}
+.rating-ranking-item__position{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-size:.84rem;font-weight:800;background:var(--accent);color:#fff}
+.rating-ranking-item__content{display:grid;gap:4px;min-width:0}
+.rating-ranking-item__content strong a{color:var(--navy)}
+.rating-ranking-item__meta{font-size:.88rem;color:var(--muted)}
+.rating-ranking-item__score{display:grid;justify-items:end;gap:2px;text-align:right}
+.rating-ranking-item__score strong{font-size:1.05rem;color:var(--navy)}
+.rating-ranking-item__score span{font-size:.86rem;color:var(--muted)}
 .news-rank-list__pos{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;font-size:.82rem;font-weight:800;background:var(--accent);color:#fff}
 .news-rank-list__title,.transfer-preview__main,.result-title,label,.form-advanced summary{color:var(--navy)}
 .news-rank-list__stat,.field-feedback,.transfer-preview__hint,.field-counter,.stat-pill__label,.validation-item__value,.audit-muted,.transfer-preview__list{color:var(--muted)}

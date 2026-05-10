@@ -69,6 +69,42 @@ async function fetchAllVisibleResources(req) {
 	return { ok: true, items: allItems }
 }
 
+async function buildTopRatedResources(req, items = [], limit = 5) {
+	const resources = Array.isArray(items) ? items : []
+	if (!resources.length) return []
+
+	const ratings = await Promise.all(
+		resources.map(async (item) => {
+			const resourceId = item?._id
+			if (!resourceId) return null
+
+			const response = await apiRequest(`/resources/${resourceId}/ratings`, {
+				token: req.session.token,
+				req,
+			})
+
+			if (!response.ok) return null
+
+			const media = Number(response.data?.media || 0)
+			const total = Number(response.data?.total || 0)
+			if (total <= 0) return null
+
+			return {
+				_id: String(resourceId),
+				titulo: item?.metadata?.resource?.titulo || 'Recurso',
+				tipo: item?.metadata?.resource?.tipo || '',
+				media,
+				total,
+			}
+		})
+	)
+
+	return ratings
+		.filter(Boolean)
+		.sort((a, b) => b.media - a.media || b.total - a.total || a.titulo.localeCompare(b.titulo, 'pt'))
+		.slice(0, limit)
+}
+
 function normalizeHashtags(input) {
 	return String(input || '')
 		.split(',')
@@ -263,6 +299,7 @@ async function list(req, res) {
 		tema: req.query.tema || '',
 		hashtag: req.query.hashtag || '',
 	}
+	const topRatedResources = resourcesForFilters.ok ? await buildTopRatedResources(req, resourcesForFilters.items) : []
 	const page = Number(listResponse.data?.page || 1)
 	const totalPages = Number(listResponse.data?.totalPages || 1)
 
@@ -272,6 +309,7 @@ async function list(req, res) {
 		filters,
 		activeFiltersCount: Object.values(filters).filter(Boolean).length,
 		filterOptions: resourcesForFilters.ok ? buildFilterOptionsFromResources(resourcesForFilters.items) : { tipos: [], anos: [], temas: [], hashtags: [] },
+		topRatedResources,
 		pagination: {
 			page,
 			totalPages,
