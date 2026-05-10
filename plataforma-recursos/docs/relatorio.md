@@ -62,7 +62,7 @@ A `interface` é uma aplicação web server-side que renderiza páginas HTML e g
 
 ### 3.2 Gateway e Bloqueio de Rotas Internas
 
-O `gateway` organiza a fronteira pública. Encaminha `/api/*`, `/auth/*` e as páginas da interface, mas bloqueia explicitamente rotas internas que não devem estar disponíveis publicamente. Por exemplo, o endpoint de publicação interna de notícias de sistema (`/api/news/system`) e o de renovação server-side de tokens (`/auth/sessions/refresh-server`) são bloqueados no gateway e protegidos adicionalmente por tokens internos nos serviços.
+O `gateway` organiza a fronteira pública. Encaminha `/api/*`, `/auth/*` e as páginas da interface, mas bloqueia explicitamente rotas internas que não devem estar disponíveis publicamente. Por exemplo, o endpoint de publicação interna de notícias de sistema (`/api/news/system`), o endpoint interno de auditoria (`/api/internal/audit`) e o de renovação server-side de tokens (`/auth/sessions/refresh-server`) são bloqueados no gateway e protegidos adicionalmente por tokens internos nos serviços.
 
 ### 3.3 MongoDB para Metadados e Disco para AIP
 
@@ -117,9 +117,9 @@ O domínio principal gira em torno de recursos educativos e da sua preservação
 ```
 admin (3)     → permissões máximas, acesso a tudo
   ↓
-produtor (2)  → pode criar/editar/apagar os seus recursos, criar posts e comentários
+produtor (2)  → pode criar/editar/apagar os seus recursos e participar na camada social
   ↓
-consumidor (1) → leitura de recursos públicos, avaliações
+consumidor (1) → leitura de recursos públicos, avaliações, posts e comentários em recursos visíveis
 ```
 
 | Operação                       | Admin | Produtor | Consumidor |
@@ -129,10 +129,11 @@ consumidor (1) → leitura de recursos públicos, avaliações
 | Criar recursos                   | ✓    | ✓       | —         |
 | Editar/apagar recursos próprios | ✓    | ✓       | —         |
 | Editar/apagar recursos alheios   | ✓    | —       | —         |
-| Criar posts e comentários       | ✓    | ✓       | —         |
+| Criar posts e comentários       | ✓    | ✓       | ✓         |
 | Avaliar recursos                 | ✓    | ✓       | ✓         |
 | Gerir utilizadores               | ✓    | —       | —         |
-| Exportar/importar dados          | ✓    | —       | —         |
+| Exportar dados visíveis          | ✓    | ✓       | ✓         |
+| Importar dados                   | ✓    | recursos próprios | — |
 
 A visibilidade dos recursos é uma regra central: recursos públicos são acessíveis a qualquer pessoa; recursos privados exigem autenticação e só são acessíveis ao produtor responsável ou a administradores. Esta regra é aplicada na listagem, no detalhe e no download do DIP.
 
@@ -242,6 +243,8 @@ O serviço `auth` (porta 16027) gere identidade e autenticação. Principais fun
 
 As passwords são armazenadas com hash bcrypt e removidas de todas as respostas. O arranque exige `JWT_SECRET`, `JWT_REFRESH_SECRET` e `INTERNAL_SERVICE_TOKEN` no ambiente — sem estes valores, o serviço recusa iniciar.
 
+A validação no `auth` existe em várias camadas. O middleware `services/auth/middleware/validate.js` garante que o registo recebe `nome`, `email` e `password`, e que o login recebe `password` mais `email` ou `username`. O modelo `User` reforça `email` único e válido, `role` limitado a `admin`, `produtor` ou `consumidor`, `nivel_acesso` dentro do intervalo permitido e password obrigatória quando o utilizador não vem de OAuth. O `UserService` acrescenta normalização de role, geração segura de `_id`, validação de password mínima, normalização de filiação, rejeição de emails duplicados e bloqueio de contas inativas no login.
+
 ---
 
 ## 7. Serviço API
@@ -254,7 +257,7 @@ A API implementa o fluxo completo OAIS: ingest (SIP → AIP) e access (AIP → D
 
 ### 7.2 Posts, Comentários e Ratings
 
-A camada social permite criar posts associados a recursos, comentar esses posts e avaliar recursos com estrelas (1–5). As operações de leitura respeitam a visibilidade do recurso associado — não é possível comentar ou avaliar um recurso privado a que o utilizador não tenha acesso.
+A camada social permite a utilizadores autenticados criar posts associados a recursos, comentar esses posts e avaliar recursos com estrelas (1–5). As operações respeitam a visibilidade do recurso associado — não é possível consultar, comentar ou avaliar um recurso privado a que o utilizador não tenha acesso.
 
 As avaliações são únicas por utilizador/recurso (upsert). O sistema calcula a média e o total de votos, disponíveis em `GET /api/resources/:id/ratings`. O endpoint `GET /api/resources/:id/ratings/mine` permite ao utilizador consultar a sua própria avaliação.
 
@@ -281,7 +284,9 @@ Cada registo inclui: serviço, ação, método HTTP, caminho, estado (success/fa
 
 ### 7.5 Exportação e Importação
 
-A API disponibiliza endpoints administrativos para backup e migração completa da plataforma. O dump exportado inclui recursos (com ficheiros AIP em base64), AIPs, notícias, posts, ratings, comentários e utilizadores. A importação usa upsert por `_id`, sendo idempotente.
+A API disponibiliza endpoints de transferência de dados em `GET /api/export` e `POST /api/import`, com permissões ajustadas ao perfil. Administradores podem exportar e importar o conjunto global, incluindo utilizadores. Produtores podem exportar recursos visíveis/geríveis e conteúdo relacionado, e importar recursos, ficando impedidos de substituir recursos pertencentes a outro produtor. Consumidores podem exportar dados visíveis, sobretudo recursos públicos e conteúdo relacionado seguro, mas não podem importar.
+
+O dump exportado inclui, conforme o perfil e os filtros permitidos, recursos (com ficheiros AIP em base64), AIPs, notícias, posts, ratings, comentários e utilizadores. A importação usa upsert por `_id`, sendo idempotente, valida `version: "2"` e devolve contadores e erros por coleção.
 
 Filtros granulares permitem exportar ou importar subconjuntos por tipo, data, produtor, visibilidade, etc. A lógica de filtros é partilhada entre a API e a interface, garantindo consistência.
 
@@ -298,6 +303,7 @@ A interface (porta 16026) é construída com Express e Pug, renderizando página
 - Formulário de submissão simples (metadados + ficheiros) e avançada (SIP ZIP).
 - Download seletivo de DIP (todos os ficheiros ou seleção manual).
 - Criação e consulta de posts, comentários em posts, avaliação de recursos.
+- Área de dados (`/data`) para exportação por todos os perfis autenticados e importação por produtores/admins conforme as permissões.
 - Área de administração: utilizadores, notícias, exportação/importação e auditoria.
 
 A interface comunica com `auth` e `api` exclusivamente por HTTP. O interceptor de 401 renova automaticamente o access token via `refresh-server` sem interromper o utilizador. Os formulários de upload usam multipart, e a interface transmite os ficheiros para a API sem os processar localmente.
@@ -310,10 +316,10 @@ A interface comunica com `auth` e `api` exclusivamente por HTTP. O interceptor d
 
 - `helmet` ativo em todos os serviços para headers HTTP defensivos.
 - CORS configurável com lista de origens permitidas.
-- Rate limiting na API e no login do `auth` (in-memory, por janela temporal).
+- Rate limiting global no gateway, na API e no login do `auth` (in-memory, por janela temporal).
 - JWT com access token de curta duração e refresh token HttpOnly.
 - Token interno entre serviços para endpoints não públicos.
-- Validação de payloads e campos obrigatórios em todos os endpoints.
+- Validação de payloads e campos obrigatórios nas rotas principais.
 - Limites de tamanho e whitelist de extensões em uploads.
 - Proteção contra zip-slip nos pacotes SIP.
 - Soft-delete de utilizadores (o documento fica marcado como inativo, o email é anonimizado).
@@ -334,10 +340,14 @@ O módulo `lib/metadataValidator.js` centraliza a validação do contrato de met
 | `dataCriacao`  | string (data) | Não         | ISO 8601                                                    |
 | `hashtags`     | array         | Não         | máx 20 entradas, cada uma máx 80 caracteres, sem espaços |
 
+Além da validação de metadados, a API tem middlewares próprios em `services/api/middleware/validate.js` para validar campos de texto obrigatórios, inteiros no body, paginação (`page`/`limit`) e inteiros opcionais na query, como o filtro `ano`. Esses validadores são usados em recursos, posts, comentários, notícias e ratings; por exemplo, `stars` tem de ser inteiro entre 1 e 5 e os endpoints paginados recusam valores inválidos antes de chegar aos controladores.
+
+No serviço `auth`, a validação de entrada cobre os casos críticos de identidade: registo com `nome`, `email` e `password`, login com `password` e um identificador (`email` ou `username`), refresh token válido, utilizador ativo e roles administrativas válidas. A validação do modelo Mongoose e do `UserService` complementa os middlewares, garantindo email único, formato de email, password mínima, role permitida e remoção da password nas respostas JSON.
+
 ### Observabilidade
 
 - Health check em todos os serviços (`/health`).
-- `requestId` único por pedido, propagado nos logs e nas respostas.
+- `requestId` único por pedido nos serviços `api` e `auth`, propagado nos logs e nas respostas.
 - Logs estruturados de todos os pedidos HTTP com método, caminho, timestamp e requestId.
 - Auditoria persistente em MongoDB com filtros por ação, serviço, estado, utilizador e intervalo temporal.
 - Documentação OpenAPI por serviço, com hub agregado no gateway.
@@ -403,22 +413,23 @@ Utilizador não percebe a renovação
 ### 10.4 Exportação e Importação de Dados
 
 ```
-Admin seleciona filtros e clica "Exportar"
+Utilizador autenticado seleciona filtros e clica "Exportar"
     ↓
 Interface chama GET /api/export com filtros como query params
     ↓
-API recolhe entidades de MongoDB com filtros aplicados
-Pede utilizadores ao auth via /internal/transfer/users
+API restringe permissões e filtros conforme o perfil
+Recolhe entidades de MongoDB com filtros aplicados
+Se for admin, pede utilizadores ao auth via /internal/transfer/users
 Exporta ficheiros AIP em base64
     ↓
 Devolve dump JSON com version: "2"
     ↓
 --- importação noutro ambiente ---
-Admin submete ficheiro de dump
+Admin ou produtor submete ficheiro de dump
     ↓
-API valida version do dump
-Faz upsert de resources, AIPs, posts, ratings, comments, news
-Envia utilizadores para auth via /internal/transfer/users (POST)
+API valida version do dump e permissões de importação
+Faz upsert das coleções permitidas pelo perfil
+Se for admin, envia utilizadores para auth via /internal/transfer/users (POST)
 Repõe ficheiros AIP em disco
     ↓
 Devolve resultado com contadores e erros por coleção
@@ -443,33 +454,16 @@ O projeto inclui testes unitários e de integração ligeiros em `services/api/t
 | `aipStorage.test.js`         | Operações sobre ficheiros AIP em disco                |
 | `dip.test.js`                | Geração do DIP a partir do AIP                        |
 | `transferFilters.test.js`    | Filtros de exportação/importação                    |
+| `transferPermissions.test.js` | Permissões de transferência por perfil               |
 | `oaisAccess.test.js`         | Rota de acesso OAIS (mocks de módulos)                 |
 | `oaisIngest.test.js`         | Rota de ingestão OAIS (mocks de módulos)              |
 
 Os testes de rota usam mocking manual do cache de módulos do Node.js para isolar dependências externas (MongoDB, auth, filesystem) sem frameworks adicionais.
 
----
-
-## 12. Limitações e Trabalho Futuro
-
-As principais limitações identificadas são:
-
-- **Helmet ausente na interface** — os headers de segurança não estão configurados no serviço `interface`.
-- **Rate limiting global no gateway** — não implementado; cada serviço tem o seu próprio controlo.
-- **Dataset de demonstração** — o conjunto de dados de exemplo é ainda reduzido; recomenda-se usar o script `data/povoamento/povoamento-recursos.py` para popular a plataforma.
-- **Sem circuit breaker** — em caso de falha de um serviço downstream, o gateway devolve apenas um erro 502 sem mecanismo de fallback.
-
-Melhorias possíveis a médio prazo:
-
-- Testes de integração end-to-end para os fluxos OAIS completos.
-- Armazenamento de objetos (S3-compatível) para os ficheiros AIP em vez de disco local.
-- Métricas operacionais para monitorização de downloads, ingestões falhadas e atividade de utilizadores.
-- Expansão do modelo de preservação com metadados PREMIS ou Dublin Core.
-- Políticas de retenção e recuperação de AIP.
 
 ---
 
-## 13. Conclusão
+## 12. Conclusão
 
 A plataforma EW2026 implementa uma solução completa para recursos educativos preservados segundo o modelo OAIS. A arquitetura por serviços separa claramente as responsabilidades: o `auth` gere identidade, a `api` gere domínio e preservação, a `interface` entrega a experiência web e o `gateway` organiza a entrada pública.
 
