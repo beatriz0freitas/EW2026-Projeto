@@ -8,7 +8,7 @@ const postsRouter = require('./posts')
 const commentsRouter = require('./comments')
 const ratingsRouter = require('./ratings')
 const newsRouter = require('./news')
-const exportRouter = require('./export')   
+const exportRouter = require('./export')
 const auditRouter = require('./audit')
 
 const router = express.Router()
