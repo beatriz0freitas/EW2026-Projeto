@@ -74,7 +74,7 @@ const config = {
 	},
 	dataTransfer: {
 		maxImportFileSizeBytes: parsePositiveInt(process.env.MAX_IMPORT_FILE_SIZE_BYTES, 256 * 1024 * 1024, 'MAX_IMPORT_FILE_SIZE_BYTES'),
-		jsonBodyLimitLegado: '20mb',
+		jsonBodyLimit: '20mb',
 	},
 }
 

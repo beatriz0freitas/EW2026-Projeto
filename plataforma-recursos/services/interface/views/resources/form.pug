@@ -8,10 +8,7 @@ block content
 			p.resource-form-hero__lead
 				| Preenche a informação principal, junta os ficheiros e a plataforma prepara tudo automaticamente.
 			.resource-form-hero__meta
-				span.resource-chip Preparação automática
-				span.resource-chip Ajuda enquanto preenches
-				a.resource-chip.resource-chip--link(href='/templates/metadados.exemplo.json' download='modelo-recurso.json') Modelo de preenchimento
-
+				
 		section.resource-form-layout
 			section.w3-card.w3-white.form-card
 				.form-card__top
@@ -144,40 +141,6 @@ block content
 							p.field-feedback(data-default-text='Aceita ficheiros .zip preparados para importação.') Aceita ficheiros .zip preparados para importação.
 						p.w3-margin-top
 							button.w3-button.w3-border(type='submit') Importar ZIP
-
-			aside.resource-sidebar
-				section.w3-card.w3-white.side-card
-					h3 Pronto a enviar?
-					p#estado-geral.sidebar-summary(aria-live='polite') Preenche os campos obrigatórios para ficares pronto a submeter.
-					.progress-track
-						span#estado-progresso.progress-track__value
-					ul.validation-list
-						li.validation-item(data-status='titulo')
-							span.validation-item__label Título
-							span.validation-item__value Por preencher
-						li.validation-item(data-status='tipo')
-							span.validation-item__label Tipo
-							span.validation-item__value Por preencher
-						li.validation-item(data-status='visibilidade')
-							span.validation-item__label Visibilidade
-							span.validation-item__value Por preencher
-						li.validation-item(data-status='datas')
-							span.validation-item__label Ano e data
-							span.validation-item__value Opcional
-						li.validation-item(data-status='hashtags')
-							span.validation-item__label Etiquetas
-							span.validation-item__value Opcional
-						li.validation-item(data-status='ficheiros')
-							span.validation-item__label Ficheiros
-							span.validation-item__value Por anexar
-
-				section.w3-card.w3-white.side-card
-					h3 Guia rápido
-					ul.quick-guide
-						li Se quiseres, começa com um exemplo e ajusta só o que interessa.
-						li O mínimo recomendado é título, tipo, visibilidade e pelo menos um ficheiro.
-						li Etiquetas e descrição ajudam outras pessoas a encontrar o recurso.
-					p
 						a.resource-inline-link(href='/templates/metadados.exemplo.json' download='modelo-recurso.json') Transferir modelo de preenchimento
 
-	script(src='/javascripts/resources-form.js')
+	script(src='/javascripts/formulario-recursos.js')

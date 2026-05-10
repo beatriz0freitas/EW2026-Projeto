@@ -1,0 +1,68 @@
+extends ../layout
+
+block content
+	section.pagina-listagem
+		section.page-hero.page-hero--compact.page-hero--single
+			.page-hero__content
+				p.page-eyebrow= transferConfig.eyebrow
+				h1 Importar dados
+				p.page-hero__lead Usa um ficheiro JSON exportado anteriormente para repor recursos dentro das tuas permissões.
+				.page-actions
+					a.w3-button.botao-claro(href='/data') Voltar a Dados
+
+		section.section-card.portal-section
+			if importError
+				div.w3-panel.w3-pale-red.w3-leftbar.w3-border-red
+					p= importError
+
+			if importResults
+				h3 Resultado da importação
+				if importOk
+					div.w3-panel.w3-pale-green.w3-leftbar.w3-border-green
+						p Importação concluída com sucesso.
+				else
+					div.w3-panel.w3-pale-yellow.w3-leftbar.w3-border-yellow
+						p Importação concluída com alguns avisos.
+
+				table.w3-table-all.w3-striped.admin-table
+					thead
+						tr.w3-teal
+							th Área
+							th Processados
+							th Erros
+					tbody
+						- var labels = { resources: 'Recursos', aips: 'Rastreabilidade AIP', news: 'Notícias', posts: 'Publicações', ratings: 'Classificações', comments: 'Comentários', aip: 'Ficheiros AIP' }
+						each key in ['resources', 'aips', 'news', 'posts', 'ratings', 'comments', 'aip']
+							- var r = importResults[key] || { upserted: 0, restored: 0, errors: [] }
+							- var total = key === 'aip' ? r.restored : r.upserted
+							tr
+								td(data-label='Área')= labels[key] || key
+								td(data-label='Processados')= total
+								td(data-label='Erros')
+									= r.errors.length
+									if r.errors.length
+										ul.w3-ul
+											each e in r.errors
+												li= e.id + ': ' + e.message
+
+			form(method='POST' action='/data/import' enctype='multipart/form-data')
+				.form-field(data-field='dumpFile')
+					label(for='dumpFile') Ficheiro exportado
+					.file-input-row
+						input#dumpFile.w3-input.w3-border(
+							type='file'
+							name='dumpFile'
+							accept='.json,application/json'
+						)
+						button.file-clear-button(type='button' data-clear-file='dumpFile' aria-label='Remover ficheiro selecionado') ×
+					p.field-feedback Usa preferencialmente o ficheiro descarregado pela exportação.
+				details.form-advanced
+					summary Colar JSON manualmente
+					label(for='dumpText') Conteúdo do ficheiro
+					textarea#dumpText.w3-input(
+						name='dumpText'
+						rows='10'
+						placeholder='Opcional: cola aqui o conteúdo do ficheiro exportado...'
+					)= dumpText
+				.conteudo-acoes
+					button.w3-button.botao-principal(type='submit') Importar agora

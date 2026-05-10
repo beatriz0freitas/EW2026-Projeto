@@ -14,8 +14,14 @@ const {
 	haFiltrosAtivosNaColecao,
 	scopeIncluiColecaoRaiz,
 } = require('../transfer/filters')
+const {
+	obterCapacidadesTransferencia,
+	restringirFiltrosTransferenciaPorPerfil,
+	filtrarNoticiasRelacionadasARecursos,
+} = require('../transfer/permissions')
 const { jsonError } = require('../lib/http')
 const { exportUsersForTransfer, importUsersForTransfer } = require('../transfer/authClient')
+const { visibilityQuery } = require('../lib/resourceAccess')
 
 function extrairDumpDoPedido(req) {
 	if (req.file?.buffer?.length) {
@@ -104,50 +110,71 @@ async function exportarEntradasAip(resourceIds) {
 
 module.exports.exportAll = async (req, res) => {
 	try {
-		const filtros = construirFiltrosTransferencia(req.query)
+		const capacidades = obterCapacidadesTransferencia(req.user)
+		if (!capacidades.canExport) {
+			return jsonError(res, 403, { code: 'FORBIDDEN', message: 'não tem permissões para exportar dados globais' })
+		}
+
+		const filtros = restringirFiltrosTransferenciaPorPerfil(
+			construirFiltrosTransferencia(req.query),
+			req.user,
+			'export'
+		)
+		const tiposPermitidos = new Set(capacidades.allowedExportRootTypes)
 		const tiposSelecionados = Array.isArray(filtros.selectedTypes) ? filtros.selectedTypes : []
 		const selecionaDiretamente = (tipo) => tiposSelecionados.length ? tiposSelecionados.includes(tipo) : filtros.scope === tipo
-		const incluirResources = scopeIncluiColecaoRaiz('resources', filtros.scope, filtros.selectedTypes)
-		const incluirNews = scopeIncluiColecaoRaiz('news', filtros.scope, filtros.selectedTypes)
-		const incluirUsers = scopeIncluiColecaoRaiz('users', filtros.scope, filtros.selectedTypes)
+		const incluirResources = tiposPermitidos.has('resources') && scopeIncluiColecaoRaiz('resources', filtros.scope, filtros.selectedTypes)
+		const incluirNews = tiposPermitidos.has('news') && scopeIncluiColecaoRaiz('news', filtros.scope, filtros.selectedTypes)
+		const incluirUsers = tiposPermitidos.has('users') && scopeIncluiColecaoRaiz('users', filtros.scope, filtros.selectedTypes)
+		const scopeNewsDireto = selecionaDiretamente('news')
 		const scopePostsDireto = selecionaDiretamente('posts')
 		const scopeRatingsDireto = selecionaDiretamente('ratings')
 		const scopeCommentsDireto = selecionaDiretamente('comments')
 		const scopeAipDireto = selecionaDiretamente('aip')
 		const recursosFiltrados = incluirResources && haFiltrosAtivosNaColecao('resources', filtros)
 		const postsFiltrados = haFiltrosAtivosNaColecao('posts', filtros)
+		const precisaRecursosVisiveis = incluirResources || scopeNewsDireto || scopePostsDireto || scopeRatingsDireto || scopeCommentsDireto || scopeAipDireto
 
 		const [resources, users] = await Promise.all([
-			incluirResources ? consultarColecao(Resource, 'resources', filtros) : Promise.resolve([]),
+			precisaRecursosVisiveis
+				? consultarColecao(Resource, 'resources', filtros, visibilityQuery(req.user))
+				: Promise.resolve([]),
 			incluirUsers ? exportUsersForTransfer() : Promise.resolve([]),
 		])
 
+		const resourcesSelecionados = incluirResources ? resources : []
 		const resourceIds = extrairIds(resources)
 		const filtroPostsPorResources = !scopePostsDireto && recursosFiltrados
 		const filtroRatingsPorResources = !scopeRatingsDireto && recursosFiltrados
 		const filtroAipsPorResources = !scopeAipDireto && recursosFiltrados
+		const filtroPostsPorPermissao = req.user?.role !== 'admin'
+		const filtroRatingsPorPermissao = req.user?.role !== 'admin'
 
-		const posts = scopePostsDireto || incluirResources
+		const posts = (tiposPermitidos.has('posts') && (scopePostsDireto || incluirResources))
 			? await consultarColecao(
 				Post,
 				'posts',
 				filtros,
-				filtroPostsPorResources ? criarFiltroIds('resourceId', resourceIds) || { _id: null } : null
+				(filtroPostsPorPermissao || filtroPostsPorResources)
+					? criarFiltroIds('resourceId', resourceIds) || { _id: null }
+					: null
 			)
 			: []
 
 		const postIds = extrairIds(posts)
 		const filtroCommentsPorPosts = !scopeCommentsDireto && (postsFiltrados || filtroPostsPorResources)
-		const ratings = scopeRatingsDireto || incluirResources
+		const ratings = (tiposPermitidos.has('ratings') && (scopeRatingsDireto || incluirResources))
 			? await consultarColecao(
 				Rating,
 				'ratings',
 				filtros,
-				filtroRatingsPorResources ? criarFiltroIds('resourceId', resourceIds) || { _id: null } : null
+				(filtroRatingsPorPermissao || filtroRatingsPorResources)
+					? criarFiltroIds('resourceId', resourceIds) || { _id: null }
+					: null
 			)
 			: []
 
-		const comments = scopeCommentsDireto || incluirResources || scopePostsDireto
+		const comments = (tiposPermitidos.has('comments') && (scopeCommentsDireto || incluirResources || scopePostsDireto))
 			? await consultarColecao(
 				Comment,
 				'comments',
@@ -167,9 +194,12 @@ module.exports.exportAll = async (req, res) => {
 
 		const newsRaw = incluirNews ? await consultarColecao(NewsItem, 'news', filtros) : []
 		const recursosPublicos = incluirNews ? await construirIdsRecursosPublicos() : new Set()
-		const news = incluirNews ? filtrarNoticiasDerivadasInvalidas(newsRaw, recursosPublicos) : []
+		const newsSeguras = incluirNews ? filtrarNoticiasDerivadasInvalidas(newsRaw, recursosPublicos) : []
+		const news = incluirNews
+			? filtrarNoticiasRelacionadasARecursos(newsSeguras, resourceIds, req.user)
+			: []
 
-		const dumpFiltrado = construirDumpFiltrado({ resources, news, users, posts, ratings, comments, aips }, filtros)
+		const dumpFiltrado = construirDumpFiltrado({ resources: resourcesSelecionados, news, users, posts, ratings, comments, aips }, filtros)
 		const idsParaExportarAip = dumpFiltrado.resources.length
 			? extrairIds(dumpFiltrado.resources)
 			: extrairIds(dumpFiltrado.aips, 'recursoId')
@@ -205,6 +235,11 @@ module.exports.exportAll = async (req, res) => {
 }
 
 module.exports.importAll = async (req, res) => {
+	const capacidades = obterCapacidadesTransferencia(req.user)
+	if (!capacidades.canImport) {
+		return jsonError(res, 403, { code: 'FORBIDDEN', message: 'não tem permissões para importar dados globais' })
+	}
+
 	const payload = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {}
 	let dump
 
@@ -218,7 +253,11 @@ module.exports.importAll = async (req, res) => {
 		return jsonError(res, 400, { code, message })
 	}
 
-	const filtros = construirFiltrosTransferencia(payload.filters || payload || req.query)
+	const filtros = restringirFiltrosTransferenciaPorPerfil(
+		construirFiltrosTransferencia(payload.filters || payload || req.query),
+		req.user,
+		'import'
+	)
 
 	if (!dump || dump.version !== '2') {
 		return jsonError(res, 400, {
@@ -241,6 +280,13 @@ module.exports.importAll = async (req, res) => {
 	const importedResourceIds = new Set()
 	const dumpFiltrado = construirDumpFiltrado(dump, filtros)
 
+	async function recursoImportavelPeloProdutor(resourceId) {
+		if (req.user?.role !== 'produtor') return true
+		const existente = await Resource.findById(resourceId).select({ produtor: 1 }).lean()
+		if (!existente) return true
+		return String(existente.produtor || '') === String(req.user.sub)
+	}
+
 	async function upsertAll(Model, docs, key) {
 		if (!Array.isArray(docs)) return
 
@@ -249,6 +295,11 @@ module.exports.importAll = async (req, res) => {
 				const nextDoc = { ...doc }
 
 				if (key === 'resources') {
+					if (!(await recursoImportavelPeloProdutor(doc._id))) {
+						results[key].errors.push({ id: String(doc._id), message: 'recurso pertence a outro produtor' })
+						continue
+					}
+
 					const resourceAipPath = construirCaminhoAipRecurso(config.storage.aipDir, doc._id)
 					nextDoc.aipPath = resourceAipPath
 					nextDoc.aipFile = construirFicheiroAipGuardado({
@@ -257,6 +308,21 @@ module.exports.importAll = async (req, res) => {
 						mimeType: doc.aipFile?.mimeType,
 						tamanho: doc.aipFile?.size,
 					})
+
+					if (req.user?.role === 'produtor') {
+						nextDoc.produtor = req.user.sub
+					}
+				}
+
+				if (key === 'aips') {
+					if (!(await recursoImportavelPeloProdutor(doc.recursoId))) {
+						results[key].errors.push({ id: String(doc._id), message: 'AIP associado a recurso não gerível por este produtor' })
+						continue
+					}
+
+					if (req.user?.role === 'produtor') {
+						nextDoc.produtor = req.user.sub
+					}
 				}
 
 				await Model.findByIdAndUpdate(doc._id, { $set: nextDoc }, { upsert: true, new: true })
@@ -282,6 +348,7 @@ module.exports.importAll = async (req, res) => {
 		const entriesById = new Map(Array.isArray(aipEntries) ? aipEntries.map((entry) => [String(entry.resourceId), entry]) : [])
 
 		for (const resourceId of resourceIds) {
+			if (req.user?.role === 'produtor' && !importedResourceIds.has(resourceId)) continue
 			if (importedResourceIds.size && !importedResourceIds.has(resourceId) && !entriesById.has(resourceId)) continue
 
 			const entry = entriesById.get(resourceId)

@@ -1,3 +1,4 @@
+- const transferTypeSet = Array.isArray(typeof allowedTransferTypes !== 'undefined' ? allowedTransferTypes : null) && allowedTransferTypes.length ? allowedTransferTypes : ['resources', 'news', 'users', 'posts', 'comments', 'ratings']
 - const tiposSelecionados = Array.isArray(filterForm.selectedTypes) ? filterForm.selectedTypes : []
 - const temFiltrosAtivos = Boolean(tiposSelecionados.length || filterForm.resourceType || filterForm.resourceYear || filterForm.resourceTheme || filterForm.resourceHashtag || filterForm.resourceVisibility || filterForm.resourceProducer || filterForm.resourceCreatedFrom || filterForm.resourceCreatedTo || filterForm.newsCreatedBy || filterForm.newsPublishedFrom || filterForm.newsPublishedTo || filterForm.postAuthor || filterForm.postCreatedFrom || filterForm.postCreatedTo || filterForm.commentAuthor || filterForm.commentCreatedFrom || filterForm.commentCreatedTo || filterForm.ratingUser || filterForm.ratingStars || filterForm.ratingCreatedFrom || filterForm.ratingCreatedTo || filterForm.quantityLimit)
 - const mostrarRecursos = !tiposSelecionados.length || tiposSelecionados.includes('resources')
@@ -6,40 +7,63 @@
 - const mostrarPosts = !tiposSelecionados.length || tiposSelecionados.includes('posts')
 - const mostrarRatings = !tiposSelecionados.length || tiposSelecionados.includes('ratings')
 - const mostrarComentarios = !tiposSelecionados.length || tiposSelecionados.includes('comments')
+- const mostrarCartaoDefault = typeof showDefaultTransferCard === 'undefined' ? true : !!showDefaultTransferCard
+- const contadorFiltrosEspecificos = [filterForm.resourceType, filterForm.resourceYear, filterForm.resourceTheme, filterForm.resourceHashtag, filterForm.resourceVisibility, filterForm.resourceProducer, filterForm.resourceCreatedFrom, filterForm.resourceCreatedTo, filterForm.newsCreatedBy, filterForm.newsPublishedFrom, filterForm.newsPublishedTo, filterForm.postAuthor, filterForm.postCreatedFrom, filterForm.postCreatedTo, filterForm.commentAuthor, filterForm.commentCreatedFrom, filterForm.commentCreatedTo, filterForm.ratingUser, filterForm.ratingStars, filterForm.ratingCreatedFrom, filterForm.ratingCreatedTo, filterForm.quantityLimit].filter(Boolean).length
+- const contadorFiltrosAtivos = contadorFiltrosEspecificos + (tiposSelecionados.length ? 1 : 0)
+- const textoResumoFiltros = contadorFiltrosAtivos ? `${contadorFiltrosAtivos} filtro${contadorFiltrosAtivos > 1 ? 's' : ''} ativo${contadorFiltrosAtivos > 1 ? 's' : ''}` : 'Sem filtros ativos'
 
 .transfer-filters
 	input(type='hidden' name='scope' value='all')
-	section.transfer-step
-		article.transfer-default-card
-			h3 Por defeito sai todo o conteúdo da plataforma.
-			p Se quiseres descarregar apenas uma parte dos dados, abre a filtragem abaixo.
+	if typeof lockResourceVisibility !== 'undefined' && lockResourceVisibility
+		input(type='hidden' name='resourceVisibility' value=lockResourceVisibility)
+	if mostrarCartaoDefault
+		section.transfer-step
+			article.transfer-default-card
+				h3= typeof defaultTransferTitle !== 'undefined' && defaultTransferTitle ? defaultTransferTitle : 'Por defeito sai todo o conteúdo da plataforma.'
+				p= typeof defaultTransferText !== 'undefined' && defaultTransferText ? defaultTransferText : 'Se quiseres descarregar apenas uma parte dos dados, abre a filtragem abaixo.'
 
-	section.transfer-step
-		details.form-advanced(open=temFiltrosAtivos)
-			summary Filtrar conteúdo a exportar
+	section.transfer-step.transfer-step--filters
+		details.form-advanced.transfer-dropdown(data-filter-dropdown)
+			summary.transfer-dropdown__summary
+				span.transfer-dropdown__summary-copy
+					strong Filtrar conteúdo a exportar
+					span.transfer-dropdown__summary-text Abre apenas se quiseres restringir a exportação.
+				span.transfer-dropdown__summary-aside
+					span.transfer-dropdown__status(data-filter-toggle-status)= textoResumoFiltros
+					span.transfer-dropdown__icon(aria-hidden='true')
 			.transfer-filter-groups
 				section.transfer-filter-group
 					h3 Tipo de conteúdo
-					p.w3-text-grey Escolhe um ou vários tipos. Se não escolheres nenhum, fica tudo incluído.
-					fieldset.transfer-type-grid
-						label.transfer-type-card
-							input(type='checkbox' name='selectedTypes' value='resources' checked=tiposSelecionados.includes('resources'))
-							strong Recursos
-						label.transfer-type-card
-							input(type='checkbox' name='selectedTypes' value='news' checked=tiposSelecionados.includes('news'))
-							strong Notícias
-						label.transfer-type-card
-							input(type='checkbox' name='selectedTypes' value='users' checked=tiposSelecionados.includes('users'))
-							strong Utilizadores
-						label.transfer-type-card
-							input(type='checkbox' name='selectedTypes' value='posts' checked=tiposSelecionados.includes('posts'))
-							strong Publicações
-						label.transfer-type-card
-							input(type='checkbox' name='selectedTypes' value='comments' checked=tiposSelecionados.includes('comments'))
-							strong Comentários
-						label.transfer-type-card
-							input(type='checkbox' name='selectedTypes' value='ratings' checked=tiposSelecionados.includes('ratings'))
-							strong Classificações
+					if transferTypeSet.length === 1
+						input(type='hidden' name='selectedTypes' value=transferTypeSet[0])
+						p.w3-text-grey Nesta área a exportação está focada em #{transferTypeSet[0] === 'resources' ? 'recursos' : transferTypeSet[0]}.
+					else
+						p.w3-text-grey Escolhe um ou vários tipos. Se não escolheres nenhum, fica tudo incluído.
+						fieldset.transfer-type-grid
+							if transferTypeSet.includes('resources')
+								label.transfer-type-card
+									input(type='checkbox' name='selectedTypes' value='resources' checked=tiposSelecionados.includes('resources'))
+									strong Recursos
+							if transferTypeSet.includes('news')
+								label.transfer-type-card
+									input(type='checkbox' name='selectedTypes' value='news' checked=tiposSelecionados.includes('news'))
+									strong Notícias
+							if transferTypeSet.includes('users')
+								label.transfer-type-card
+									input(type='checkbox' name='selectedTypes' value='users' checked=tiposSelecionados.includes('users'))
+									strong Utilizadores
+							if transferTypeSet.includes('posts')
+								label.transfer-type-card
+									input(type='checkbox' name='selectedTypes' value='posts' checked=tiposSelecionados.includes('posts'))
+									strong Publicações
+							if transferTypeSet.includes('comments')
+								label.transfer-type-card
+									input(type='checkbox' name='selectedTypes' value='comments' checked=tiposSelecionados.includes('comments'))
+									strong Comentários
+							if transferTypeSet.includes('ratings')
+								label.transfer-type-card
+									input(type='checkbox' name='selectedTypes' value='ratings' checked=tiposSelecionados.includes('ratings'))
+									strong Classificações
 
 				section.transfer-filter-group
 					h3 Atributos
@@ -57,15 +81,21 @@
 							.form-field
 								label(for='resourceHashtag') Etiqueta
 								input#resourceHashtag.w3-input.w3-border(type='text' name='resourceHashtag' value=filterForm.resourceHashtag placeholder='Ex.: exame')
-							.form-field
-								label(for='resourceVisibility') Visibilidade
-								select#resourceVisibility.w3-select(name='resourceVisibility')
-									option(value='' selected=!filterForm.resourceVisibility) Todas
-									option(value='publico' selected=filterForm.resourceVisibility === 'publico') Público
-									option(value='privado' selected=filterForm.resourceVisibility === 'privado') Privado
-							.form-field
-								label(for='resourceProducer') Autor
-								input#resourceProducer.w3-input.w3-border(type='text' name='resourceProducer' value=filterForm.resourceProducer placeholder='Nome ou identificador')
+							if !(typeof lockResourceVisibility !== 'undefined' && lockResourceVisibility)
+								.form-field
+									label(for='resourceVisibility') Visibilidade
+									select#resourceVisibility.w3-select(name='resourceVisibility')
+										option(value='' selected=!filterForm.resourceVisibility) Todas
+										option(value='publico' selected=filterForm.resourceVisibility === 'publico') Público
+										option(value='privado' selected=filterForm.resourceVisibility === 'privado') Privado
+							else
+								.form-field
+									label Visibilidade aplicada
+									input.w3-input.w3-border(type='text' value=(lockResourceVisibility === 'publico' ? 'Público' : 'Privado') readonly)
+							if typeof showResourceProducerFilter === 'undefined' || showResourceProducerFilter
+								.form-field
+									label(for='resourceProducer') Autor
+									input#resourceProducer.w3-input.w3-border(type='text' name='resourceProducer' value=filterForm.resourceProducer placeholder='Nome ou identificador')
 							.form-field
 								label(for='resourceCreatedFrom') Data de publicação
 								input#resourceCreatedFrom.w3-input.w3-border(type='date' name='resourceCreatedFrom' value=filterForm.resourceCreatedFrom)

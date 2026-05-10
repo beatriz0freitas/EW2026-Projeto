@@ -3,46 +3,53 @@ extends ../layout
 block content
 	- const r = typeof form !== 'undefined' && form ? form : {}
 	- const t = typeof suggestions !== 'undefined' && suggestions ? suggestions : { tipos: [], anos: [], temas: [], hashtags: [] }
-	section.w3-card.w3-white.secao-card
-		h1 Editar recurso
-		p.w3-text-grey Atualiza a informação que aparece na página do recurso.
+	section.page-hero.page-hero--compact
+		.page-hero__content
+			p.page-eyebrow Gestão do recurso
+			h1 Editar recurso
+			p.page-hero__lead Atualiza apenas o que melhora a compreensão de quem vai consultar ou reutilizar este material.
+			.page-actions
+				a.w3-button.w3-border(href=`/resources/${resource._id}`) Voltar ao detalhe
 
-		form.formulario-compacto(action=`/resources/${resource._id}/edit` method='post')
-			label(for='titulo') Título
-			input#titulo.w3-input(type='text' name='titulo' maxlength='200' required value=(r.titulo || ''))
+	section.resource-edit-layout
+		section.section-card
+			form.formulario-compacto(action=`/resources/${resource._id}/edit` method='post')
+				label(for='titulo') Título
+				input#titulo.w3-input(type='text' name='titulo' maxlength='200' required value=(r.titulo || ''))
 
-			label(for='subtitulo') Subtítulo
-			input#subtitulo.w3-input(type='text' name='subtitulo' maxlength='200' value=(r.subtitulo || ''))
+				label(for='subtitulo') Subtítulo
+				input#subtitulo.w3-input(type='text' name='subtitulo' maxlength='200' value=(r.subtitulo || ''))
 
-			label(for='tipo') Tipo
-			input#tipo.w3-input(type='text' name='tipo' list='tipos-list' required value=(r.tipo || ''))
-			datalist#tipos-list
-				each tipo in t.tipos
-					option(value=tipo)
+				label(for='tipo') Tipo
+				input#tipo.w3-input(type='text' name='tipo' list='tipos-list' required value=(r.tipo || ''))
+				datalist#tipos-list
+					each tipo in t.tipos
+						option(value=tipo)
 
-			label(for='ano') Ano
-			input#ano.w3-input(type='number' name='ano' min='0' max='3000' value=(r.ano || ''))
+				label(for='ano') Ano
+				input#ano.w3-input(type='number' name='ano' min='0' max='3000' value=(r.ano || ''))
 
-			label(for='tema') Tema
-			input#tema.w3-input(type='text' name='tema' list='temas-list' value=(r.tema || ''))
-			datalist#temas-list
-				each tema in t.temas
-					option(value=tema)
+				label(for='tema') Tema
+				input#tema.w3-input(type='text' name='tema' list='temas-list' value=(r.tema || ''))
+				datalist#temas-list
+					each tema in t.temas
+						option(value=tema)
 
-			label(for='hashtags') Etiquetas
-			input#hashtags.w3-input(type='text' name='hashtags' list='hashtags-list' value=(r.hashtags || ''))
-			datalist#hashtags-list
-				each hashtag in t.hashtags
-					option(value=hashtag)
+				label(for='hashtags') Etiquetas
+				input#hashtags.w3-input(type='text' name='hashtags' list='hashtags-list' value=(r.hashtags || ''))
+				datalist#hashtags-list
+					each hashtag in t.hashtags
+						option(value=hashtag)
 
-			label(for='dataCriacao') Data de criação
-			input#dataCriacao.w3-input(type='text' name='dataCriacao' value=(r.dataCriacao || ''))
+				label(for='dataCriacao') Data de criação
+				input#dataCriacao.w3-input(type='text' name='dataCriacao' value=(r.dataCriacao || ''))
 
-			label(for='visibilidade') Visibilidade
-			select#visibilidade.w3-select(name='visibilidade' required)
-				option(value='publico' selected=(r.visibilidade === 'publico')) Público
-				option(value='privado' selected=(r.visibilidade !== 'publico')) Privado
+				label(for='visibilidade') Visibilidade
+				select#visibilidade.w3-select(name='visibilidade' required)
+					option(value='publico' selected=(r.visibilidade === 'publico')) Público
+					option(value='privado' selected=(r.visibilidade !== 'publico')) Privado
 
-			.conteudo-acoes
-				button.w3-button.botao-principal(type='submit') Guardar alterações
-				a.w3-button.w3-border(href=`/resources/${resource._id}`) Cancelar
+				.conteudo-acoes
+					button.w3-button.botao-principal(type='submit') Guardar alterações
+					a.w3-button.w3-border(href=`/resources/${resource._id}`) Cancelar
+«

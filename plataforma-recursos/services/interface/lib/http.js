@@ -24,6 +24,27 @@ const { config } = require('./config')
 const AUTH_URL = config.services.authUrl
 const API_URL = config.services.apiUrl
 
+function resolveServiceName(baseUrl) {
+	if (baseUrl === AUTH_URL) return 'autenticação'
+	if (baseUrl === API_URL) return 'dados'
+	return 'remoto'
+}
+
+function buildNetworkFailurePayload(baseUrl, endpoint, error) {
+	const serviceName = resolveServiceName(baseUrl)
+	const technicalMessage = error instanceof Error ? error.message : String(error || 'Falha de ligação')
+
+	return {
+		message: `O serviço de ${serviceName} está temporariamente indisponível.`,
+		code: 'service_unavailable',
+		details: [
+			{
+				message: `${serviceName}:${endpoint} · ${technicalMessage}`,
+			},
+		],
+	}
+}
+
 // ─── Função base ─────────────────────────────────────────────────────────────
 
 async function requestJson(baseUrl, endpoint, { method = 'GET', token, headers = {}, body } = {}) {
@@ -31,11 +52,21 @@ async function requestJson(baseUrl, endpoint, { method = 'GET', token, headers =
 	if (body !== undefined) requestHeaders['Content-Type'] = 'application/json'
 	if (token) requestHeaders.Authorization = `Bearer ${token}`
 
-	const response = await fetch(`${baseUrl}${endpoint}`, {
-		method,
-		headers: requestHeaders,
-		body: body !== undefined ? JSON.stringify(body) : undefined,
-	})
+	let response
+	try {
+		response = await fetch(`${baseUrl}${endpoint}`, {
+			method,
+			headers: requestHeaders,
+			body: body !== undefined ? JSON.stringify(body) : undefined,
+		})
+	} catch (error) {
+		return {
+			ok: false,
+			status: 503,
+			data: buildNetworkFailurePayload(baseUrl, endpoint, error),
+			headers: new Headers(),
+		}
+	}
 
 	let payload = null
 	try { payload = await response.json() } catch { payload = null }
@@ -52,11 +83,18 @@ async function requestRaw(baseUrl, endpoint, { method = 'GET', token, headers = 
 	if (!hasAcceptHeader) mergedHeaders.Accept = 'application/json'
 	if (token) mergedHeaders.Authorization = `Bearer ${token}`
 
-	return fetch(`${baseUrl}${endpoint}`, {
-		method,
-		headers: mergedHeaders,
-		body,
-	})
+	try {
+		return await fetch(`${baseUrl}${endpoint}`, {
+			method,
+			headers: mergedHeaders,
+			body,
+		})
+	} catch (error) {
+		return new Response(JSON.stringify(buildNetworkFailurePayload(baseUrl, endpoint, error)), {
+			status: 503,
+			headers: { 'content-type': 'application/json' },
+		})
+	}
 }
 
 // ─── Renovação de token ───────────────────────────────────────────────────────

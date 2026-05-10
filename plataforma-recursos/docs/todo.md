@@ -5,6 +5,7 @@ Legenda:
 - ✅ Implementado
 - ⚠️ Parcial / com ressalvas
 - ❌ Em falta
+- 🎯 Prioridade recomendada
 
 Atualizado em: 2026-05-09
 
@@ -20,138 +21,53 @@ Validação desta atualização:
 
 ---
 
-## 1) Alterações efetuadas por categorias
+## 1) Diagnóstico do `todo.md` anterior
 
-### Submissão e ingestão de recursos
+O ficheiro anterior já não estava a cumprir bem a função de backlog porque misturava três coisas diferentes:
 
-- ✅ Criado fluxo de submissão simples em `/resources/new/simple`.
-- ✅ Criado endpoint API `POST /api/oais/ingest/simples`.
-- ✅ A submissão simples recebe metadados e ficheiros soltos e gera automaticamente um SIP BagIt.
-- ✅ O SIP gerado contém `manifest.json`, `bagit.txt`, `checksums.txt`, `data/` e os ficheiros do recurso.
-- ✅ O mesmo fluxo de ingestão OAIS é usado para SIP avançado e submissão simples.
-- ✅ Mantido o upload avançado de SIP ZIP para utilizadores que já têm um pacote preparado.
+- histórico do que foi implementado;
+- fotografia do estado atual;
+- lista de trabalho pendente.
 
-### Validação, segurança e contratos
+Além disso, havia problemas concretos de manutenção do documento:
 
-- ✅ Lógica de validação de `metadata.resource` centralizada no módulo `lib/metadataValidator.js`.
-- ✅ Validação coerente aplicada no SIP gerado, upload avançado de SIP ZIP e na atualização (PATCH) de recursos.
-- ✅ Limites de tamanho exatos para campos como `tipo`, `titulo`, `subtitulo`, `descricao`, `tema` definidos.
-- ✅ Array de `hashtags` tem validação estrita do número máximo de entradas e tamanho.
-- ✅ Normalização de caminhos no manifesto para impedir entradas fora de `data/`.
-- ✅ Mensagens de erro de SIP traduzidas para português.
-- ✅ Upload múltiplo em memória com limite de número de ficheiros e tamanho.
-- ✅ Interface mostra detalhes de erro vindos da API quando a submissão falha.
-
-### Interface e experiência de utilização
-
-- ✅ Formulário guiado de submissão simples com campos de metadados, ficheiros e visibilidade.
-- ✅ Exemplos rápidos para dataset, artigo e slides.
-- ✅ Validação visual em tempo real no formulário de submissão.
-- ✅ Resumo lateral do estado dos metadados e dos ficheiros anexados.
-- ✅ Detalhe de recurso mostra subtítulo, descrição, hashtags, data de criação e ficheiros submetidos.
-- ✅ Listagem de recursos mantém filtros por tipo, ano, tema e hashtag.
-- ✅ Home, recursos, detalhe, posts e autenticação foram adaptados para uma UI mais apelativa.
-- ✅ Paleta visual revista para azul escuro, vermelho e branco, com maior contraste e hierarquia.
-
-### Documentação e apoio
-
-- ✅ Swagger da API atualizado com `/api/oais/ingest/simples`.
-- ✅ Swagger da interface atualizado com `/resources/new/simple`.
-- ✅ Criado `docs/submissao-recursos.md` com instruções de submissão.
-- ✅ Criado template `services/interface/public/templates/metadados.exemplo.json`.
-- ✅ Documentação de submissão atualizada para o formato único atual.
+- havia secções duplicadas para `gateway`, `nginx` e `interface`;
+- existiam itens marcados como ❌ que já estão implementados no código;
+- o backlog dava destaque a tarefas menos relevantes e escondia lacunas mais importantes de robustez operacional.
 
 ---
 
-## 2) Cobertura do enunciado (Proposta 1)
+## 2) Estado validado no código
 
-### Objetivos funcionais
+### Itens anteriormente marcados como em falta, mas que já existem
 
-- ✅ Disponibilizar recursos educativos de vários tipos.
-- ✅ Permitir adicionar novos recursos por formulário simples ou SIP ZIP.
-- ✅ Classificação por tipo, ano, tema e hashtag.
-- ✅ Permitir posts sobre recursos, com associação por `resourceId`.
-- ✅ Permitir comentários em posts.
-- ✅ Sistema de ranking por estrelas (1..5), com média e total.
+- ✅ `Helmet` na interface (`services/interface/app.js`).
+- ✅ `Rate limiting` global no gateway (`services/gateway/app.js` + `services/gateway/middleware/rateLimit.js`).
+- ✅ Testes automáticos mínimos na API, incluindo OAIS, validação, autorização e rate limiting (`services/api/testes/*`).
+- ✅ OAuth Google/Facebook presente na interface (`services/interface/routes/auth.js`).
 
-### SIP / DIP (OAIS)
+### Estado geral atual
 
-- ✅ SIP em ZIP com validação BagIt simplificada.
-- ✅ Validação de checksums SHA-256 e deteção de zip-slip.
-- ✅ Geração automática de SIP a partir de metadados e ficheiros.
-- ✅ DIP disponível por GET `/api/oais/access/:id`.
-- ✅ DIP gerado a partir do AIP preservado em disco.
-- ✅ Controlo público/privado no acesso ao DIP.
-
-### Utilizadores e perfis
-
-- ✅ Autenticação por username/email + password com JWT.
-- ✅ Perfis admin, produtor e consumidor implementados.
-- ✅ Refresh token implementado.
-- ✅ Registo público força `role=consumidor`.
-- ✅ Autenticações alternativas (Google, Facebook) implementadas.
-
-### Metainformação de recursos
-
-- ✅ `tipo`, `titulo`, `visibilidade`, produtor e data de registo existem no fluxo/modelo.
-- ✅ `subtitulo`, `descrição`, `tema`, `ano`, `hashtags` e `dataCriacao` são suportados na submissão simples.
-- ✅ `ano`, `visibilidade` e `hashtags` têm validação nos 3 métodos de ingestão.
-- ✅ `subtitulo` e `descricao` têm validação de limites de caracteres.
-- ✅ Implementado um esquema exato e rigoroso central partilhado pelo SIP e form.
-
-### Notícias na página principal
-
-- ✅ Notícias manuais por admin.
-- ✅ Últimas notícias na home.
-- ✅ Notícias automáticas de nova submissão, top3 e total de utilizadores.
-
-### Dataset para demonstração
-
-- ⚠️ Existem entradas reais no storage, mas ainda não atinge "dezenas".
+- ✅ Núcleo funcional da Proposta 1 está implementado.
+- ✅ Fluxo OAIS SIP/AIP/DIP está implementado.
+- ✅ Submissão simples com geração automática de SIP está implementada.
+- ✅ API, auth, gateway e interface estão separados e organizados por serviço.
+- ✅ Segurança base já existe em vários pontos: `helmet`, `cors`, validação de input, limites de upload e rate limiting.
+- ⚠️ A maturidade global ainda está desigual entre serviços: a API já tem testes, mas os restantes serviços ainda não têm o mesmo nível de validação.
 
 ---
 
-## 3) Estado por serviço
+## 3) O que realmente falta e é pertinente
 
-### API (`services/api`)
+Esta é a parte mais importante neste momento.
 
-- ✅ Estrutura modular com `models`, `routes`, `controllers`, `middleware` e `lib`.
-- ✅ Swagger disponível em `/api/docs`.
-- ✅ OAIS ingest e access operacionais.
-- ✅ Submissão simples em `/api/oais/ingest/simples`.
-- ✅ CRUD principal: resources, posts, comments, ratings e news.
-- ✅ Export/import de dados globais.
-- ✅ Paginação e respostas de erro centralizadas em `lib/http.js`.
-- ✅ Endpoint `ratings/mine` implementado.
-- ✅ Notícias de sistema com deduplicação.
-- ✅ Evento automático `system.new_submission` no fim do ingest.
-- ✅ Job para `system.top3` e `system.total_users`.
-- ✅ Contagem de downloads por recurso.
-- ✅ PATCH de resources atualiza campos permitidos da metadata.
-- ✅ GET `/api/posts` aceita filtro opcional `resourceId`.
-- ✅ Helmet implementado
-- ✅ CORS explícito implementado na API.
-- ✅ Rate limiting implementado na API.
+### 🎯 Prioridade alta
 
-### Auth (`services/auth`)
+#### 3.1 Sessões da interface em store persistente
 
-- ✅ Separação entre `routes`, `controllers`, `services`, `models`, `middleware` e `lib`.
-- ✅ Middleware de acesso consolidado.
-- ✅ JWT, refresh token, verify e gestão de utilizadores admin.
-- ✅ Swagger disponível em `/docs` e `/auth/docs`.
-- ✅ Soft-delete de utilizador (`ativo=false`).
-- ✅ Hash de password com bcrypt.
-- ✅ Validação dedicada para login/campos obrigatórios.
-- ✅ Arranque só após ligação ao MongoDB.
-- ✅ CORS configurado no auth.
-- ✅ Rate limiting no login.
-- ✅ Endpoints internos legados removidos para simplificar a API Auth.
-- ✅ Publicacao automatica de noticia `system.total_users` quando o total de utilizadores muda (auth -> api, best-effort).
-- ✅ Config valida e exige `JWT_SECRET` e `INTERNAL_SERVICE_TOKEN` no arranque.
-- ✅ Refresh token deixou de ser devolvido em JSON no login.
-- ✅ `JWT_REFRESH_SECRET` exigido no arranque do auth.
-- ✅ Rate limiting no login implementado em POST `/auth/sessions` (in-memory por janela temporal).
-- ✅ Helmet implementado.
+- ❌ A interface usa `express-session` sem store externo, ficando na prática com `MemoryStore`.
+- Impacto: não é solução robusta para produção, perde sessões em restart e escala mal.
+- Evolução recomendada: usar `connect-mongo` ou Redis para guardar sessões.
 
 ### Gateway (`services/gateway`)
 
@@ -165,14 +81,17 @@ Validação desta atualização:
 - ✅ Rate limiting global implementado.
 - ⚠️ Sem circuit breaker.
 
-### Nginx (`infra/nginx`)
+### 🎯 Prioridade média
 
-- ✅ `nginx` exposto ao exterior e a encaminhar tráfego para o gateway.
-- ✅ Compressão `gzip` ativa.
-- ✅ Limite de upload definido na borda.
-- ✅ Gateway apenas acessível na rede Docker.
+#### 3.6 Tipos de recurso realmente extensíveis
 
-### Interface (`services/interface`)
+- ❌ O enunciado pede não só um conjunto base de tipos, mas também prever o aumento e a adição de novos tipos de recurso.
+- Estado atual: os tipos válidos estão fechados por enumeração fixa no backend.
+- Impacto: para acrescentar um novo tipo é preciso mexer no código e redeploy, em vez de a plataforma o suportar de forma mais natural.
+- Evolução recomendada:
+	- extrair tipos base para configuração ou coleção própria;
+	- permitir gestão administrativa dos tipos disponíveis;
+	- manter validação sem ficar preso a uma lista hardcoded.
 
 - ✅ App Express com Pug, sessão, flash messages e rotas montadas.
 - ✅ Login/registo/logout funcionais.
@@ -188,18 +107,20 @@ Validação desta atualização:
 
 ---
 
-## 4) Backlog prioritário para fecho
+## 4) Backlog recomendado para fecho
 
-### Hardening transversal
+### Sprint 1 — robustez mínima obrigatória
 
 - ✅ Helmet na interface.
 - ✅ Rate limiting global no gateway.
 
-### Auth — melhorias de segurança
+### Sprint 2 — confiança na entrega
 
-- ✅ Remover refreshToken do corpo JSON do login (manter apenas em cookie HttpOnly).
-- ✅ Exigir JWT_REFRESH_SECRET no arranque em vez de ter fallback por defeito.
+- 🎯 Criar testes do gateway (proxy, 502, rate limiting).
+- 🎯 Criar smoke tests da interface para rotas críticas.
+- 🎯 Criar pipeline CI para testes e checks automáticos.
 
+### Sprint 3 — demonstração e operação
 
 ### Experiência funcional final
 
@@ -217,7 +138,7 @@ Validação desta atualização:
 
 ---
 
-## 5) Estado final resumido
+## 5) Itens que deixam de fazer sentido como prioridade
 
 - Núcleo da Proposta 1: ✅ funcional.
 - OAIS ingest/access: ✅ funcional.

@@ -1,27 +1,60 @@
 extends ../layout
 
 block content
+	- const activeFilterChips = []
+	- if (filters?.tipo) activeFilterChips.push(`Tipo: ${filters.tipo}`)
+	- if (filters?.ano) activeFilterChips.push(`Ano: ${filters.ano}`)
+	- if (filters?.tema) activeFilterChips.push(`Tema: ${filters.tema}`)
+	- if (filters?.hashtag) activeFilterChips.push(`Etiqueta: ${filters.hashtag}`)
+	- const resourceItems = Array.isArray(items) ? items : []
+	- const ratingRanking = Array.isArray(topRatedResources) ? topRatedResources : []
+	- const visibleTypes = new Set(resourceItems.map((item) => item?.metadata?.resource?.tipo).filter(Boolean)).size
 	section.pagina-listagem
-		section.cabecalho-pagina
-			h1 Recursos educativos
-			p Pesquisa e reutiliza materiais preservados na plataforma.
-			.cabecalho-acoes
-				if user && (user.role === 'produtor' || user.role === 'admin')
-					a.w3-button.botao-principal(href='/resources/new') Submeter recurso
-				a.w3-button.w3-border(href='/posts') Ver publicações
-			.etiquetas
-				span.etiqueta Total: #{pagination.total}
-				span.etiqueta.etiqueta--vermelha Página #{pagination.page} de #{pagination.totalPages}
+		section.page-hero.page-hero--compact.page-hero--single
+			.page-hero__content
+				p.page-eyebrow Catálogo
+				h1 Recursos educativos
+				p.page-hero__lead Pesquisa, compara e abre cada recurso com sinais visuais claros para não te perderes na lista.
+				.page-actions
+					if user && (user.role === 'produtor' || user.role === 'admin')
+						a.w3-button.botao-principal(href='/resources/new') Submeter recurso
+					a.w3-button.w3-border(href='/posts') Ver publicações
+		
+		section.section-card
+			.cabecalho-secao
+				div
+					h2 Ranking de classificações
+					p.w3-text-grey Recursos com melhor avaliação média entre os conteúdos visíveis.
+			if !ratingRanking.length
+				.empty-state
+					p Ainda não existem classificações suficientes para apresentar um ranking.
+			else
+				ol.rating-ranking-list
+					each item, index in ratingRanking
+						li.rating-ranking-item
+							span.rating-ranking-item__position #{index + 1}
+							div.rating-ranking-item__content
+								strong
+									a(href=`/resources/${item._id}`)= item.titulo
+								if item.tipo
+									span.rating-ranking-item__meta= item.tipo
+							div.rating-ranking-item__score
+								strong #{item.media.toFixed(1)}
+								span #{item.total} voto#{item.total === 1 ? '' : 's'}
 
-		section.w3-white.secao-card
+		section.section-card
 			- const f = filters || {}
 			- const options = filterOptions || { tipos: [], anos: [], temas: [], hashtags: [] }
 			.cabecalho-secao
 				div
 					h2 Filtrar recursos
-					p.w3-text-grey Escolhe só o que precisas para reduzir a lista.
+					p.w3-text-grey Escolhe apenas o que ajuda a decidir. O resto fica limpo e legível.
 				if activeFiltersCount
 					a.w3-button.w3-border(href='/resources') Limpar filtros
+			if activeFilterChips.length
+				.chips-linha.resource-filters__summary
+					each chip in activeFilterChips
+						span.etiqueta.etiqueta--subtle= chip
 			form.filtros-recursos(action='/resources' method='get')
 				div
 					label(for='tipo') Tipo
@@ -55,7 +88,7 @@ block content
 					button.w3-button.botao-principal(type='submit') Filtrar
 					a.w3-button.w3-border(href='/resources') Limpar
 
-		section.w3-white.secao-card
+		section.section-card
 			.cabecalho-secao
 				div
 					h2 Resultados
@@ -70,23 +103,31 @@ block content
 					if activeFiltersCount
 						a.w3-button.w3-border(href='/resources') Limpar filtros
 			else
-				table.w3-table-all.w3-hoverable.w3-striped
-					thead
-						tr.w3-teal
-							th Título
-							th Tipo
-							th Ano
-							th Ação
-					tbody
-						each item in items
-							- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
-							tr
-								td(data-label='Título')
-									a.result-title(href=`/resources/${item._id}`)= r.titulo || 'Sem título'
-								td(data-label='Tipo')= r.tipo || '-'
-								td(data-label='Ano')= r.ano || '-'
-								td.tabela-acoes
-									a(href=`/resources/${item._id}`) Ver detalhe
+				.resource-result-grid
+					each item in items
+						- const r = (item && item.metadata && item.metadata.resource) ? item.metadata.resource : {}
+						- const shortDescription = r.descricao ? (r.descricao.length > 180 ? `${r.descricao.slice(0, 180)}...` : r.descricao) : ''
+						article.resource-result-card
+							div.resource-result-card__meta
+								span.etiqueta= r.tipo || 'Recurso'
+								span.etiqueta.etiqueta--subtle= r.ano || 'Ano indisponível'
+							if r.tema
+								span.etiqueta.etiqueta--subtle= r.tema
+							h3
+								a.result-title(href=`/resources/${item._id}`)= r.titulo || 'Sem título'
+							if shortDescription
+								p= shortDescription
+							else if r.subtitulo
+								p= r.subtitulo
+							else
+								p Recurso preservado com metadados disponíveis para consulta detalhada.
+							if r.hashtags && r.hashtags.length
+								.chips-linha
+									each hashtag in r.hashtags.slice(0, 4)
+										span.etiqueta.etiqueta--subtle= hashtag
+							.resource-result-card__footer
+								span.resource-inline-link #{r.tema || 'Tema por definir'}
+								a(href=`/resources/${item._id}`) Ver detalhe
 				if pagination.totalPages > 1
 					nav.pagination(aria-label='Paginação de recursos')
 						if pagination.prevHref

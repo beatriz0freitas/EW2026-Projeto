@@ -12,7 +12,7 @@ const MAPA_SCOPE_COLECOES = {
 	posts: ['posts'],
 	ratings: ['ratings'],
 	comments: ['comments'],
-	aip: ['aips', 'aip'],
+	aip: ['aips', 'aip']
 }
 
 const ORDEM_COLECOES = ['resources', 'news', 'users', 'posts', 'ratings', 'comments', 'aips', 'aip']
@@ -518,7 +518,7 @@ function construirDumpFiltrado(dumpFonte, filtros) {
 	const idsPorColecao = {}
 
 	for (const nomeColecao of ORDEM_COLECOES) {
-		const definicaoColecao = DEFINICOES_COLECOES[nomeColecao]
+		const definicaoColecao = DEFINICOES_COLECOES[nomeColecao] || {}
 		let itens = dumpNormalizado[nomeColecao]
 
 		if (definicaoColecao.raiz && !colecaoRaizIncluida(nomeColecao, filtros)) {

@@ -3,34 +3,75 @@ html(lang='pt')
 	head
 		meta(charset='utf-8')
 		meta(name='viewport' content='width=device-width, initial-scale=1')
+		meta(name='theme-color' content='#071b3a')
 		title #{title || 'Plataforma de Recursos'}
 		link(rel='stylesheet' href='/stylesheets/style.css')
 	body.app-body
-		header.app-header
-			nav.app-nav(aria-label='Navegação principal')
-				a.app-brand(class=isActivePath('/') ? 'is-active' : '' href='/') EW2026
-				a.app-nav__link(class=isActivePath('/resources') ? 'is-active' : '' href='/resources') Recursos
-				a.app-nav__link(class=isActivePath('/posts') ? 'is-active' : '' href='/posts') Publicações
-				if user && user.role === 'admin'
-					a.app-nav__link(class=isActivePath('/admin') ? 'is-active' : '' href='/admin/users') Administração
-			.app-session
-				if user
-					span.app-session__name Olá, #{user.nome}
-					form(action='/auth/logout' method='post')
-						button.w3-button.w3-white.w3-border(type='submit') Sair
-				else
-					a.app-nav__link(href='/auth/login') Entrar
+		a.skip-link(href='#main-content') Saltar para o conteúdo
+		- const roleLabel = user ? (user.role === 'admin' ? 'Administrador' : user.role === 'produtor' ? 'Produtor' : 'Consumidor') : 'Visitante'
+		- const isAuthPage = isActivePath('/auth')
+		- const authTarget = '/auth/login'
+		- const homeTarget = user ? '/' : '/auth/login?requireAuth=1&target=home'
+		- const resourcesTarget = user ? '/resources' : '/auth/login?requireAuth=1&target=resources'
+		- const postsTarget = user ? '/posts' : '/auth/login?requireAuth=1&target=posts'
+		- const dataTarget = user ? '/data' : '/auth/login?requireAuth=1&target=data'
+		.app-shell
+			header.app-header
+				.section-shell.app-header__inner(class=isAuthPage ? 'app-header__inner--auth' : '')
+					a.app-brand(href=homeTarget)
+						span.app-brand__mark EW
+						span.app-brand__text
+							strong.app-brand__title Plataforma de Recursos
+							span.app-brand__subtitle EW2026
+					button.app-nav-toggle(type='button' aria-controls='primary-nav' aria-expanded='false' data-nav-toggle)
+						span.app-nav-toggle__line
+						span.app-nav-toggle__line
+						span.app-nav-toggle__line
+						span.sr-only Abrir navegação principal
+					.app-header__panel#primary-nav(data-nav-panel class=isAuthPage ? 'app-header__panel--auth' : '')
+						nav.app-nav(class=isAuthPage ? 'app-nav--auth' : '' aria-label='Navegação principal')
+							a.app-nav__link(class=user && isActivePath('/') ? 'is-active' : '' href=homeTarget aria-disabled=user ? 'false' : 'true') Início
+							a.app-nav__link(class=user && isActivePath('/resources') ? 'is-active' : '' href=resourcesTarget aria-disabled=user ? 'false' : 'true') Recursos
+							a.app-nav__link(class=user && isActivePath('/posts') ? 'is-active' : '' href=postsTarget aria-disabled=user ? 'false' : 'true') Comunidade
+							a.app-nav__link(class=user && isActivePath('/data') ? 'is-active' : '' href=dataTarget aria-disabled=user ? 'false' : 'true') Dados
+							if user && user.role === 'admin'
+								a.app-nav__link(class=isActivePath('/admin') ? 'is-active' : '' href='/admin/users') Administração
+						.app-session
+							if user
+								span.app-user-pill
+									strong= user.nome
+									small= roleLabel
+								if user.role === 'produtor' || user.role === 'admin'
+									a.w3-button.botao-principal.botao-principal--small(href='/resources/new') Novo recurso
+								form(action='/auth/logout' method='post')
+									button.w3-button.w3-white.w3-border(type='submit') Sair
+							else if !isAuthPage
+								a.w3-button.botao-principal.botao-principal--small(href='/auth/login') Entrar
 
-		main.w3-container.w3-padding.app-main
-			if success
-				div.w3-panel.w3-pale-green.w3-leftbar.w3-border-green
-					p= success
-			if error
-				div.w3-panel.w3-pale-red.w3-leftbar.w3-border-red
-					p= error
+			main#main-content.app-main
+				.section-shell
+					if success || error
+						.section-card.flash-stack
+							if success
+								div.flash-message.flash-message--success(role='status')
+									strong Tudo certo.
+									span= success
+							if error
+								div.flash-message.flash-message--error(role='alert')
+									strong Atenção.
+									span= error
+					block content
 
-			block content
-
-		footer.w3-container.w3-padding.w3-small.w3-text-grey
-			p Plataforma EW2026 · Recursos educativos
-		script(src='/javascripts/file-input-controls.js')
+			footer.app-footer
+				.section-shell.app-footer__inner
+					div
+						strong.app-footer__title Plataforma EW2026
+						p Uma plataforma para descobrir recursos educativos com valor, acompanhar a dinâmica da comunidade.
+					div.app-footer__links
+						a(href=homeTarget) Início
+						a(href=resourcesTarget) Recursos
+						a(href=postsTarget) Comunidade
+						a(href=dataTarget) Dados
+						if user && user.role === 'admin'
+							a(href='/admin/users') Administração
+		script(src='/javascripts/interface-publica.js')
