@@ -10,6 +10,7 @@ const {
 const { apiFetch } = require('../lib/http')
 const { apiErrorMessage } = require('../lib/web')
 
+
 function obterConfigTransferencia(user = {}) {
 	const role = String(user?.role || 'consumidor')
 
@@ -20,10 +21,10 @@ function obterConfigTransferencia(user = {}) {
 			lockResourceVisibility: '',
 			showResourceProducerFilter: true,
 			pageTitle: 'Dados',
-			eyebrow: 'Transferência global',
-			intro: 'Exporta ou importa dados da plataforma com o nível de acesso de administrador.',
-			exportDescription: 'Por defeito, a exportação descarrega uma cópia completa. Abre os filtros apenas se quiseres exportar uma seleção menor.',
-			defaultTransferTitle: 'Por defeito sai todo o conteúdo da plataforma.',
+			eyebrow: 'Transferência de dados',
+			intro: 'Exporta ou importa dados da plataforma como administrador.',
+			exportDescription: 'Por defeito, a exportação descarrega uma cópia completa. Abre os filtros apenas se quiseres restringir os dados a exportar.',
+			defaultTransferTitle: 'Por defeito todo o conteúdo da plataforma é exportado.',
 			defaultTransferText: 'Se quiseres descarregar apenas uma parte dos dados, abre a filtragem abaixo.',
 		}
 	}
@@ -34,10 +35,10 @@ function obterConfigTransferencia(user = {}) {
 			allowImport: true,
 			lockResourceVisibility: '',
 			showResourceProducerFilter: false,
-			pageTitle: 'Os meus recursos e recursos visíveis',
-			eyebrow: 'Transferência de recursos',
-			intro: 'Exporta em lote os recursos públicos e os teus recursos privados, juntamente com publicações, comentários, classificações e notícias relacionadas quando forem seguras.',
-			exportDescription: 'A exportação global respeita as tuas permissões: só saem recursos públicos ou recursos teus e conteúdo relacionado que não exponha dados indevidos.',
+			pageTitle: 'Dados',
+			eyebrow: 'Transferência de dados',
+			intro: 'Exporta os recursos públicos e os teus recursos privados, juntamente com publicações, comentários, classificações e notícias relacionadas quando forem seguras.',
+			exportDescription: 'A exportação global permite-te exportar recursos públicos ou recursos da tua autoria e conteúdo relacionado que não exponha dados indevidos.',
 			defaultTransferTitle: 'Por defeito saem recursos visíveis e conteúdo relacionado seguro.',
 			defaultTransferText: 'Se precisares, aplica filtros para reduzir a seleção exportada.',
 		}
@@ -48,10 +49,10 @@ function obterConfigTransferencia(user = {}) {
 		allowImport: false,
 		lockResourceVisibility: 'publico',
 		showResourceProducerFilter: false,
-		pageTitle: 'Recursos públicos',
-		eyebrow: 'Transferência de recursos',
+		pageTitle: 'Dados',
+		eyebrow: 'Transferência de dados',
 		intro: 'Descarrega de uma só vez os recursos públicos disponíveis na plataforma, com publicações, comentários, classificações e notícias relacionadas quando fizer sentido e for seguro.',
-		exportDescription: 'A exportação global respeita as tuas permissões: apenas recursos públicos e conteúdo relacionado visível ficam incluídos.',
+		exportDescription: 'A exportação global permite-te exportar recursos públicos ou recursos da tua autoria e conteúdo relacionado que não exponha dados indevidos.',
 		defaultTransferTitle: 'Por defeito saem todos os recursos públicos e o respetivo contexto visível.',
 		defaultTransferText: 'Se quiseres, aplica filtros para afinar a exportação antes de descarregar o ficheiro.',
 	}
@@ -100,7 +101,7 @@ async function exportData(req, res) {
 		let payload = null
 		try { payload = await apiRes.json() } catch { payload = null }
 		req.flashError(apiErrorMessage(payload, 'Não foi possível exportar os dados.'))
-		return res.redirect('/data')
+		return res.redirect(`/data/export${query.toString() ? `?${query.toString()}` : ''}`)
 	}
 
 	const cd = apiRes.headers.get('content-disposition')
@@ -116,9 +117,29 @@ async function exportData(req, res) {
 }
 
 function showData(req, res) {
-	const { config, filterForm } = construirFilterForm(req)
+	const { config } = construirFilterForm(req)
 	res.render('data/index', {
 		title: config.pageTitle,
+		dataActions: {
+			export: {
+				href: '/data/export',
+				label: 'Exportar dados',
+				description: config.exportDescription,
+			},
+			import: config.allowImport ? {
+				href: '/data/import',
+				label: 'Importar dados',
+				description: 'Repõe dados a partir de um ficheiro JSON compatível com o teu perfil e com as tuas permissões.',
+			} : null,
+		},
+		transferConfig: config,
+	})
+}
+
+function showExportPage(req, res) {
+	const { config, filterForm } = construirFilterForm(req)
+	res.render('data/export', {
+		title: `${config.pageTitle} · Exportar`,
 		filterForm,
 		transferPreview: construirPrevisaoTransferencia(filterForm, 'exportar'),
 		transferConfig: config,
@@ -199,6 +220,7 @@ module.exports = {
 	renderImportWithError,
 	exportData,
 	showData,
+	showExportPage,
 	showImportForm,
 	importData,
 }

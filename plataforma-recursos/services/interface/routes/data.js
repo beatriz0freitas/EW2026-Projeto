@@ -38,7 +38,8 @@ function processarUploadDump(req, res, next) {
 router.use(requireSession)
 
 router.get('/', dataController.showData)
-router.get('/export', routeAsync(dataController.exportData))
+router.get('/export', dataController.showExportPage)
+router.get('/export/download', routeAsync(dataController.exportData))
 router.get('/import', requireLevel('produtor'), dataController.showImportForm)
 router.post('/import', requireLevel('produtor'), processarUploadDump, routeAsync(dataController.importData))
 
