@@ -10,15 +10,17 @@ const upload = multer({
 	limits: { fileSize: 100 * 1024 * 1024 },
 })
 
-router.get('/new', requireSession, requireLevel('produtor'), resourcesController.showCreateForm)
-router.post('/new/simple', requireSession, requireLevel('produtor'), upload.array('ficheiros', 20), routeAsync(resourcesController.createSimple))
-router.post('/new', requireSession, requireLevel('produtor'), upload.single('sip'), routeAsync(resourcesController.createFromSip))
+router.use(requireSession)
+
+router.get('/new', requireLevel('produtor'), resourcesController.showCreateForm)
+router.post('/new/simple', requireLevel('produtor'), upload.array('ficheiros', 20), routeAsync(resourcesController.createSimple))
+router.post('/new', requireLevel('produtor'), upload.single('sip'), routeAsync(resourcesController.createFromSip))
 router.get('/:id/dip', routeAsync(resourcesController.downloadDip))
 router.get('/', routeAsync(resourcesController.list))
 router.get('/:id', routeAsync(resourcesController.detail))
-router.get('/:id/edit', requireSession, requireLevel('produtor'), routeAsync(resourcesController.showEditForm))
-router.post('/:id/edit', requireSession, requireLevel('produtor'), routeAsync(resourcesController.update))
-router.post('/:id/delete', requireSession, requireLevel('produtor'), routeAsync(resourcesController.remove))
-router.post('/:id/ratings', requireSession, routeAsync(resourcesController.rate))
+router.get('/:id/edit', requireLevel('produtor'), routeAsync(resourcesController.showEditForm))
+router.post('/:id/edit', requireLevel('produtor'), routeAsync(resourcesController.update))
+router.post('/:id/delete', requireLevel('produtor'), routeAsync(resourcesController.remove))
+router.post('/:id/ratings', routeAsync(resourcesController.rate))
 
 module.exports = router

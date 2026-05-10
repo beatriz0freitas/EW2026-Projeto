@@ -9,10 +9,16 @@ html(lang='pt')
 	body.app-body
 		a.skip-link(href='#main-content') Saltar para o conteúdo
 		- const roleLabel = user ? (user.role === 'admin' ? 'Administrador' : user.role === 'produtor' ? 'Produtor' : 'Consumidor') : 'Visitante'
+		- const isAuthPage = isActivePath('/auth')
+		- const authTarget = '/auth/login'
+		- const homeTarget = user ? '/' : '/auth/login?requireAuth=1&target=home'
+		- const resourcesTarget = user ? '/resources' : '/auth/login?requireAuth=1&target=resources'
+		- const postsTarget = user ? '/posts' : '/auth/login?requireAuth=1&target=posts'
+		- const dataTarget = user ? '/data' : '/auth/login?requireAuth=1&target=data'
 		.app-shell
 			header.app-header
-				.section-shell.app-header__inner
-					a.app-brand(href='/')
+				.section-shell.app-header__inner(class=isAuthPage ? 'app-header__inner--auth' : '')
+					a.app-brand(href=homeTarget)
 						span.app-brand__mark EW
 						span.app-brand__text
 							strong.app-brand__title Plataforma de Recursos
@@ -22,13 +28,12 @@ html(lang='pt')
 						span.app-nav-toggle__line
 						span.app-nav-toggle__line
 						span.sr-only Abrir navegação principal
-					.app-header__panel#primary-nav(data-nav-panel)
-						nav.app-nav(aria-label='Navegação principal')
-							a.app-nav__link(class=isActivePath('/') ? 'is-active' : '' href='/') Início
-							a.app-nav__link(class=isActivePath('/resources') ? 'is-active' : '' href='/resources') Recursos
-							a.app-nav__link(class=isActivePath('/posts') ? 'is-active' : '' href='/posts') Comunidade
-							if user
-								a.app-nav__link(class=isActivePath('/data') ? 'is-active' : '' href='/data') Dados
+					.app-header__panel#primary-nav(data-nav-panel class=isAuthPage ? 'app-header__panel--auth' : '')
+						nav.app-nav(class=isAuthPage ? 'app-nav--auth' : '' aria-label='Navegação principal')
+							a.app-nav__link(class=user && isActivePath('/') ? 'is-active' : '' href=homeTarget aria-disabled=user ? 'false' : 'true') Início
+							a.app-nav__link(class=user && isActivePath('/resources') ? 'is-active' : '' href=resourcesTarget aria-disabled=user ? 'false' : 'true') Recursos
+							a.app-nav__link(class=user && isActivePath('/posts') ? 'is-active' : '' href=postsTarget aria-disabled=user ? 'false' : 'true') Comunidade
+							a.app-nav__link(class=user && isActivePath('/data') ? 'is-active' : '' href=dataTarget aria-disabled=user ? 'false' : 'true') Dados
 							if user && user.role === 'admin'
 								a.app-nav__link(class=isActivePath('/admin') ? 'is-active' : '' href='/admin/users') Administração
 						.app-session
@@ -40,7 +45,7 @@ html(lang='pt')
 									a.w3-button.botao-principal.botao-principal--small(href='/resources/new') Novo recurso
 								form(action='/auth/logout' method='post')
 									button.w3-button.w3-white.w3-border(type='submit') Sair
-							else
+							else if !isAuthPage
 								a.w3-button.botao-principal.botao-principal--small(href='/auth/login') Entrar
 
 			main#main-content.app-main
@@ -63,11 +68,10 @@ html(lang='pt')
 						strong.app-footer__title Plataforma EW2026
 						p Disponibilização de recursos educativos
 					div.app-footer__links
-						a(href='/') Início
-						a(href='/resources') Recursos
-						a(href='/posts') Comunidade
-						if user
-							a(href='/data') Dados
+						a(href=homeTarget) Início
+						a(href=resourcesTarget) Recursos
+						a(href=postsTarget) Comunidade
+						a(href=dataTarget) Dados
 						if user && user.role === 'admin'
 							a(href='/admin/users') Administração
 		script(src='/javascripts/interface-publica.js')
