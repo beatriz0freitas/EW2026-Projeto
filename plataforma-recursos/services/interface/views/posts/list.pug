@@ -2,16 +2,20 @@ extends ../layout
 
 block content
 	- const postCountLabel = items.length === 1 ? '1 publicação' : `${items.length} publicações`
+	- const linkedPosts = items.filter((post) => post && post.resourceId).length
+	- const recentPosts = items.filter((post) => post?.createdAt && (Date.now() - new Date(post.createdAt).getTime()) <= 1000 * 60 * 60 * 24 * 7).length
 	section.pagina-listagem
-		section.cabecalho-pagina
-			h1 Publicações
-			p Conversas e notas ligadas aos recursos educativos.
-			.cabecalho-acoes
-				a.w3-button.botao-claro(href='/resources') Ver recursos
-				if user && (user.role === 'produtor' || user.role === 'admin')
-					a.w3-button.botao-principal(href='/posts/new') Criar nova publicação
+		section.page-hero.page-hero--compact.page-hero--single
+			.page-hero__content
+				p.page-eyebrow Comunidade
+				h1 Publicações
+				p.page-hero__lead Conversas ligadas aos recursos, organizadas para leitura rápida e participação simples.
+				.page-actions
+					a.w3-button.botao-claro(href='/resources') Ver recursos
+					if user && (user.role === 'produtor' || user.role === 'admin')
+						a.w3-button.botao-principal(href='/posts/new') Criar nova publicação
 
-		section.w3-white.secao-card.feed-section
+		section.section-card.feed-section
 			.feed-section__top
 				div
 					h2 Feed da comunidade
@@ -38,9 +42,11 @@ block content
 											time(datetime=post.createdAt)= new Date(post.createdAt).toLocaleString('pt-PT')
 									h2
 										a(href=`/posts/${post._id}`)= post.titulo
+									if post.resourceId
+										div.post-resource-callout
+											span.post-resource-callout__label Recurso associado
+											a.post-resource-callout__link(href=`/resources/${post.resourceId}`) Ver recurso
 									if resumo
 										p= resumo
 									.post-card__footer
-										if post.resourceId
-											span.etiqueta Recurso associado
 										a.w3-button.botao-claro.post-card__button(href=`/posts/${post._id}`) Abrir conversa

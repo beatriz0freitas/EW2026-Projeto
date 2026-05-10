@@ -1,0 +1,44 @@
+extends ../layout
+
+block content
+	section.pagina-listagem
+		section.page-hero.page-hero--compact.page-hero--single
+			.page-hero__content
+				p.page-eyebrow= transferConfig.eyebrow
+				h1 Exportar dados
+				p.page-hero__lead Define apenas os filtros que precisares. Se não mudares nada, a exportação usa automaticamente a seleção por defeito do teu perfil.
+				.page-actions
+					a.w3-button.botao-claro(href='/data') Voltar a Dados
+
+		section.section-card.portal-section.data-export-panel
+			div.cabecalho-secao.data-export-panel__top
+				div
+					h2 Permissões de exportação
+					p.w3-text-grey= transferConfig.exportDescription
+
+			form#data-export-form(method='GET' action='/data/export/download' data-export-form)
+				- var allowedTransferTypes = transferConfig.allowedTransferTypes
+				- var lockResourceVisibility = transferConfig.lockResourceVisibility
+				- var showResourceProducerFilter = transferConfig.showResourceProducerFilter
+				- var defaultTransferTitle = transferConfig.defaultTransferTitle
+				- var defaultTransferText = transferConfig.defaultTransferText
+				- var showDefaultTransferCard = false
+				include ../admin/data-transfer-filters.pug
+
+				section.transfer-preview.transfer-preview--hero(data-export-preview)
+					h3 Resumo da exportação
+					p.transfer-preview__hint(data-preview-content hidden=!transferPreview.conteudos) Tipos de conteúdo escolhidos: #{transferPreview.conteudos}.
+					ul.transfer-preview__list(data-preview-list hidden=!transferPreview.temFiltrosEspecificos)
+						each entry in transferPreview.filtrosEspecificos
+							li
+								strong= entry.label + ': '
+								= entry.value
+					p.transfer-preview__hint(data-preview-empty hidden=transferPreview.temFiltrosEspecificos) Sem filtros adicionais: será usada a exportação por defeito deste perfil.
+
+				div.conteudo-acoes
+					button.w3-button.botao-principal(type='submit') Exportar
+					if transferPreview.temFiltrosEspecificos || filterForm.selectedTypes.length || filterForm.quantityLimit
+						a.w3-button.w3-border(href='/data/export') Limpar filtros
+
+			script#data-export-preview-state(type='application/json').
+				!{JSON.stringify({ filterForm })}

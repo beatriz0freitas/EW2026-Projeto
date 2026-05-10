@@ -36,7 +36,7 @@ Os pontos essenciais a cobrir são:
 - O serviço Auth trata registo, login, refresh token, verificação de sessão e gestão de utilizadores.
 - Os perfis `admin`, `produtor` e `consumidor` já existem no backend.
 - A password é guardada com hash e não é devolvida nas respostas.
-- O Auth expõe Swagger em `/docs`.
+- O Auth expõe Swagger internamente em `/docs` e publicamente em `/auth/docs` através do gateway.
 
 ### Interface
 

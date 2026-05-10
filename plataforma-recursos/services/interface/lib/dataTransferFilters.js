@@ -403,5 +403,4 @@ module.exports = {
 	construirFormularioFiltrosDados,
 	construirPrevisaoTransferencia,
 	construirQueryFiltrosDados,
-	construirResumoFiltrosDados,
 }

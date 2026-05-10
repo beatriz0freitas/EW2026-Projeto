@@ -1,0 +1,31 @@
+extends ../layout
+
+block content
+	section.pagina-listagem
+		section.page-hero.page-hero--compact.page-hero--single
+			.page-hero__content
+				p.page-eyebrow= transferConfig.eyebrow
+				h1= transferConfig.pageTitle
+				p.page-hero__lead Escolhe a operação que queres realizar sobre os dados disponíveis no teu perfil.
+
+		section.section-card.portal-section
+			div.data-choice-grid
+				article.data-choice-card
+					p.data-choice-card__kicker Saída
+					h2= dataActions.export.label
+					p= transferConfig.intro
+					ul.data-choice-card__list
+						li Usa filtros opcionais para afinar a seleção.
+						li Respeita automaticamente as permissões do teu perfil.
+					a.w3-button.botao-principal(href=dataActions.export.href) Continuar para exportação
+
+				if dataActions.import
+					article.data-choice-card.data-choice-card--muted
+						p.data-choice-card__kicker Entrada
+						h2= dataActions.import.label
+						p= dataActions.import.description
+						ul.data-choice-card__list
+							li Aceita ficheiro JSON exportado pela plataforma.
+							li Mostra o resultado por área processada.
+							li Mantém as restrições do teu nível de acesso.
+						a.w3-button.w3-border(href=dataActions.import.href) Continuar para importação

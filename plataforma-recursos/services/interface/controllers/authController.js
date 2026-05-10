@@ -47,7 +47,18 @@ async function handleOAuthCallback(req, res, provider, providerId, email, nome) 
 
 function showLogin(req, res) {
 	if (req.session.token) return res.redirect('/')
-	res.render('auth/login', { title: 'Entrar', providersSociais })
+	let inlineError = null
+	if (req.query?.requireAuth === '1') {
+		const labels = {
+			home: 'Início',
+			resources: 'Recursos',
+			posts: 'Comunidade',
+			data: 'Dados',
+		}
+		const targetLabel = labels[String(req.query.target || '').trim()] || 'essa área'
+		inlineError = `Precisa de autenticação prévia para aceder a ${targetLabel}.`
+	}
+	res.render('auth/login', { title: 'Entrar', providersSociais, error: inlineError || res.locals.error })
 }
 
 async function login(req, res) {
