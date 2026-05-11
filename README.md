@@ -1,8 +1,81 @@
-# EW2026 - Plataforma de Recursos
+# EngWeb2026
 
-Projeto de gestão e disponibilização de recursos educativos com arquitetura composta por `gateway`, `interface`, `api`, `auth`, `mongodb` e storage AIP em disco.
+- **Título**: Projeto EW2026 - Plataforma de Recursos Educativos
+- **Data**: 11/05/2026
+- **Autores**: Luís Miguel Silva Coelho, Rafael Filipe Duarte, Ana Beatriz Freitas
+- **UC**: Engenharia Web
+
+## Autores
+
+| Número | Nome | Foto |
+| ------ | ---- | ---- |
+| A106843 | Luís Miguel Silva Coelho | ![Luís Miguel Silva Coelho](plataforma-recursos/eu.png) |
+| A106918 | Rafael Filipe Duarte | ![Rafael Filipe Duarte](plataforma-recursos/foto.jpeg) |
+| A106853 | Ana Beatriz Freitas | ![Ana Beatriz Freitas](plataforma-recursos/bf.jpeg) |
+
+## Resumo
+
+Este trabalho consiste no desenvolvimento de uma plataforma web para gestão, preservação, consulta e disseminação de recursos educativos.
+
+A solução foi implementada com uma arquitetura orientada a serviços, composta por `nginx`, `gateway`, `auth`, `api`, `interface`, `mongodb` e armazenamento AIP em disco. O acesso público é feito através do `nginx` e do `gateway`, que encaminham pedidos para a interface web, para o serviço de autenticação ou para a API de domínio.
+
+O sistema implementa autenticação com JWT e refresh tokens, perfis de utilizador (`admin`, `produtor` e `consumidor`), gestão de recursos públicos e privados, camada social com posts, comentários e avaliações, notícias automáticas, auditoria, importação/exportação de dados e documentação OpenAPI/Swagger para os serviços.
+
+Conceptualmente, a plataforma segue o modelo OAIS. Os recursos são submetidos como SIP, validados por camadas, preservados como AIP e disponibilizados ao consumidor através de DIP gerado a partir do arquivo. A submissão pode ser simples, através da interface, ou avançada, através de um SIP ZIP com `manifest.json`, pasta `data/`, `bagit.txt` opcional e `checksums.txt` opcional.
+
+## Lista de Resultados
+
+- `plataforma-recursos/` — aplicação completa da plataforma
+  - `docker-compose.yml` — orquestração dos serviços e da base de dados
+  - `infra/nginx/default.conf` — configuração do ponto de entrada público
+  - `services/` — conjunto dos serviços Node.js da plataforma
+    - `services/gateway/` — serviço de encaminhamento e proteção da fronteira pública
+      - `services/gateway/middleware/` — middlewares do gateway, incluindo controlo de rate limit
+      - `services/gateway/routes/` — rotas públicas que encaminham pedidos para a API, Auth e Interface
+      - `services/gateway/lib/` — funções auxiliares de configuração e proxy HTTP
+    - `services/auth/` — serviço de autenticação, sessões, utilizadores e perfis
+      - `services/auth/middleware/` — middlewares de autenticação, validação, rate limit e proteção de endpoints internos
+      - `services/auth/routes/` — rotas de sessões, utilizadores, estado do serviço e transferência interna
+      - `services/auth/lib/` — utilitários de JWT, configuração, HTTP, auditoria e publicação de notícias de sistema
+      - `services/auth/models/` — modelos MongoDB do domínio de autenticação, como `User`
+      - `services/auth/controllers/` — controladores das operações de sessões, utilizadores e transferência interna
+      - `services/auth/services/` — lógica de serviço associada à gestão de utilizadores
+    - `services/api/` — API principal de recursos, OAIS, posts, comentários, ratings, notícias, auditoria e transferência de dados
+      - `services/api/middleware/` — middlewares de autenticação, validação, CORS, uploads, rate limit e tokens internos
+      - `services/api/transfer/` — filtros, permissões e cliente Auth usados na importação/exportação de dados
+      - `services/api/routes/` — rotas REST para recursos, posts, comentários, avaliações, notícias, auditoria e exportação
+      - `services/api/testes/` — testes unitários e de integração da API, incluindo OAIS, permissões, validação e rate limit
+      - `services/api/lib/` — utilitários partilhados, como ZIP simples, validação de metadados, HTTP, configuração e controlo de acesso
+      - `services/api/models/` — modelos MongoDB da plataforma, incluindo recursos, AIP, posts, comentários, ratings, notícias e auditoria
+      - `services/api/audit/` — registo, sanitização e middleware HTTP de auditoria
+      - `services/api/controllers/` — controladores das operações de domínio expostas pela API
+      - `services/api/oais/` — implementação do fluxo OAIS de submissão, preservação e acesso
+        - `services/api/oais/access/` — geração e entrega de DIP a partir dos AIP preservados
+        - `services/api/oais/ingest/` — validação e ingestão de SIP simples ou avançados
+      - `services/api/jobs/` — tarefas automáticas da API, como geração de notícias de sistema
+    - `services/interface/` — interface web server-side em Express e Pug
+      - `services/interface/public/` — ficheiros públicos servidos pela interface
+        - `services/interface/public/javascripts/` — scripts de apoio às páginas públicas e formulários de recursos
+        - `services/interface/public/templates/` — modelos de exemplo usados pela interface, como metadados de submissão
+        - `services/interface/public/stylesheets/` — folhas de estilo da aplicação web
+      - `services/interface/bin/` — script de arranque HTTP da aplicação
+      - `services/interface/routes/` — rotas web para autenticação, recursos, posts, administração e transferência de dados
+      - `services/interface/lib/` — utilitários de configuração, chamadas HTTP, helpers web e filtros de transferência de dados
+      - `services/interface/views/` — templates Pug comuns da interface
+        - `services/interface/views/auth/` — páginas de login e registo
+        - `services/interface/views/data/` — páginas de importação e exportação de dados para utilizadores
+        - `services/interface/views/admin/` — páginas de administração, utilizadores, notícias, auditoria e transferência de dados
+        - `services/interface/views/posts/` — páginas de listagem, detalhe e criação/edição de posts
+        - `services/interface/views/resources/` — páginas de listagem, detalhe, criação e edição de recursos
+      - `services/interface/controllers/` — controladores server-side que ligam as rotas web aos serviços `api` e `auth`
+  - `data/povoamento/` — fixtures, inicialização MongoDB e script de povoamento de recursos
+  - `data/aip/` — diretório de preservação dos pacotes AIP
+  - `.env.example` — exemplo de configuração de ambiente
 
 ---
+
+# Intruções de Execução
+
 
 ## Pré-requisitos
 
@@ -29,7 +102,7 @@ pip --version
 Entrar na pasta do projeto:
 
 ```bash
-cd EW2026-Projeto/plataforma-recursos
+cd plataforma-recursos
 ```
 
 Criar o ficheiro `.env` a partir do exemplo:
@@ -44,21 +117,7 @@ Gerar segredos fortes para preencher o `.env`:
 openssl rand -hex 32
 ```
 
-Preencher pelo menos estas variáveis:
-
-```env
-JWT_SECRET=<valor-1>
-JWT_REFRESH_SECRET=<valor-2>
-SESSION_SECRET=<valor-3>
-INTERNAL_SERVICE_TOKEN=<valor-4>
-```
-
-Para que serve cada valor:
-
-- `JWT_SECRET`: assinatura dos access tokens no serviço Auth.
-- `JWT_REFRESH_SECRET`: assinatura dos refresh tokens.
-- `SESSION_SECRET`: assinatura de sessão no serviço Interface.
-- `INTERNAL_SERVICE_TOKEN`: autenticação entre serviços (API <-> Auth) para endpoints internos e notícias automáticas.
+Preencher as variáveis de ambiente.
 
 ---
 
@@ -76,12 +135,6 @@ docker compose up -d --build
 docker compose ps
 ```
 
-### 3. Ver logs, se necessário
-
-```bash
-docker compose logs -f mongodb api auth interface gateway nginx
-```
-
 ### 4. Abrir a aplicação
 
 No browser:
@@ -95,17 +148,6 @@ http://localhost:16020
 ```bash
 docker compose down
 ```
-
----
-
-## Utilizadores de demonstração
-
-Os utilizadores de demonstração são carregados automaticamente pelo MongoDB no arranque inicial, a partir de:
-
-- `data/povoamento/fixtures.json`
-- `data/povoamento/init-mongo.js`
-
-Isto acontece apenas quando a coleção `users` ainda está vazia.
 
 ---
 
@@ -160,52 +202,6 @@ python3 data/povoamento/povoamento-recursos.py data/recursos --token <TOKEN> --o
 
 ---
 
-## Estrutura esperada para `data/recursos`
-
-O script aceita dois formatos.
-
-### Opção A: um ficheiro = um recurso
-
-```text
-data/recursos/
-  ficha-a.pdf
-  ficha-b.pdf
-```
-
-### Opção B: uma subpasta = um recurso
-
-```text
-data/recursos/
-  recurso-01/
-    artigo.pdf
-    anexo.docx
-  recurso-02/
-    slides.pdf
-```
-
----
-
-## Metadados opcionais com `metadata.csv`
-
-Se existir um ficheiro `metadata.csv` na raiz do diretório de input, os seus valores são usados por recurso.
-
-Exemplo:
-
-```csv
-key,titulo,tipo,visibilidade,tema,ano,hashtags
-ficha-a.pdf,Título Personalizado,artigo,publico,Ciência,2024,ia
-recurso-01,Slides de Segurança,slides,privado,Segurança,2025,seguranca,aula
-```
-
-Notas:
-
-- `key` deve ser o nome do ficheiro ou da subpasta;
-- se `titulo` não existir, o script gera o título a partir do nome do item;
-- `tipo`, `visibilidade`, `tema`, `ano` e `hashtags` podem ser definidos diretamente no CSV.
-- se `tipo` ou `visibilidade` não existirem no CSV, o script usa `artigo` e `publico`.
-
----
-
 ## Swagger
 
 Com a stack a correr, a documentação Swagger fica acessível em:
@@ -216,5 +212,3 @@ Com a stack a correr, a documentação Swagger fica acessível em:
 - `http://localhost:16020/interface/docs`
 
 ---
-
-**Universidade do Minho | Escola de Engenharia**
