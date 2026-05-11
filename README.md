@@ -42,9 +42,6 @@ Gerar segredos fortes para preencher o `.env`:
 
 ```bash
 openssl rand -hex 32
-openssl rand -hex 32
-openssl rand -hex 32
-openssl rand -hex 32
 ```
 
 Preencher pelo menos estas variáveis:
@@ -206,16 +203,6 @@ Notas:
 - se `titulo` não existir, o script gera o título a partir do nome do item;
 - `tipo`, `visibilidade`, `tema`, `ano` e `hashtags` podem ser definidos diretamente no CSV.
 - se `tipo` ou `visibilidade` não existirem no CSV, o script usa `artigo` e `publico`.
-
----
-
-## Flags disponíveis no script
-
-| Flag                      | Efeito                                             |
-| ------------------------- | -------------------------------------------------- |
-| `--token`               | Usa um token JWT já obtido                        |
-| `--only`                | Processa apenas certos items                       |
-| `--dry-run`             | Simula sem enviar                                  |
 
 ---
 

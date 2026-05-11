@@ -1,118 +1,130 @@
 # EW2026 - Plataforma de Recursos Educativos
 
----
-
 ## 1. Introdução
 
-Este relatório documenta a solução desenvolvida para a plataforma de recursos educativos EW2026. O projeto tem como objetivo disponibilizar uma aplicação completa para submissão, preservação, consulta e disseminação de recursos educativos, integrando autenticação, perfis de utilizador, gestão administrativa, interação social e documentação técnica através de Swagger/OpenAPI.
+Este relatório apresenta a solução desenvolvida para a Proposta 1 do projeto inserido na unidade curricular de Engenharia Web 2026, cujo objetivo consistiu na criação de uma plataforma de gestão, disponibilização e discussão de recursos educativos. A aplicação permite que utilizadores autenticados, com permissões diferentes consoante o seu perfil, submetam recursos, consultem conteúdos, descarreguem pacotes de disseminação, avaliem materiais, participem em discussões e acompanhem notícias relacionadas com a atividade da plataforma.
 
-A solução segue uma abordagem orientada a serviços. Em vez de concentrar toda a lógica numa única aplicação, o sistema foi dividido em componentes com responsabilidades específicas: `gateway`, `auth`, `api` e `interface`. Esta decisão permite separar autenticação, domínio aplicacional, interface web e encaminhamento externo, tornando o projeto mais claro, mais fácil de manter e mais próximo de uma arquitetura real de produção.
+A solução foi pensada para responder simultaneamente a duas necessidades. A primeira é a preservação dos recursos, garantindo que uma submissão não é tratada como um simples carregamento de ficheiros, mas como um pacote que deve ser validado, registado, preservado e posteriormente reutilizado. A segunda é a utilização quotidiana da plataforma, isto é, a possibilidade de navegar pelos recursos, aceder aos seus metadados, fazer download, comentar, classificar e administrar informação de forma simples.
 
-Conceptualmente, o projeto assenta no modelo OAIS, com um fluxo de preservação que distingue SIP, AIP e DIP:
+O modelo OAIS foi usado como referência conceptual para organizar o ciclo de vida dos recursos. Neste contexto, o SIP corresponde ao pacote submetido pelo produtor, o AIP corresponde ao pacote arquivístico preservado pelo sistema e o DIP corresponde ao pacote entregue ao consumidor quando este descarrega um recurso. Esta separação implica que o utilizador não recebe diretamente o ficheiro original submetido, mas sim uma representação de disseminação gerada a partir do arquivo preservado.
 
-- **SIP (Submission Information Package)** — o pacote submetido pelo produtor.
-- **AIP (Archival Information Package)** — a representação preservada pelo sistema.
-- **DIP (Dissemination Information Package)** — o pacote entregue ao consumidor no momento de acesso.
+Assim, a plataforma procura equilibrar usabilidade e robustez. Para o produtor, existe uma submissão simples através da interface, onde basta preencher metadados e anexar ficheiros. Para cenários mais técnicos, existe também a submissão avançada de um SIP já preparado. Em ambos os casos, o sistema converge para o mesmo fluxo de validação e preservação, garantindo coerência interna.
 
-Esta distinção é fundamental porque evita tratar o ficheiro submetido como um simples upload sem semântica arquivística. O sistema valida o pacote recebido, guarda uma versão preservada com metadados e rastreabilidade, e só depois gera pacotes de disseminação a partir do arquivo.
+## 2. Objetivos e Âmbito da Solução
 
----
+O projeto teve como objetivo construir uma aplicação completa para recursos educativos, desde a entrada do recurso no sistema até à sua consulta e reutilização por outros utilizadores. Para isso, foram implementadas funcionalidades de autenticação, autorização por perfis, gestão de recursos, preservação OAIS, download de DIP, comunicação social em torno dos recursos, notícias, auditoria e mecanismos de exportação/importação de dados.
 
-## 2. Arquitetura Geral
+Os requisitos do enunciado foram cobertos através de vários módulos articulados entre si. O upload e a validação dos pacotes são assegurados pelos endpoints OAIS da API. A conversão de SIP para AIP ocorre durante o ingest, com criação dos documentos `Resource` e `Aip` e escrita dos pacotes em disco. A conversão de AIP para DIP é feita no momento do acesso, garantindo que o download resulta sempre do conteúdo preservado. A administração de recursos, utilizadores, notícias e dados é disponibilizada por endpoints próprios e refletida na interface web.
 
-A aplicação corre em contentores Docker, com `nginx` como ponto de entrada externo e uma rede interna partilhada pelos serviços. A base de dados usada é MongoDB, enquanto os ficheiros AIP são persistidos em disco através de um volume próprio.
+Foram considerados três perfis de utilização: `admin`, `produtor` e `consumidor`. O administrador tem acesso total à plataforma; o produtor pode criar recursos e gerir os seus próprios conteúdos; o consumidor pode consultar, descarregar e interagir com recursos acessíveis. Esta hierarquia permite que a plataforma sirva tanto a vertente de gestão como a vertente de consumo dos materiais educativos.
 
-Os principais componentes são:
+Para além da gestão base de recursos, a plataforma inclui funcionalidades complementares que tornam o sistema mais completo: posts associados a recursos, comentários, classificações por estrelas, notícias manuais e automáticas, exportação filtrada, importação controlada, documentação Swagger/OpenAPI e registos de auditoria. Estas funcionalidades reforçam a ideia de que a aplicação não é apenas um repositório estático, mas um espaço de publicação, preservação e interação.
 
-- **nginx** — entrada pública em `localhost:16020`, responsável por encaminhar tráfego para o gateway.
-- **gateway** — camada de routing público e proxy para os restantes serviços (porta 16020 interna).
-- **auth** — serviço de autenticação, sessões, utilizadores e perfis (porta 16027).
-- **api** — serviço principal de domínio, onde residem recursos, OAIS, posts, comentários, ratings, notícias e transferência de dados (porta 16025).
-- **interface** — aplicação web server-side, construída com Express e Pug (porta 16026).
-- **mongodb** — persistência documental das entidades do domínio.
-- **data/aip** — armazenamento em disco dos pacotes arquivísticos preservados.
+## 3. Visão Geral da Arquitetura
 
-O fluxo externo típico passa pelo `nginx`, segue para o `gateway` e é encaminhado para a `interface`, `api` ou `auth` conforme a rota. Internamente, os serviços comunicam entre si através da rede Docker, por exemplo `http://api:16025` e `http://auth:16027`.
+A aplicação foi organizada em serviços separados e executa em Docker Compose. Esta divisão foi escolhida para manter responsabilidades claras e evitar que autenticação, regras de domínio, interface e entrada pública ficassem concentradas num único processo. O resultado é uma arquitetura simples de compreender, mas suficientemente modular para permitir evolução futura.
 
-```
+```text
 Utilizador
-    ↓
-nginx (porta 16020)
-    ↓
+    |
+    v
+nginx (localhost:16020)
+    |
+    v
 gateway
-    ├── /api/*   → api
-    ├── /auth/*  → auth (rotas de API) ou interface (páginas HTML)
-    └── /*       → interface
+    |-- /api/*   -> api
+    |-- /auth/*  -> auth ou páginas de autenticação da interface
+    |-- /docs    -> hub Swagger/OpenAPI
+    `-- /*       -> interface
 
-api  → MongoDB + storage AIP em disco
-auth → MongoDB
+api       -> MongoDB + armazenamento AIP em disco
+auth      -> MongoDB
+interface -> API + Auth
 ```
 
----
+O `nginx` é a porta de entrada externa e expõe a aplicação em `localhost:16020`. A seguir encontra-se o `gateway`, que encaminha pedidos para os serviços internos, agrega a documentação OpenAPI, aplica CORS, rate limiting e bloqueia rotas que não devem ser chamadas diretamente pelo exterior. O serviço `auth` concentra o registo, login, refresh token, OAuth opcional e gestão de utilizadores. O serviço `api` contém o domínio principal da aplicação: recursos, OAIS, posts, comentários, ratings, notícias, auditoria e transferência de dados. A `interface` disponibiliza a aplicação web server-side, construída com Express e Pug. Por fim, o MongoDB guarda os documentos da aplicação e a pasta `data/aip` preserva os pacotes arquivísticos em disco.
 
-## 3. Decisões Arquiteturais
+Esta separação também melhora a segurança. A interface pode esconder ou mostrar ações de acordo com o utilizador, mas a decisão final é sempre tomada no backend. Mesmo que alguém tente chamar diretamente a API, as permissões são novamente verificadas. Além disso, existem endpoints internos protegidos por `INTERNAL_SERVICE_TOKEN`, usados apenas para comunicação entre serviços, como refresh server-side, notícias de sistema e algumas operações de auditoria ou transferência.
 
-### 3.1 Separação entre API, Auth e Interface
+O `gateway` bloqueia explicitamente rotas internas como `/api/news/system`, `/api/internal/audit`, `/auth/sessions/verify` e `/auth/sessions/refresh-server`. Estas rotas continuam disponíveis dentro da rede Docker quando acompanhadas do token interno, mas não fazem parte da superfície pública da aplicação.
 
-A autenticação foi isolada no serviço `auth` para concentrar num único ponto as responsabilidades de registo, login, emissão de tokens, refresh tokens, verificação de sessão e gestão de utilizadores. Isto evita espalhar lógica sensível por vários módulos.
+## 4. Decisões de Desenho
 
-A `api` concentra o domínio da plataforma: recursos, pacotes OAIS, fóruns, comentários, avaliações, notícias e exportação/importação de dados. Esta separação deixa claro que a API é o núcleo funcional do sistema.
+Uma das primeiras decisões foi separar os serviços por responsabilidade. O `auth` ficou dedicado à identidade dos utilizadores, o `api` ficou responsável pelo domínio dos recursos e o `interface` ficou responsável pela apresentação. Esta organização torna o código mais fácil de manter, porque cada serviço tem uma fronteira funcional clara. Também permite que a segurança seja aplicada perto dos dados, e não apenas no frontend.
 
-A `interface` é uma aplicação web server-side que renderiza páginas HTML e gere formulários, sessões web e feedback visual. Sempre que precisa de dados ou ações, chama `auth` ou `api` por HTTP. Esta opção permitiu criar uma aplicação utilizável sem duplicar a lógica de negócio no frontend.
+O MongoDB foi escolhido para persistir metadados e entidades da aplicação porque os documentos manipulados pela plataforma têm uma estrutura naturalmente flexível. Recursos, notícias, posts, ratings e registos de auditoria podem evoluir sem exigir migrações relacionais complexas. Por outro lado, os ficheiros dos recursos não são guardados diretamente na base de dados. Os AIPs são preservados em disco, na pasta configurada por `AIP_DIR`, porque os pacotes podem ser grandes e devem manter uma estrutura arquivística própria.
 
-### 3.2 Gateway e Bloqueio de Rotas Internas
+Outra decisão importante foi renderizar a interface no servidor com Express e Pug. Como o projeto não exigia uma SPA e a lógica crítica vive nos serviços backend, esta abordagem reduziu duplicação de regras no frontend e simplificou o fluxo de autenticação. A interface atua como camada de experiência do utilizador, enquanto a API e o serviço de autenticação continuam a ser as fontes de verdade.
 
 O `gateway` organiza a fronteira pública. Encaminha `/api/*`, `/auth/*` e as páginas da interface, mas bloqueia explicitamente rotas internas que não devem estar disponíveis publicamente. Por exemplo, o endpoint de publicação interna de notícias de sistema (`/api/news/system`), o endpoint interno de auditoria (`/api/internal/audit`) e o de renovação server-side de tokens (`/auth/sessions/refresh-server`) são bloqueados no gateway e protegidos adicionalmente por tokens internos nos serviços.
 
-### 3.3 MongoDB para Metadados e Disco para AIP
+No domínio OAIS, a decisão mais relevante foi gerar o DIP sempre a partir do AIP preservado. Isto garante que o download reflete o estado arquivado e não depende de um ficheiro temporário ou de uma submissão original sem validação. Ao mesmo tempo, a estrutura técnica do AIP não é exposta ao consumidor final: o DIP inclui os ficheiros de consumo e um ficheiro de metadados, mas oculta elementos internos como `sip.zip`, `bagit.txt` e `checksums.txt`.
 
-O MongoDB é adequado para guardar documentos flexíveis como recursos, notícias, posts e utilizadores. Os metadados dos recursos variam conforme o tipo de recurso e encaixam bem num modelo documental.
+## 5. Modelo de Domínio
 
-Os ficheiros AIP são preservados em disco. Esta decisão evita guardar pacotes binários grandes diretamente na base de dados e torna o armazenamento arquivístico mais transparente. Cada recurso tem uma pasta própria com o pacote preservado, incluindo o SIP original e a estrutura `bag/`.
+O domínio da aplicação é composto por entidades simples, mas articuladas. O `User` representa um utilizador autenticável e contém o perfil que determina as suas permissões. O `Resource` representa o recurso educativo propriamente dito, com metadados, produtor, visibilidade, caminho para o AIP e contador de downloads. O `Aip` é o registo de preservação associado ao recurso e contém o resultado das validações, o estado do ingest, o checksum do SIP e a localização em disco.
 
+À volta dos recursos existem entidades de interação. Um `Post` é uma publicação associada a um recurso, um `Comment` é uma resposta a um post e um `Rating` representa uma avaliação de 1 a 5 estrelas feita por um utilizador a um recurso. As notícias são modeladas por `NewsItem` e podem ser criadas manualmente por administradores ou automaticamente pelo sistema. Finalmente, o `AuditLog` regista ações relevantes, permitindo acompanhar o funcionamento da plataforma e analisar operações sensíveis.
+
+Os perfis seguem uma hierarquia direta. O administrador tem acesso total, incluindo gestão de utilizadores, auditoria, importação/exportação global e edição de qualquer recurso. O produtor pode criar recursos, consultar recursos públicos, gerir os seus próprios recursos privados e importar conteúdos que ficam associados a si quando necessário. O consumidor pode consultar recursos públicos, descarregar DIPs, comentar, publicar e classificar, mas não pode criar recursos nem importar dados.
+
+A regra transversal mais importante é a visibilidade do recurso. Um recurso `publico` pode ser consultado por utilizadores autorizados no fluxo normal de leitura e, em alguns endpoints de consulta pública, pode ser visto sem token. Um recurso `privado` só é acessível ao produtor que o criou ou a um administrador. Esta regra não se limita à listagem de recursos: também é aplicada no detalhe, no download, nos posts, nos comentários, nas avaliações e nos mecanismos de transferência de dados.
+
+## 6. Fluxo OAIS: Submissão, Preservação e Acesso
+
+O fluxo OAIS foi implementado para garantir que cada recurso passa por uma cadeia controlada desde a submissão até ao download. A plataforma aceita dois tipos de entrada. Na submissão simples, o produtor usa a interface para preencher metadados e anexar ficheiros. A API constrói automaticamente um SIP no formato esperado. Na submissão avançada, o produtor envia diretamente um ZIP SIP já preparado, útil para utilizadores mais técnicos ou processos automatizados.
+
+Independentemente da origem, o resultado é sempre um SIP com estrutura normalizada:
+
+```text
+recurso.zip
+|-- manifest.json
+|-- bagit.txt
+|-- checksums.txt
+`-- data/
+    `-- ficheiros do recurso
 ```
+
+O `manifest.json` contém os metadados principais do recurso, como título, tipo, visibilidade, tema, ano, descrição, hashtags e lista de ficheiros esperados. Se a visibilidade não for indicada, o sistema assume `publico`. A pasta `data/` contém os ficheiros reais do recurso. O `checksums.txt`, quando presente, permite validar a integridade dos ficheiros através de SHA-256.
+
+Durante o ingest, a API valida o pacote por camadas. A primeira camada verifica a estrutura do ZIP, a existência do manifesto, a pasta `data/` e os ficheiros declarados. A segunda valida os metadados, incluindo campos obrigatórios, enumerações, datas, tamanhos e normalização de hashtags. A terceira camada trata de segurança, rejeitando caminhos perigosos, zip-slip, extensões não permitidas e pacotes acima dos limites definidos. A quarta camada confirma a consistência entre manifesto, ficheiros reais, tamanhos e checksums.
+
+Se o SIP for inválido, é criado um registo de preservação com estado de erro e relatório de validação. Isto permite perceber porque é que uma submissão falhou, em vez de simplesmente rejeitar o pedido sem rastreabilidade. Se o SIP for válido, a API cria o `Resource`, cria o `Aip`, guarda o pacote em disco, preserva uma cópia do ZIP original em `sip.zip` e regista a localização do AIP. A estrutura resultante é organizada por recurso:
+
+```text
 data/aip/<resourceId>/
-├── bag/
-│   ├── manifest.json
-│   ├── bagit.txt
-│   ├── checksums.txt
-│   └── data/
-│       └── ...
-└── sip.zip
+|-- bag/
+|   |-- manifest.json
+|   |-- bagit.txt
+|   |-- checksums.txt
+|   `-- data/
+|       `-- ficheiros
+`-- sip.zip
 ```
 
-### 3.4 Segurança no Backend
+O acesso ao recurso segue o caminho inverso, mas sem expor diretamente o pacote arquivístico. Quando o utilizador pede o download através de `GET /api/oais/access/:id`, a API verifica se o recurso existe, confirma as permissões, lê o AIP preservado e gera um DIP com os ficheiros de consumo e os metadados necessários. Depois do download, os contadores em `Resource` e `Aip` são incrementados e, se a alteração afetar o ranking dos recursos mais requisitados, a notícia automática do top 3 é atualizada.
 
-As permissões são sempre validadas no backend. A interface pode esconder botões ou páginas, mas a decisão final pertence aos serviços. Recursos privados só podem ser acedidos pelo produtor responsável ou por administradores. Operações administrativas exigem perfil `admin`. Submissão e edição de recursos exigem `produtor` ou `admin`.
+O DIP é, portanto, um produto de disseminação. Ele é criado para ser útil ao consumidor, não para revelar toda a estrutura de preservação. Por omissão inclui `metadados.json` e os ficheiros do recurso, podendo também ser gerado com uma seleção manual de ficheiros através de parâmetros de query.
 
-Os serviços usam JWT para autenticação e refresh token para renovação de sessão. A interface guarda uma sessão web server-side e comunica com o `auth` para verificar e renovar tokens quando necessário, de forma transparente para o utilizador.
+## 7. Metadados, Validação e Classificação
 
-### 3.5 Token Interno entre Serviços
+A validação de metadados foi centralizada em `lib/metadataValidator.js`. Esta opção evita divergências entre submissão simples, submissão avançada e edição de recursos. O contrato principal é `metadata.resource`, onde se concentram os campos que descrevem o recurso educativo.
 
-A comunicação entre serviços usa um token interno partilhado (`INTERNAL_SERVICE_TOKEN`), transmitido no header `X-Internal-Token`. Este mecanismo protege endpoints que não devem ser expostos publicamente, como a publicação de notícias de sistema, a renovação de tokens server-side e os endpoints de transferência de utilizadores.
+O campo `titulo` é obrigatório e limitado em tamanho. O campo `tipo` também é obrigatório e aceita os valores `artigo`, `tese`, `slides`, `teste`, `relatorio`, `aplicacao`, `problema` e `outro`. A `visibilidade` pode ser `publico` ou `privado`, assumindo `publico` por omissão. Campos como `subtitulo`, `descricao` e `tema` são opcionais, mas também têm limites. O `ano` deve ser um inteiro entre 0 e 3000, `dataCriacao` deve ser uma data válida e `hashtags` é normalizado para uma lista controlada.
 
-### 3.6 Documentação OpenAPI
+Esta estrutura permite classificar recursos por tipo, ano, tema, visibilidade e etiquetas. Esses mesmos campos são usados nas listagens, nos filtros de exportação e nas regras de acesso. Desta forma, os metadados não servem apenas para descrever o recurso; eles também orientam a pesquisa, a administração e a transferência de dados.
 
-Cada serviço expõe a sua documentação OpenAPI própria. O `gateway` disponibiliza um hub Swagger agregado em `/docs` que agrega as especificações de todos os serviços, facilitando a navegação e o teste dos endpoints.
+## 8. Autenticação, Perfis e Sessões
 
----
+O serviço `auth` permite registo local, login por email ou username, refresh token, OAuth Google/Facebook quando as credenciais estão configuradas e gestão de utilizadores por administradores. As passwords são guardadas com bcrypt e nunca são devolvidas nas respostas da API.
 
-## 4. Modelo de Dados e Entidades
+No login são emitidos dois tokens. O access token JWT tem curta duração e é usado para autenticar pedidos aos serviços. O refresh token tem duração superior e é guardado em cookie HttpOnly, reduzindo a exposição a código cliente. A interface mantém uma sessão server-side com os dados necessários para renderizar páginas e fazer pedidos autenticados.
 
-O domínio principal gira em torno de recursos educativos e da sua preservação. As entidades principais são:
+Quando uma chamada da interface à API falha por token expirado, a própria interface chama internamente `/auth/sessions/refresh-server` com o `X-Internal-Token`. Se o refresh for válido, recebe um novo access token e repete o pedido original. Este mecanismo mantém a experiência fluida para o utilizador, ao mesmo tempo que preserva a separação entre sessão web e autenticação entre serviços.
 
-| Entidade     | Descrição                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `User`     | Utilizador autenticável, com role `admin`, `produtor` ou `consumidor`. Gerido pelo serviço `auth`.        |
-| `Resource` | Recurso educativo com metadados, produtor, visibilidade e contadores de download.                                   |
-| `Aip`      | Registo arquivístico associado ao recurso, com validações por camada, estado, checksum e localização em disco. |
-| `Post`     | Publicação social associada a um recurso.                                                                         |
-| `Comment`  | Comentário num post.                                                                                               |
-| `Rating`   | Avaliação (1–5 estrelas) de um recurso por utilizador.                                                           |
-| `NewsItem` | Notícia manual ou gerada automaticamente pelo sistema.                                                             |
-| `AuditLog` | Registo de auditoria de ações realizadas na plataforma.                                                           |
+As permissões são aplicadas nos serviços backend. O administrador pode gerir todos os dados. O produtor tem autorização para criar e gerir os seus recursos, mas não pode alterar recursos de outros produtores. O consumidor tem acesso de leitura e interação sobre recursos permitidos. Esta regra é aplicada tanto em operações visíveis na interface como em chamadas diretas à API.
 
-### Hierarquia de Perfis
+## 9. Interação Social e Notícias
 
 ```
 admin (3)     → permissões máximas, acesso a tudo
@@ -135,99 +147,61 @@ consumidor (1) → leitura de recursos públicos, avaliações, posts e comentá
 | Exportar dados visíveis          | ✓    | ✓       | ✓         |
 | Importar dados                   | ✓    | recursos próprios | — |
 
-A visibilidade dos recursos é uma regra central: recursos públicos são acessíveis a qualquer pessoa; recursos privados exigem autenticação e só são acessíveis ao produtor responsável ou a administradores. Esta regra é aplicada na listagem, no detalhe e no download do DIP.
+As notícias têm duas origens. As notícias manuais são criadas por administradores e funcionam como comunicação editorial da plataforma. As notícias automáticas são geradas pelo sistema perante eventos relevantes. Atualmente existem notícias para nova submissão pública, atualização do top 3 de recursos mais requisitados e alteração do total de utilizadores.
 
----
+Para impedir ruído e repetição, as notícias automáticas usam uma chave de deduplicação. No caso do top 3, por exemplo, a notícia só é republicada quando o ranking muda. Assim, o feed mantém-se informativo sem ser preenchido por atualizações redundantes.
 
-## 5. Fluxo OAIS: Submissão, Preservação e Acesso
+## 10. Exportação e Importação de Dados
 
-### 5.1 Modos de Submissão
+A exportação e importação foram implementadas como mecanismos de backup, migração e demonstração, mas não ignoram as regras de acesso. O dump exportado usa `version: "2"` e pode incluir recursos, AIPs, ficheiros AIP codificados em base64, notícias, posts, comentários, ratings e utilizadores. Quando a operação envolve utilizadores, a API comunica com o serviço `auth` através de endpoints internos protegidos.
 
-O sistema aceita dois modos de submissão, ambos convergindo para o mesmo processo de ingestão:
+As capacidades variam conforme o perfil. O administrador pode exportar e importar o conjunto global, incluindo utilizadores. O produtor pode exportar recursos permitidos e importar recursos, ficando estes associados ao próprio produtor quando a operação o exige. O consumidor pode exportar recursos públicos e contexto seguro relacionado, mas não pode importar dados.
 
-**Submissão simples** — o produtor preenche metadados e anexa ficheiros diretamente no formulário web. A API gera automaticamente um SIP BagIt a partir dos dados recebidos. Este modo é o recomendado para a maioria dos casos.
+Os filtros de transferência permitem restringir o conteúdo por tipo, datas, produtor, visibilidade, tipo de notícia, autor de posts ou comentários, estrelas de rating, estado AIP e quantidade. A mesma lógica de normalização existe na API e na interface através dos módulos de filtros, garantindo que aquilo que o utilizador escolhe no formulário corresponde ao comportamento real do backend.
 
-**Submissão avançada** — o produtor envia diretamente um SIP ZIP já preparado, útil para fluxos automatizados ou importações em lote.
+Esta parte do projeto é particularmente importante porque toca várias entidades ao mesmo tempo. Exportar apenas recursos, por exemplo, pode exigir incluir AIPs, posts, comentários ou ratings relacionados, respeitando sempre dependências e permissões. Por isso, a implementação trata as coleções de forma ordenada e aplica filtros tanto em consultas MongoDB como, quando necessário, sobre os dados já carregados.
 
-### 5.2 Estrutura do SIP
+## 11. Segurança e Observabilidade
 
-O SIP é sempre um ZIP com a seguinte estrutura:
+A segurança foi tratada em várias camadas. Os serviços usam `helmet`, CORS configurado, limites de tamanho nos pedidos e uploads, rate limiting no gateway, na API e no login, proteção contra zip-slip nos pacotes SIP e validação explícita de permissões no backend. As rotas internas exigem `INTERNAL_SERVICE_TOKEN`, impedindo que operações reservadas à comunicação entre serviços fiquem expostas publicamente.
 
-```
-meu-recurso.zip
-├── manifest.json      (obrigatório)
-├── bagit.txt          (opcional)
-├── checksums.txt      (opcional)
-└── data/              (obrigatório)
-    ├── ficheiro.pdf
-    └── ...
-```
+Os utilizadores removidos são desativados por soft-delete, o que preserva histórico e evita que referências antigas fiquem quebradas. Dados sensíveis, como passwords, tokens e cookies, são removidos antes de serem registados em auditoria. Esta preocupação é importante porque a auditoria deve ajudar a investigar ações sem se transformar num novo ponto de exposição de informação confidencial.
 
-O `manifest.json` contém os metadados e a lista de ficheiros:
+A observabilidade inclui health checks, logs por pedido, propagação de `requestId` e auditoria persistente em MongoDB. O `requestId` é colocado nas respostas e usado nos logs, facilitando o acompanhamento de pedidos entre camadas. A auditoria regista serviço, ação, método, caminho, estado, código HTTP, utilizador, alvo, IP, user-agent e metadados sanitizados.
 
-```json
-{
-  "titulo": "Recurso de exemplo",
-  "tipo": "artigo",
-  "visibilidade": "publico",
-  "hashtags": ["ensino", "exemplo"],
-  "files": [
-    { "name": "ficheiro.pdf", "type": "application/pdf", "required": true }
-  ]
-}
-```
+Esta combinação dá uma visão razoável sobre o comportamento do sistema: é possível saber que operações foram feitas, por quem, sobre que alvo e com que resultado, sem depender apenas de logs temporários dos containers.
 
-### 5.3 Validações de Ingestão
+## 12. Interface Web
 
-O ingest valida o SIP por quatro camadas sequenciais:
+A interface foi construída com Express e Pug e funciona como uma camada web server-side sobre os serviços `api` e `auth`. Esta escolha tornou a aplicação mais direta para os objetivos do projeto, porque evita duplicar no browser regras que já existem no backend.
 
-| Camada                  | Verificações                                                                                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Estrutura**     | ZIP válido, existência de `manifest.json` e pasta `data/`, ficheiros declarados presentes                                                          |
-| **Metadados**     | Campos obrigatórios (`titulo`, `tipo`), tipo na enumeração permitida, visibilidade válida, formatos de data                                      |
-| **Segurança**    | Proteção contra zip-slip, extensões permitidas, limites de tamanho (50 MB por ficheiro, 100 MB total), nomes de ficheiro sem caracteres perigosos     |
-| **Consistência** | Correspondência entre `manifest.json` e ficheiros reais, verificação de checksums SHA-256 quando presentes, correspondência de tamanhos declarados |
+A página inicial apresenta recursos recentes, notícias e estatísticas. A área de autenticação permite login, registo, logout e OAuth opcional. A área de recursos permite listar, pesquisar, consultar detalhes, criar recursos por submissão simples, enviar SIP avançado, editar metadados quando permitido e descarregar DIPs. Nos detalhes de cada recurso, o utilizador pode aceder à discussão associada, comentar e classificar.
 
-Tipos de recurso aceites: `artigo`, `tese`, `slides`, `teste`, `relatorio`, `aplicacao`, `problema`, `outro`.
+Existe também uma área de dados para exportação e importação conforme o perfil do utilizador. Para administradores, a interface inclui páginas de gestão de utilizadores, notícias, auditoria e transferência global de dados. Estas páginas não substituem a segurança do backend; apenas tornam visíveis as ações disponíveis para cada perfil.
 
-Extensões de ficheiro permitidas incluem: `.pdf`, `.txt`, `.docx`, `.xlsx`, `.csv`, `.json`, `.xml`, `.md`, `.py`, `.js`, `.html`, `.jpg`, `.png`, `.mp4`, `.zip`, entre outras.
+A interface foi desenhada para acompanhar o funcionamento real da API. Por exemplo, os filtros de exportação apresentados no formulário seguem as mesmas definições de normalização e resumo usadas no backend. Isto reduz a possibilidade de discrepâncias entre o que a interface promete e o que a API executa.
 
-### 5.4 Criação do AIP
+## 13. Testes e Dados de Demonstração
 
-Quando o SIP passa todas as validações, a API:
+A API inclui testes automatizados com `node:test`, cobrindo as áreas de maior risco da aplicação. Existem testes para validação de metadados, regras de acesso, autorização, middlewares de validação e upload, criação de pacotes simples, armazenamento AIP, geração de DIP, ingest OAIS, filtros e permissões de transferência de dados, rate limiting e utilitários de ZIP.
 
-1. Cria um documento `Resource` em MongoDB com os metadados extraídos.
-2. Cria um documento `Aip` com o relatório de validação e rastreabilidade.
-3. Guarda o conteúdo extraído em `data/aip/<resourceId>/bag/`.
-4. Preserva o ZIP original em `data/aip/<resourceId>/sip.zip`.
+Na validação final referida durante o desenvolvimento, a suíte da API passou com 45 testes bem-sucedidos. A cobertura concentra-se especialmente nos pontos onde uma regressão teria maior impacto: validação de pacotes, permissões, visibilidade, importação/exportação e acesso a recursos.
 
-Em caso de falha após a escrita em disco, a API executa rollback automático, removendo os ficheiros e o documento `Resource` criados.
+O projeto inclui ainda dados de demonstração. Em `data/povoamento/fixtures.json` existem três utilizadores iniciais: `admin.teste`, `produtor.teste` e `consumidor.teste`. A pasta `data/recursos` contém ficheiros reais que podem ser carregados para popular a plataforma através do script `data/povoamento/povoamento-recursos.py`. Esta base facilita a demonstração das funcionalidades principais sem exigir criação manual de todos os recursos.
 
-### 5.5 Geração do DIP
+## 14. Limitações e Trabalho Futuro
 
-No download, o consumidor não recebe o ficheiro original submetido. A API constrói um DIP a partir do AIP preservado:
+Apesar de funcional, a solução tem algumas limitações assumidas. A interface já usa `express-session` com store persistente em MongoDB, o que evita perda imediata de sessão em restart do processo web e melhora o comportamento operacional. Como evolução futura, faria sentido adicionar testes dedicados aos fluxos de sessão e tornar a política de retenção ainda mais configurável por perfil ou contexto. Os tipos de recurso já são extensíveis no fluxo principal, mas uma evolução natural seria permitir a sua gestão explícita através de configuração dedicada ou de uma área administrativa.
 
-```
-GET /api/oais/access/:resourceId
-    ↓
-verifica recurso e permissões de visibilidade
-    ↓
-lê data/aip/<resourceId>/bag/data/
-    ↓
-gera DIP-<resourceId>.zip com metadados.json + ficheiros
-    ↓
-incrementa downloadCount em resources e aips
-    ↓
-publica notícia de top3 se ranking mudou
-```
+A API tem testes sobre os componentes principais, mas os serviços `auth`, `gateway` e `interface` ainda beneficiariam de testes próprios. O dataset de demonstração também depende da execução explícita do script de povoamento, pelo que a base de dados inicial não fica completamente carregada apenas com o arranque dos containers. Do ponto de vista operacional, o gateway ainda poderia evoluir com circuit breaker, métricas mais detalhadas e estratégias de fallback para falhas temporárias dos serviços internos.
 
-O DIP inclui um `metadados.json` gerado pelo sistema e os ficheiros de consumo de `bag/data/`. A estrutura técnica de preservação (checksums, bagit.txt, sip.zip) não é exposta ao utilizador. É possível selecionar ficheiros individuais para download através de parâmetros de query.
+Como trabalho futuro, faria sentido acrescentar testes end-to-end aos fluxos completos, armazenamento S3-compatível para AIPs, métricas operacionais, gestão administrativa dos tipos de recurso e suporte a metadados de preservação mais ricos, como PREMIS ou Dublin Core. Estes pontos não invalidam a solução atual, mas indicam caminhos claros para a tornar mais robusta e mais próxima de um ambiente de produção.
 
----
+## 15. Conclusão
 
-## 6. Serviço Auth
+A plataforma desenvolvida cumpre o objetivo de gerir e disponibilizar recursos educativos com preservação arquivística, controlo de acessos e funcionalidades de interação. O modelo OAIS foi incorporado no fluxo principal da aplicação: o produtor submete um SIP, o sistema valida e preserva um AIP, e o consumidor recebe um DIP gerado a partir do arquivo.
 
-O serviço `auth` (porta 16027) gere identidade e autenticação. Principais funcionalidades:
+A arquitetura em serviços separados permitiu organizar melhor as responsabilidades. O `gateway` controla a entrada pública, o `auth` gere identidade e sessões, a `api` concentra o domínio da aplicação e a `interface` oferece uma experiência web utilizável. O MongoDB guarda os documentos e o armazenamento em disco preserva os pacotes AIP.
 
 - Registo público de novos utilizadores (sempre com `role=consumidor`).
 - Login por email ou username com validação bcrypt.

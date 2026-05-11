@@ -1,6 +1,7 @@
 extends ../layout
 
 block content
+	- const t = typeof suggestions !== 'undefined' && suggestions ? suggestions : { tipos: [] }
 	section.resource-form-page
 		section.resource-form-hero
 			p.resource-form-hero__eyebrow Passo a passo
@@ -45,14 +46,8 @@ block content
 								span.field-badge.field-badge--required Obrigatório
 							input#tipo.w3-input(type='text' name='tipo' list='tipos-recurso' required placeholder='Ex: artigo, tese, slides')
 							datalist#tipos-recurso
-								option(value='artigo')
-								option(value='tese')
-								option(value='slides')
-								option(value='teste')
-								option(value='relatorio')
-								option(value='aplicacao')
-								option(value='problema')
-								option(value='outro')
+								each tipo in t.tipos
+									option(value=tipo)
 							p.field-feedback(data-default-text='Escolhe um tipo simples e reconhecível para facilitar a pesquisa.') Escolhe um tipo simples e reconhecível para facilitar a pesquisa.
 
 						.form-field(data-field='ano')
