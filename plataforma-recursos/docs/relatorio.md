@@ -191,7 +191,7 @@ O projeto inclui ainda dados de demonstração. Em `data/povoamento/fixtures.jso
 
 ## 14. Limitações e Trabalho Futuro
 
-Apesar de funcional, a solução tem algumas limitações assumidas. A interface usa `express-session` em memória, o que é suficiente para desenvolvimento, mas deveria ser substituído por uma store persistente como MongoDB ou Redis num ambiente de produção. Os tipos de recurso já são extensíveis no fluxo principal, mas uma evolução natural seria permitir a sua gestão explícita através de configuração dedicada ou de uma área administrativa.
+Apesar de funcional, a solução tem algumas limitações assumidas. A interface já usa `express-session` com store persistente em MongoDB, o que evita perda imediata de sessão em restart do processo web e melhora o comportamento operacional. Como evolução futura, faria sentido adicionar testes dedicados aos fluxos de sessão e tornar a política de retenção ainda mais configurável por perfil ou contexto. Os tipos de recurso já são extensíveis no fluxo principal, mas uma evolução natural seria permitir a sua gestão explícita através de configuração dedicada ou de uma área administrativa.
 
 A API tem testes sobre os componentes principais, mas os serviços `auth`, `gateway` e `interface` ainda beneficiariam de testes próprios. O dataset de demonstração também depende da execução explícita do script de povoamento, pelo que a base de dados inicial não fica completamente carregada apenas com o arranque dos containers. Do ponto de vista operacional, o gateway ainda poderia evoluir com circuit breaker, métricas mais detalhadas e estratégias de fallback para falhas temporárias dos serviços internos.
 

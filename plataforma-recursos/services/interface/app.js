@@ -1,6 +1,7 @@
 const path = require('path')
 const express = require('express')
 const session = require('express-session')
+const MongoStore = require('connect-mongo')
 const helmet = require('helmet')
 const passport = require('passport')
 const swaggerUi = require('swagger-ui-express')
@@ -29,17 +30,30 @@ app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'public')))
 
+const sessionStore = MongoStore.create({
+	mongoUrl: config.session.store.mongoUrl,
+	collectionName: config.session.store.collectionName,
+	ttl: config.session.ttlSeconds,
+	autoRemove: 'native',
+	stringify: false,
+})
+
+sessionStore.on('error', (err) => {
+	console.error('[interface] erro na store de sessões MongoDB:', err)
+})
+
 app.use(
 	session({
 		name: config.session.cookieName,
 		secret: config.session.secret,
+		store: sessionStore,
 		resave: false,
 		saveUninitialized: false,
 		cookie: {
 			httpOnly: true,
 			sameSite: 'lax',
 			secure: config.nodeEnv === 'production',
-			maxAge: 1000 * 60 * 60 * 24,
+			maxAge: config.session.ttlSeconds * 1000,
 		},
 	})
 )
