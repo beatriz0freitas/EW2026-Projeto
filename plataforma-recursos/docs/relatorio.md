@@ -133,12 +133,9 @@ Este fluxo foi escolhido porque evita obrigar o utilizador a novo login sempre q
 
 ### 8.3 Sessão persistente da interface
 
-Durante a implementação, a interface usava `express-session` com a store em memória, o que era suficiente para desenvolvimento inicial mas frágil para um ambiente minimamente estável. Essa limitação foi depois corrigida com uma store persistente em MongoDB através de `connect-mongo`.
+A interface usa uma store de sessão persistente em MongoDB através de `connect-mongo`, mantendo o estado da camada web alinhado com a estratégia de persistência já usada no resto da plataforma.
 
-Esta alteração foi importante por duas razões:
-
-- a sessão passou a sobreviver ao restart do processo da interface;
-- a política da camada web ficou mais coerente com o resto da arquitetura, que já dependia de MongoDB como persistência principal.
+Com esta solução, as sessões deixam de depender exclusivamente do processo da interface e ganham maior estabilidade operacional, ao mesmo tempo que a gestão de estado fica mais consistente com a arquitetura global da aplicação.
 
 ## 9. Camada Social: Posts, Comentários, Ratings e Notícias
 
@@ -156,10 +153,7 @@ As classificações foram implementadas como upsert por par `(resourceId, userId
 
 ### 9.4 Notícias manuais e de sistema
 
-As notícias aparecem em duas formas:
-
-- **manuais**, publicadas por administradores;
-- **automáticas**, geradas por eventos do sistema.
+As notícias aparecem em duas formas: **manuais**, publicadas por administradores e **automáticas**, geradas por eventos do sistema.
 
 As notícias automáticas mais importantes são:
 
@@ -170,12 +164,6 @@ As notícias automáticas mais importantes são:
 Para evitar ruído, foi introduzido o uso de `dedupeKey`, especialmente nas notícias de sistema. Assim, uma atualização do top 3 só republica notícia quando o ranking muda realmente.
 
 ## 10. Exportação e Importação de Dados
-
-Exportação e importação não foram tratadas como utilitários secundários. Elas servem três objetivos diferentes:
-
-- backup/portabilidade;
-- migração entre ambientes;
-- demonstração e reposição de cenários.
 
 O dump usa `version: "2"` e pode incluir recursos, AIPs, ficheiros AIP em base64, notícias, posts, comentários, ratings e utilizadores. Como os utilizadores vivem no serviço `auth`, a API coordena esta parte através de endpoints internos protegidos por token interno.
 
@@ -197,7 +185,7 @@ A segurança foi tratada em múltiplos níveis:
 - `INTERNAL_SERVICE_TOKEN` para endpoints internos;
 - revalidação backend de permissões mesmo quando a interface esconde ações.
 
-### 11.2 Auditoria e rastreabilidade
+### 11.2 Histórico e rastreabilidade
 
 Foi criada uma camada de auditoria persistente em MongoDB. O objetivo não era apenas guardar logs HTTP, mas também conseguir responder a perguntas do tipo:
 
@@ -208,25 +196,6 @@ Foi criada uma camada de auditoria persistente em MongoDB. O objetivo não era a
 - com que contexto sanitizado.
 
 Além disso, `requestId` e health checks foram incluídos para melhorar rastreabilidade entre serviços.
-
-## 12. Interface Web e Experiência de Utilização
-
-A interface foi evoluindo no sentido de mostrar o sistema completo sem depender de chamadas “manuais” à API. As páginas principais foram desenhadas para espelhar o domínio real do projeto:
-
-- homepage com recursos recentes, notícias e métricas;
-- listagem de recursos com filtros por tipo, ano, tema e etiqueta;
-- detalhe de recurso com metadados, ficheiros, avaliação e publicações associadas;
-- área de posts e comentários;
-- formulários de submissão simples e avançada;
-- área de dados para exportação/importação;
-- administração para utilizadores, notícias e auditoria.
-
-Uma preocupação recorrente foi manter a interface coerente com o backend. Por isso, por exemplo:
-
-- os filtros de exportação usam a mesma lógica de normalização da API;
-- a renovação de sessão é feita server-side;
-- as sugestões de tipos acompanham os tipos base e os já existentes;
-- o detalhe do recurso mostra as conversas associadas por `resourceId`.
 
 ## 13. Povoamento, Dataset de Demonstração e Ajustes de Campo
 
@@ -354,29 +323,6 @@ No login são emitidos dois tokens. O access token JWT tem curta duração e é 
 Quando uma chamada da interface à API falha por token expirado, a própria interface chama internamente `/auth/sessions/refresh-server` com o `X-Internal-Token`. Se o refresh for válido, recebe um novo access token e repete o pedido original. Este mecanismo mantém a experiência fluida para o utilizador, ao mesmo tempo que preserva a separação entre sessão web e autenticação entre serviços.
 
 As permissões são aplicadas nos serviços backend. O administrador pode gerir todos os dados. O produtor tem autorização para criar e gerir os seus recursos, mas não pode alterar recursos de outros produtores. O consumidor tem acesso de leitura e interação sobre recursos permitidos. Esta regra é aplicada tanto em operações visíveis na interface como em chamadas diretas à API.
-
-## 9. Interação Social e Notícias
-
-```
-admin (3)     → permissões máximas, acesso a tudo
-  ↓
-produtor (2)  → pode criar/editar/apagar os seus recursos e participar na camada social
-  ↓
-consumidor (1) → leitura de recursos públicos, avaliações, posts e comentários em recursos visíveis
-```
-
-| Operação                       | Admin | Produtor           | Consumidor |
-| -------------------------------- | ----- | ------------------ | ---------- |
-| Ler recursos públicos           | ✓    | ✓                 | ✓         |
-| Ler recursos privados próprios  | ✓    | ✓                 | —         |
-| Criar recursos                   | ✓    | ✓                 | —         |
-| Editar/apagar recursos próprios | ✓    | ✓                 | —         |
-| Editar/apagar recursos alheios   | ✓    | —                 | —         |
-| Criar posts e comentários       | ✓    | ✓                 | ✓         |
-| Avaliar recursos                 | ✓    | ✓                 | ✓         |
-| Gerir utilizadores               | ✓    | —                 | —         |
-| Exportar dados visíveis         | ✓    | ✓                 | ✓         |
-| Importar dados                   | ✓    | recursos próprios | —         |
 
 As notícias têm duas origens. As notícias manuais são criadas por administradores e funcionam como comunicação editorial da plataforma. As notícias automáticas são geradas pelo sistema perante eventos relevantes. Atualmente existem notícias para nova submissão pública, atualização do top 3 de recursos mais requisitados e alteração do total de utilizadores.
 
