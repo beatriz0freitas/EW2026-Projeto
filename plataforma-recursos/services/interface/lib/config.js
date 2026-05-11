@@ -14,6 +14,14 @@ function parseUrl(value, name) {
 	}
 }
 
+function parsePositiveInt(value, fallback, name) {
+	const parsed = Number(value ?? fallback)
+	if (!Number.isInteger(parsed) || parsed <= 0) {
+		throw new Error(`${name} inválida: ${value}`)
+	}
+	return parsed
+}
+
 function getSessionSecret(nodeEnv) {
 	const value = process.env.SESSION_SECRET
 	if (nodeEnv === 'production' && !value) {
@@ -40,6 +48,11 @@ const config = {
 	session: {
 		secret: getSessionSecret(nodeEnv),
 		cookieName: process.env.SESSION_COOKIE_NAME || 'ew.sid',
+		ttlSeconds: parsePositiveInt(process.env.SESSION_TTL_SECONDS, 60 * 60 * 24, 'SESSION_TTL_SECONDS'),
+		store: {
+			mongoUrl: process.env.SESSION_STORE_MONGO_URL || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/ew2026',
+			collectionName: process.env.SESSION_STORE_COLLECTION || 'interface_sessions',
+		},
 	},
 	services: {
 		authUrl: parseUrl(process.env.AUTH_URL || 'http://auth:16027', 'AUTH_URL'),

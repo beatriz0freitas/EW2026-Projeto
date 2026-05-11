@@ -65,9 +65,9 @@ Esta é a parte mais importante neste momento.
 
 #### 3.1 Sessões da interface em store persistente
 
-- ❌ A interface usa `express-session` sem store externo, ficando na prática com `MemoryStore`.
-- Impacto: não é solução robusta para produção, perde sessões em restart e escala mal.
-- Evolução recomendada: usar `connect-mongo` ou Redis para guardar sessões.
+- ✅ A interface usa `express-session` com store persistente em MongoDB através de `connect-mongo`.
+- Impacto positivo: as sessões sobrevivem a restart do serviço interface e deixam de ficar limitadas ao processo local.
+- Configuração atual: a store usa `MONGO_URL` ou `SESSION_STORE_MONGO_URL`, coleção dedicada e TTL configurável por ambiente.
 
 ### Gateway (`services/gateway`)
 
