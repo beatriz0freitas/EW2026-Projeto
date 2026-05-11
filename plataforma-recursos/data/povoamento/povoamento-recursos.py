@@ -28,6 +28,49 @@ VISIBILIDADE_OMISSAO = "publico"
 LIMITE_FICHEIRO_MB = 50
 LIMITE_TOTAL_MB = 100
 MAX_FICHEIROS_POR_RECURSO = 20
+EXTENSOES_PERMITIDAS = {
+    '',
+    '.pdf',
+    '.txt',
+    '.docx',
+    '.xlsx',
+    '.xls',
+    '.csv',
+    '.json',
+    '.xml',
+    '.md',
+    '.ipynb',
+    '.py',
+    '.js',
+    '.ts',
+    '.java',
+    '.hs',
+    '.cpp',
+    '.c',
+    '.hpp',
+    '.h',
+    '.css',
+    '.html',
+    '.yml',
+    '.yaml',
+    '.ini',
+    '.toml',
+    '.sql',
+    '.vpp',
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.svg',
+    '.webp',
+    '.mp4',
+    '.mov',
+    '.mp3',
+    '.wav',
+    '.zip',
+    '.rar',
+    '.7z',
+}
 
 
 def cabecalho_auth(token: str) -> Dict[str, str]:
@@ -76,6 +119,20 @@ def recolher_ficheiros(item: Path, modo: str) -> List[Path]:
     if modo == "pasta":
         return [p for p in sorted(item.rglob("*")) if p.is_file()]
     return [item]
+
+
+def filtrar_ficheiros_permitidos(ficheiros: List[Path]) -> Tuple[List[Path], List[Path]]:
+    permitidos: List[Path] = []
+    ignorados: List[Path] = []
+
+    for ficheiro in ficheiros:
+        extensao = ficheiro.suffix.lower()
+        if extensao in EXTENSOES_PERMITIDAS:
+            permitidos.append(ficheiro)
+        else:
+            ignorados.append(ficheiro)
+
+    return permitidos, ignorados
 
 
 def aplicar_filtro_only(items: List[Path], only: str) -> List[Path]:
@@ -206,10 +263,12 @@ def ingerir(args: argparse.Namespace, token: str, diretorio: Path) -> int:
 
     for item in items:
         total += 1
-        ficheiros = recolher_ficheiros(item, modo)
+        ficheiros, ficheiros_ignorados = filtrar_ficheiros_permitidos(recolher_ficheiros(item, modo))
         if not ficheiros:
-            print(f"\n==> {item.name}\n  ERRO: sem ficheiros")
-            falhas.append((item.name, "SEM_FICHEIROS"))
+            print(f"\n==> {item.name}\n  ERRO: sem ficheiros permitidos")
+            if ficheiros_ignorados:
+                print(f"  Ignorados por extensão não suportada: {', '.join(f.name for f in ficheiros_ignorados)}")
+            falhas.append((item.name, "SEM_FICHEIROS_PERMITIDOS"))
             continue
 
         override = metadata.get(item.name, {})
@@ -221,9 +280,13 @@ def ingerir(args: argparse.Namespace, token: str, diretorio: Path) -> int:
         }
 
         print(f"\n==> {item.name}  [{len(ficheiros)} ficheiro(s)]  título: {titulo}")
+        if ficheiros_ignorados:
+            print(f"  Aviso: ignorados por extensão não suportada: {', '.join(f.name for f in ficheiros_ignorados)}")
 
         nomes_locais = {ficheiro.name for ficheiro in ficheiros}
-        duplicado = titulo in titulos_existentes or bool(nomes_locais & ficheiros_existentes)
+        duplicado_por_titulo = titulo in titulos_existentes
+        duplicado_por_ficheiros = bool(nomes_locais) and nomes_locais.issubset(ficheiros_existentes)
+        duplicado = duplicado_por_titulo or duplicado_por_ficheiros
         if duplicado:
             print("  IGNORADO: já existe na plataforma")
             ignorados += 1
