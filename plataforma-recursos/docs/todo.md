@@ -85,13 +85,10 @@ Esta é a parte mais importante neste momento.
 
 #### 3.6 Tipos de recurso realmente extensíveis
 
-- ❌ O enunciado pede não só um conjunto base de tipos, mas também prever o aumento e a adição de novos tipos de recurso.
-- Estado atual: os tipos válidos estão fechados por enumeração fixa no backend.
-- Impacto: para acrescentar um novo tipo é preciso mexer no código e redeploy, em vez de a plataforma o suportar de forma mais natural.
-- Evolução recomendada:
-	- extrair tipos base para configuração ou coleção própria;
-	- permitir gestão administrativa dos tipos disponíveis;
-	- manter validação sem ficar preso a uma lista hardcoded.
+- ✅ O requisito do enunciado para prever o aumento de tipos de recurso fica cumprido.
+- Estado atual: o backend aceita qualquer tipo textual válido, normaliza-o e mantém apenas um conjunto base como sugestão inicial.
+- Impacto positivo: passam a poder ser criados novos tipos sem alteração de código nem redeploy.
+- A interface sugere os tipos base e reaproveita também os tipos já existentes nos recursos guardados.
 
 - ✅ App Express com Pug, sessão, flash messages e rotas montadas.
 - ✅ Login/registo/logout funcionais.

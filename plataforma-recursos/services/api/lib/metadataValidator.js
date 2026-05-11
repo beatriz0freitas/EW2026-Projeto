@@ -4,8 +4,8 @@
 
 'use strict'
 
-const TIPOS_VALIDOS = new Set(['artigo', 'tese', 'slides', 'teste', 'relatorio', 'aplicacao', 'problema', 'outro'])
 const VISIBILIDADES_VALIDAS = new Set(['publico', 'privado'])
+const { normalizarTipoRecurso, tiposBaseRecurso } = require('./resourceTypes')
 
 const LIMITES = {
 	tipo: { min: 1, max: 80 },
@@ -43,19 +43,16 @@ function validateMetadataResource(resource) {
 
 	// ── campos obrigatórios ─────────────────────────────────────────────────
 
-	const tipo = limparTexto(resource.tipo)
+	const tipo = normalizarTipoRecurso(resource.tipo)
 	if (!tipo) {
 		errors.push({ code: 'BAD_METADATA', message: 'metadata.resource.tipo é obrigatório' })
-	} else if (!TIPOS_VALIDOS.has(tipo)) {
-		errors.push({
-			code: 'BAD_METADATA',
-			message: `metadata.resource.tipo deve ser um de: ${Array.from(TIPOS_VALIDOS).join(', ')}`,
-		})
 	} else if (tipo.length > LIMITES.tipo.max) {
 		errors.push({
 			code: 'BAD_METADATA',
 			message: `metadata.resource.tipo não pode exceder ${LIMITES.tipo.max} caracteres`,
 		})
+	} else {
+		resource.tipo = tipo
 	}
 
 	const titulo = limparTexto(resource.titulo)
@@ -211,6 +208,7 @@ function validateMetadata(metadata) {
 }
 
 module.exports = {
+	tiposBaseRecurso,
 	validateMetadata,
 	validateMetadataResource,
 }
