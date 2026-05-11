@@ -56,7 +56,7 @@ O MongoDB foi escolhido para persistir metadados e entidades da aplicação porq
 
 Outra decisão importante foi renderizar a interface no servidor com Express e Pug. Como o projeto não exigia uma SPA e a lógica crítica vive nos serviços backend, esta abordagem reduziu duplicação de regras no frontend e simplificou o fluxo de autenticação. A interface atua como camada de experiência do utilizador, enquanto a API e o serviço de autenticação continuam a ser as fontes de verdade.
 
-A autenticação usa JWT de curta duração e refresh token de duração superior. Esta combinação permite que os serviços verifiquem a identidade por HTTP sem guardar estado partilhado, mantendo ao mesmo tempo uma experiência de sessão contínua para o utilizador. Quando a interface recebe uma resposta de token expirado, tenta renovar a sessão internamente através do serviço `auth` e repete o pedido original.
+O `gateway` organiza a fronteira pública. Encaminha `/api/*`, `/auth/*` e as páginas da interface, mas bloqueia explicitamente rotas internas que não devem estar disponíveis publicamente. Por exemplo, o endpoint de publicação interna de notícias de sistema (`/api/news/system`), o endpoint interno de auditoria (`/api/internal/audit`) e o de renovação server-side de tokens (`/auth/sessions/refresh-server`) são bloqueados no gateway e protegidos adicionalmente por tokens internos nos serviços.
 
 No domínio OAIS, a decisão mais relevante foi gerar o DIP sempre a partir do AIP preservado. Isto garante que o download reflete o estado arquivado e não depende de um ficheiro temporário ou de uma submissão original sem validação. Ao mesmo tempo, a estrutura técnica do AIP não é exposta ao consumidor final: o DIP inclui os ficheiros de consumo e um ficheiro de metadados, mas oculta elementos internos como `sip.zip`, `bagit.txt` e `checksums.txt`.
 
@@ -126,9 +126,26 @@ As permissões são aplicadas nos serviços backend. O administrador pode gerir 
 
 ## 9. Interação Social e Notícias
 
-A plataforma inclui uma camada de interação social associada aos recursos. Qualquer utilizador autenticado, dentro das regras de acesso ao recurso, pode criar posts, comentar publicações e avaliar recursos. Os posts pertencem a um recurso, os comentários pertencem a um post e os ratings são associados ao par utilizador/recurso.
+```
+admin (3)     → permissões máximas, acesso a tudo
+  ↓
+produtor (2)  → pode criar/editar/apagar os seus recursos e participar na camada social
+  ↓
+consumidor (1) → leitura de recursos públicos, avaliações, posts e comentários em recursos visíveis
+```
 
-A classificação por estrelas usa uma lógica de atualização em vez de duplicação: se o mesmo utilizador voltar a avaliar o mesmo recurso, a classificação anterior é atualizada. Isto evita que um único utilizador distorça a média através de múltiplas avaliações repetidas.
+| Operação                       | Admin | Produtor | Consumidor |
+| -------------------------------- | ----- | -------- | ---------- |
+| Ler recursos públicos           | ✓    | ✓       | ✓         |
+| Ler recursos privados próprios  | ✓    | ✓       | —         |
+| Criar recursos                   | ✓    | ✓       | —         |
+| Editar/apagar recursos próprios | ✓    | ✓       | —         |
+| Editar/apagar recursos alheios   | ✓    | —       | —         |
+| Criar posts e comentários       | ✓    | ✓       | ✓         |
+| Avaliar recursos                 | ✓    | ✓       | ✓         |
+| Gerir utilizadores               | ✓    | —       | —         |
+| Exportar dados visíveis          | ✓    | ✓       | ✓         |
+| Importar dados                   | ✓    | recursos próprios | — |
 
 As notícias têm duas origens. As notícias manuais são criadas por administradores e funcionam como comunicação editorial da plataforma. As notícias automáticas são geradas pelo sistema perante eventos relevantes. Atualmente existem notícias para nova submissão pública, atualização do top 3 de recursos mais requisitados e alteração do total de utilizadores.
 
@@ -186,4 +203,244 @@ A plataforma desenvolvida cumpre o objetivo de gerir e disponibilizar recursos e
 
 A arquitetura em serviços separados permitiu organizar melhor as responsabilidades. O `gateway` controla a entrada pública, o `auth` gere identidade e sessões, a `api` concentra o domínio da aplicação e a `interface` oferece uma experiência web utilizável. O MongoDB guarda os documentos e o armazenamento em disco preserva os pacotes AIP.
 
-As decisões tomadas procuram manter equilíbrio entre simplicidade e rigor. A submissão simples torna a plataforma acessível, a submissão avançada mantém flexibilidade técnica, as permissões são validadas no backend, os recursos privados são protegidos em todos os fluxos e a geração do DIP a partir do AIP preservado reforça a coerência do modelo. O resultado é uma solução integrada que cobre preservação, acesso, administração, discussão, notícias, auditoria e transferência de dados, oferecendo uma visão completa do ciclo de vida dos recursos educativos.
+- Registo público de novos utilizadores (sempre com `role=consumidor`).
+- Login por email ou username com validação bcrypt.
+- Emissão de access token JWT (validade curta, 15 minutos por omissão) e refresh token (validade longa, 7 dias por omissão).
+- Refresh token guardado em cookie HttpOnly, nunca exposto em JSON.
+- Renovação de access token via `/sessions/refresh` (browser) ou `/sessions/refresh-server` (server-side, protegido por token interno).
+- Verificação de token em `/sessions/verify`.
+- Login/registo OAuth com Google e Facebook (quando configurados).
+- Listagem, atualização e soft-delete de utilizadores por administradores.
+- Publicação automática de notícia `system.total_users` quando o total de utilizadores muda.
+- Registo de eventos de auditoria no serviço API para ações sensíveis (login, registo, alteração de perfil, etc.).
+- Endpoints internos de exportação/importação de utilizadores para suportar a transferência de dados global.
+
+As passwords são armazenadas com hash bcrypt e removidas de todas as respostas. O arranque exige `JWT_SECRET`, `JWT_REFRESH_SECRET` e `INTERNAL_SERVICE_TOKEN` no ambiente — sem estes valores, o serviço recusa iniciar.
+
+A validação no `auth` existe em várias camadas. O middleware `services/auth/middleware/validate.js` garante que o registo recebe `nome`, `email` e `password`, e que o login recebe `password` mais `email` ou `username`. O modelo `User` reforça `email` único e válido, `role` limitado a `admin`, `produtor` ou `consumidor`, `nivel_acesso` dentro do intervalo permitido e password obrigatória quando o utilizador não vem de OAuth. O `UserService` acrescenta normalização de role, geração segura de `_id`, validação de password mínima, normalização de filiação, rejeição de emails duplicados e bloqueio de contas inativas no login.
+
+---
+
+## 7. Serviço API
+
+O serviço `api` (porta 16025) é o núcleo de domínio. As suas áreas principais são:
+
+### 7.1 Recursos e OAIS
+
+A API implementa o fluxo completo OAIS: ingest (SIP → AIP) e access (AIP → DIP). Disponibiliza também CRUD sobre os metadados dos recursos (listar, consultar, editar, apagar), com controlo de visibilidade em todas as operações. A remoção de um recurso elimina em cascata os documentos AIP, ratings, posts e respetivos comentários, bem como os ficheiros em disco.
+
+### 7.2 Posts, Comentários e Ratings
+
+A camada social permite a utilizadores autenticados criar posts associados a recursos, comentar esses posts e avaliar recursos com estrelas (1–5). As operações respeitam a visibilidade do recurso associado — não é possível consultar, comentar ou avaliar um recurso privado a que o utilizador não tenha acesso.
+
+As avaliações são únicas por utilizador/recurso (upsert). O sistema calcula a média e o total de votos, disponíveis em `GET /api/resources/:id/ratings`. O endpoint `GET /api/resources/:id/ratings/mine` permite ao utilizador consultar a sua própria avaliação.
+
+### 7.3 Notícias Manuais e de Sistema
+
+Existem dois tipos de notícias:
+
+- **Manuais** — criadas por administradores via `POST /api/news`.
+- **De sistema** — geradas automaticamente e publicadas via `POST /api/news/system` (endpoint interno protegido por token).
+
+Notícias automáticas implementadas:
+
+- `system.new_submission` — publicada quando um novo recurso público é ingerido com sucesso.
+- `system.top3` — top 3 de recursos mais requisitados, calculado com base em downloads e ratings; só é republicada quando o ranking muda.
+- `system.total_users` — publicada pelo serviço `auth` quando o total de utilizadores se altera.
+
+O mecanismo de deduplicação usa o campo `dedupeKey` (com índice único no MongoDB) para evitar duplicados nas notícias de sistema.
+
+### 7.4 Auditoria
+
+A API mantém um registo de auditoria persistente em MongoDB (`audit_logs`). O middleware `auditHttpRequests` captura automaticamente todos os pedidos HTTP à API, inferindo a ação, o alvo e o estado a partir do método e caminho. O serviço `auth` publica eventos adicionais via `POST /api/internal/audit`.
+
+Cada registo inclui: serviço, ação, método HTTP, caminho, estado (success/failure), código HTTP, utilizador, alvo, IP, user-agent e metadados sanitizados. Os campos sensíveis (passwords, tokens, cookies) são removidos automaticamente na sanitização.
+
+### 7.5 Exportação e Importação
+
+A API disponibiliza endpoints de transferência de dados em `GET /api/export` e `POST /api/import`, com permissões ajustadas ao perfil. Administradores podem exportar e importar o conjunto global, incluindo utilizadores. Produtores podem exportar recursos visíveis/geríveis e conteúdo relacionado, e importar recursos, ficando impedidos de substituir recursos pertencentes a outro produtor. Consumidores podem exportar dados visíveis, sobretudo recursos públicos e conteúdo relacionado seguro, mas não podem importar.
+
+O dump exportado inclui, conforme o perfil e os filtros permitidos, recursos (com ficheiros AIP em base64), AIPs, notícias, posts, ratings, comentários e utilizadores. A importação usa upsert por `_id`, sendo idempotente, valida `version: "2"` e devolve contadores e erros por coleção.
+
+Filtros granulares permitem exportar ou importar subconjuntos por tipo, data, produtor, visibilidade, etc. A lógica de filtros é partilhada entre a API e a interface, garantindo consistência.
+
+---
+
+## 8. Interface Web
+
+A interface (porta 16026) é construída com Express e Pug, renderizando páginas HTML no servidor. As funcionalidades disponíveis são:
+
+- Página inicial com recursos recentes e notícias.
+- Login, registo e logout (com suporte a OAuth Google/Facebook quando configurado).
+- Listagem de recursos com filtros por tipo, ano, tema e etiqueta.
+- Detalhe de recurso com metadados, ficheiros, avaliação e posts associados.
+- Formulário de submissão simples (metadados + ficheiros) e avançada (SIP ZIP).
+- Download seletivo de DIP (todos os ficheiros ou seleção manual).
+- Criação e consulta de posts, comentários em posts, avaliação de recursos.
+- Área de dados (`/data`) para exportação por todos os perfis autenticados e importação por produtores/admins conforme as permissões.
+- Área de administração: utilizadores, notícias, exportação/importação e auditoria.
+
+A interface comunica com `auth` e `api` exclusivamente por HTTP. O interceptor de 401 renova automaticamente o access token via `refresh-server` sem interromper o utilizador. Os formulários de upload usam multipart, e a interface transmite os ficheiros para a API sem os processar localmente.
+
+---
+
+## 9. Segurança, Validação e Observabilidade
+
+### Segurança
+
+- `helmet` ativo em todos os serviços para headers HTTP defensivos.
+- CORS configurável com lista de origens permitidas.
+- Rate limiting global no gateway, na API e no login do `auth` (in-memory, por janela temporal).
+- JWT com access token de curta duração e refresh token HttpOnly.
+- Token interno entre serviços para endpoints não públicos.
+- Validação de payloads e campos obrigatórios nas rotas principais.
+- Limites de tamanho e whitelist de extensões em uploads.
+- Proteção contra zip-slip nos pacotes SIP.
+- Soft-delete de utilizadores (o documento fica marcado como inativo, o email é anonimizado).
+
+### Validação
+
+O módulo `lib/metadataValidator.js` centraliza a validação do contrato de metadados `metadata.resource`, aplicado de forma consistente na submissão simples, no ingest de SIP ZIP e na atualização via PATCH. Os limites de campo são:
+
+| Campo            | Tipo          | Obrigatório | Limite                                                      |
+| ---------------- | ------------- | ------------ | ----------------------------------------------------------- |
+| `tipo`         | string (enum) | Sim          | máx 80 caracteres                                          |
+| `titulo`       | string        | Sim          | máx 200 caracteres                                         |
+| `visibilidade` | enum          | Sim          | `publico` ou `privado`                                  |
+| `subtitulo`    | string        | Não         | máx 200 caracteres                                         |
+| `descricao`    | string        | Não         | máx 2000 caracteres                                        |
+| `tema`         | string        | Não         | máx 120 caracteres                                         |
+| `ano`          | inteiro       | Não         | 0–3000                                                     |
+| `dataCriacao`  | string (data) | Não         | ISO 8601                                                    |
+| `hashtags`     | array         | Não         | máx 20 entradas, cada uma máx 80 caracteres, sem espaços |
+
+Além da validação de metadados, a API tem middlewares próprios em `services/api/middleware/validate.js` para validar campos de texto obrigatórios, inteiros no body, paginação (`page`/`limit`) e inteiros opcionais na query, como o filtro `ano`. Esses validadores são usados em recursos, posts, comentários, notícias e ratings; por exemplo, `stars` tem de ser inteiro entre 1 e 5 e os endpoints paginados recusam valores inválidos antes de chegar aos controladores.
+
+No serviço `auth`, a validação de entrada cobre os casos críticos de identidade: registo com `nome`, `email` e `password`, login com `password` e um identificador (`email` ou `username`), refresh token válido, utilizador ativo e roles administrativas válidas. A validação do modelo Mongoose e do `UserService` complementa os middlewares, garantindo email único, formato de email, password mínima, role permitida e remoção da password nas respostas JSON.
+
+### Observabilidade
+
+- Health check em todos os serviços (`/health`).
+- `requestId` único por pedido nos serviços `api` e `auth`, propagado nos logs e nas respostas.
+- Logs estruturados de todos os pedidos HTTP com método, caminho, timestamp e requestId.
+- Auditoria persistente em MongoDB com filtros por ação, serviço, estado, utilizador e intervalo temporal.
+- Documentação OpenAPI por serviço, com hub agregado no gateway.
+
+---
+
+## 10. Fluxos Principais
+
+### 10.1 Submissão de Recurso (modo simples)
+
+```
+Produtor preenche formulário + anexa ficheiros
+    ↓
+Interface envia multipart para /api/oais/ingest/simples
+    ↓
+API constrói SIP BagIt (manifest.json + bagit.txt + checksums.txt + data/)
+    ↓
+Validação por 4 camadas (estrutura, metadados, segurança, consistência)
+    ↓
+Criação de Resource + Aip em MongoDB
+Escrita em data/aip/<resourceId>/
+    ↓
+Publicação de notícia system.new_submission (se recurso público)
+Atualização de notícia system.top3
+    ↓
+Interface redireciona para detalhe do recurso
+```
+
+### 10.2 Download de Recurso
+
+```
+Utilizador pede DIP (com ou sem seleção de ficheiros)
+    ↓
+API verifica existência do recurso
+Verifica visibilidade e permissões
+    ↓
+Lê AIP de data/aip/<resourceId>/bag/data/
+Gera ZIP DIP com metadados.json + ficheiros selecionados
+    ↓
+Incrementa downloadCount em Resource e Aip
+Atualiza notícia system.top3 se ranking mudou
+    ↓
+Devolve ZIP ao cliente
+```
+
+### 10.3 Renovação Automática de Sessão
+
+```
+Interface faz pedido à API com access token expirado
+    ↓
+API devolve 401
+    ↓
+Interface chama POST /auth/sessions/refresh-server
+  com X-Internal-Token e refreshToken (guardado na sessão server-side)
+    ↓
+Auth valida refresh token, emite novo access token
+    ↓
+Interface atualiza sessão e repete o pedido original
+    ↓
+Utilizador não percebe a renovação
+```
+
+### 10.4 Exportação e Importação de Dados
+
+```
+Utilizador autenticado seleciona filtros e clica "Exportar"
+    ↓
+Interface chama GET /api/export com filtros como query params
+    ↓
+API restringe permissões e filtros conforme o perfil
+Recolhe entidades de MongoDB com filtros aplicados
+Se for admin, pede utilizadores ao auth via /internal/transfer/users
+Exporta ficheiros AIP em base64
+    ↓
+Devolve dump JSON com version: "2"
+    ↓
+--- importação noutro ambiente ---
+Admin ou produtor submete ficheiro de dump
+    ↓
+API valida version do dump e permissões de importação
+Faz upsert das coleções permitidas pelo perfil
+Se for admin, envia utilizadores para auth via /internal/transfer/users (POST)
+Repõe ficheiros AIP em disco
+    ↓
+Devolve resultado com contadores e erros por coleção
+```
+
+---
+
+## 11. Testes Automatizados
+
+O projeto inclui testes unitários e de integração ligeiros em `services/api/testes/`, usando o módulo nativo `node:test` do Node.js:
+
+| Ficheiro                       | Cobertura                                               |
+| ------------------------------ | ------------------------------------------------------- |
+| `metadataValidator.test.js`  | Validação centralizada de metadados                   |
+| `resourceAccess.test.js`     | Lógica de visibilidade e controlo de acesso a recursos |
+| `validateMiddleware.test.js` | Middlewares de validação de body e query              |
+| `uploadMiddleware.test.js`   | Upload single e múltiplo com limites e tipos           |
+| `rateLimitApi.test.js`       | Rate limiting da API                                    |
+| `autorizacao.test.js`        | Middlewares `requireLevel` e `optionalAuth`         |
+| `simpleZip.test.js`          | Criação de ZIPs e validação de caminhos             |
+| `pacoteSimples.test.js`      | Construção automática de SIP BagIt                   |
+| `aipStorage.test.js`         | Operações sobre ficheiros AIP em disco                |
+| `dip.test.js`                | Geração do DIP a partir do AIP                        |
+| `transferFilters.test.js`    | Filtros de exportação/importação                    |
+| `transferPermissions.test.js` | Permissões de transferência por perfil               |
+| `oaisAccess.test.js`         | Rota de acesso OAIS (mocks de módulos)                 |
+| `oaisIngest.test.js`         | Rota de ingestão OAIS (mocks de módulos)              |
+
+Os testes de rota usam mocking manual do cache de módulos do Node.js para isolar dependências externas (MongoDB, auth, filesystem) sem frameworks adicionais.
+
+
+---
+
+## 12. Conclusão
+
+A plataforma EW2026 implementa uma solução completa para recursos educativos preservados segundo o modelo OAIS. A arquitetura por serviços separa claramente as responsabilidades: o `auth` gere identidade, a `api` gere domínio e preservação, a `interface` entrega a experiência web e o `gateway` organiza a entrada pública.
+
+As decisões arquiteturais procuram equilibrar simplicidade e robustez. MongoDB guarda entidades flexíveis e pesquisáveis, enquanto o AIP fica em disco como pacote arquivístico independente. O backend concentra todas as regras de segurança e a interface atua como camada de apresentação. A auditoria persistente, a documentação Swagger por serviço e os testes automatizados contribuem para a rastreabilidade e qualidade do sistema.
+
+O resultado é uma plataforma capaz de suportar submissão, validação, preservação, disseminação, interação social, administração e transferência de dados, mantendo uma correspondência clara com os conceitos fundamentais de Producer, SIP, Ingest, AIP, Access, DIP e Consumer do modelo OAIS.
