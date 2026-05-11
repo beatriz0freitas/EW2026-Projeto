@@ -9,8 +9,8 @@
 
 | Número | Nome | Foto |
 | ------ | ---- | ---- |
-| A106843 | Luís Miguel Silva Coelho | ![Luís Miguel Silva Coelho](plataforma-recursos/eu.png) |
-| A106918 | Rafael Filipe Duarte | ![Rafael Filipe Duarte](plataforma-recursos/foto.jpeg) |
+| A106843 | Luís Miguel Silva Coelho | ![Luís Miguel Silva Coelho](plataforma-recursos/foto.jpeg) |
+| A106918 | Rafael Filipe Duarte | ![Rafael Filipe Duarte](plataforma-recursos/eu.png) |
 | A106853 | Ana Beatriz Freitas | ![Ana Beatriz Freitas](plataforma-recursos/bf.jpeg) |
 
 ## Resumo
