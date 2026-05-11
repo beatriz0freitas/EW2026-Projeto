@@ -5,7 +5,7 @@ const { validateMetadata, validateMetadataResource } = require('../lib/metadataV
 
 test('valida metadados mínimos corretos e assume visibilidade pública', () => {
 	const recurso = {
-		tipo: 'artigo',
+		tipo: ' Artigo ',
 		titulo: 'Recurso de exemplo',
 	}
 
@@ -13,19 +13,33 @@ test('valida metadados mínimos corretos e assume visibilidade pública', () => 
 
 	assert.equal(resultado.ok, true)
 	assert.deepEqual(resultado.errors, [])
+	assert.equal(recurso.tipo, 'artigo')
 	assert.equal(recurso.visibilidade, 'publico')
 })
 
-test('rejeita hashtags com espaços e tipo inválido', () => {
+test('aceita tipos novos e rejeita hashtags com espaços', () => {
 	const resultado = validateMetadataResource({
-		tipo: 'desconhecido',
+		tipo: 'monografia interativa',
 		titulo: 'Título válido',
 		hashtags: ['tema invalido'],
 	})
 
 	assert.equal(resultado.ok, false)
-	assert.match(resultado.errors.map((erro) => erro.message).join(' | '), /tipo deve ser um de/)
+	assert.equal(resultado.errors.some((erro) => erro.message.includes('tipo deve ser um de')), false)
 	assert.match(resultado.errors.map((erro) => erro.message).join(' | '), /não pode conter espaços/)
+})
+
+test('aceita novo tipo de recurso fora da lista base', () => {
+	const recurso = {
+		tipo: 'trabalho de alunos',
+		titulo: 'Portefólio final',
+	}
+
+	const resultado = validateMetadataResource(recurso)
+
+	assert.equal(resultado.ok, true)
+	assert.deepEqual(resultado.errors, [])
+	assert.equal(recurso.tipo, 'trabalho de alunos')
 })
 
 test('converte lista de hashtags enviada em texto', () => {

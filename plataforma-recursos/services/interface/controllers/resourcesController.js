@@ -4,10 +4,11 @@ const { pipeline } = require('stream/promises')
 
 const { apiFetch, apiRequest } = require('../lib/http')
 const { apiErrorMessage } = require('../lib/web')
+const { normalizarTipoRecurso, tiposBaseRecurso } = require('../lib/resourceTypes')
 
 function buildFilterOptionsFromResources(items = []) {
 	const values = {
-		tipos: new Set(),
+		tipos: new Set(tiposBaseRecurso()),
 		anos: new Set(),
 		temas: new Set(),
 		hashtags: new Set(),
@@ -16,7 +17,8 @@ function buildFilterOptionsFromResources(items = []) {
 	for (const item of items) {
 		const resource = item?.metadata?.resource || {}
 
-		if (resource.tipo) values.tipos.add(String(resource.tipo))
+		const tipo = normalizarTipoRecurso(resource.tipo)
+		if (tipo) values.tipos.add(tipo)
 		if (resource.ano !== undefined && resource.ano !== null && resource.ano !== '') {
 			values.anos.add(String(resource.ano))
 		}
@@ -139,7 +141,10 @@ function canManageResource(user, resource) {
 }
 
 function showCreateForm(req, res) {
-	res.render('resources/form', { title: 'Submeter recurso' })
+	res.render('resources/form', {
+		title: 'Submeter recurso',
+		suggestions: buildFilterOptionsFromResources(),
+	})
 }
 
 async function createSimple(req, res) {
@@ -424,7 +429,7 @@ async function update(req, res) {
 		...currentMetadata,
 		resource: {
 			...currentMetadataResource,
-			tipo: String(req.body.tipo || '').trim(),
+			tipo: normalizarTipoRecurso(req.body.tipo),
 			titulo: String(req.body.titulo || '').trim(),
 			subtitulo: String(req.body.subtitulo || '').trim() || undefined,
 			ano: req.body.ano ? Number(req.body.ano) : undefined,
