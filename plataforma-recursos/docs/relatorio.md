@@ -258,23 +258,7 @@ O foco principal da bateria de testes ficou na API, por ser a componente com mai
 - filtros e permissões de transferência de dados;
 - rate limiting.
 
-Na última ronda de validação da API usada durante o desenvolvimento, a suite passou com **46 testes bem-sucedidos**. Para além disso, foram usados checks adicionais como:
-
-- `node --check` em ficheiros JavaScript alterados;
-- `git diff --check` para validar diffs sem problemas de whitespace;
-- validação de Pug/templates e inspeção funcional das páginas principais.
-
-## 13. Limitações Atuais e Trabalho Futuro
-
-Apesar de o projeto cumprir o objetivo funcional, há limitações assumidas:
-
-- os serviços `auth`, `gateway` e `interface` ainda beneficiariam de suites de testes dedicadas;
-- o `gateway` ainda pode evoluir com circuit breaker, métricas operacionais mais fortes e estratégias de fallback;
-- a gestão administrativa explícita de tipos de recurso continua a ser uma evolução natural, mesmo depois de os tipos terem sido tornados extensíveis;
-- o povoamento continua dependente da execução de scripts e não de um cenário totalmente automático no arranque;
-- o modelo OAIS implementado é suficiente para o projeto, mas pode ser enriquecido com metadados de preservação mais ricos, como PREMIS ou Dublin Core.
-
-## 14. Conclusão
+## 13. Conclusão
 
 O resultado final é uma plataforma que cumpre o enunciado não apenas em termos de funcionalidades visíveis, mas também ao nível do raciocínio estrutural que lhes dá suporte. O sistema preserva recursos segundo o modelo OAIS, impõe regras de autenticação e autorização coerentes, disponibiliza uma interface navegável e completa, suporta interação social e administração, exporta/importa dados e pode ser povoado com recursos reais para demonstração.
 
