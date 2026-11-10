@@ -92,3 +92,40 @@ jobs:
 
       - name: Run automated test suite
         run: npm test
+
+  docker-validation:
+    name: Docker Infrastructure & Image Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose -f plataforma-recursos/docker-compose.yml config --quiet
+        env:
+          INTERNAL_SERVICE_TOKEN: "ci-dummy-internal-token-for-parsing"
+          JWT_SECRET: "ci-dummy-jwt-secret-for-parsing"
+          JWT_REFRESH_SECRET: "ci-dummy-jwt-refresh-secret-for-parsing"
+          SESSION_SECRET: "ci-dummy-session-secret-for-parsing"
+          GOOGLE_CLIENT_ID: "ci-dummy-google-client-id"
+          GOOGLE_CLIENT_SECRET: "ci-dummy-google-client-secret"
+          FACEBOOK_APP_ID: "ci-dummy-facebook-app-id"
+          FACEBOOK_APP_SECRET: "ci-dummy-facebook-app-secret"
+
+      - name: Build API Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: plataforma-recursos/services/api
+          push: false
+          tags: ew2026-api:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify Built Image
+        run: |
+          docker images ew2026-api:ci
