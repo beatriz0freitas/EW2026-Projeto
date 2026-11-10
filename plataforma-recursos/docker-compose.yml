@@ -37,6 +37,7 @@ services:
       - AUTH_URL=http://auth:16027
       - AUTH_COOKIE_NAME=ew.auth
       - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+      - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ai:8000}
       - API_CORS_ORIGINS=${API_CORS_ORIGINS:-http://localhost:16020}
       - API_RATE_LIMIT_WINDOW_MS=${API_RATE_LIMIT_WINDOW_MS:-900000}
       - API_RATE_LIMIT_MAX_REQUESTS=${API_RATE_LIMIT_MAX_REQUESTS:-300}
@@ -111,9 +112,47 @@ services:
     networks:
       - ew2026-net
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ew2026_ollama
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0:11434
+    expose:
+      - "11434"
+    networks:
+      - ew2026-net
+    restart: unless-stopped
+
+  ai:
+    build:
+      context: ./services/ai
+      dockerfile: Dockerfile
+    container_name: ew2026_ai
+    expose:
+      - "8000"
+    volumes:
+      - ai_data:/app/data
+    environment:
+      - PORT=8000
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LLM_MODEL=${LLM_MODEL:-llama3.2:1b}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
+      - FAISS_INDEX_PATH=/app/data/faiss_index
+      - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+    depends_on:
+      - ollama
+    networks:
+      - ew2026-net
+    restart: unless-stopped
+
 networks:
   ew2026-net:
     driver: bridge
 
 volumes:
   mongo_data:
+  ollama_models:
+  ai_data:
