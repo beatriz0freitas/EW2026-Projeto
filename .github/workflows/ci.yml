@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - beatriz
+  pull_request:
+    branches:
+      - main
+      - beatriz
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-analysis-workflows:
+    name: Workflow Static Analysis (actionlint & zizmor)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python for security tools
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install and run actionlint
+        run: |
+          bash -c "$(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)"
+          ./actionlint -color -verbose
+
+      - name: Install and run zizmor (Actions security audit)
+        run: |
+          pip install zizmor
+          zizmor --persona auditor .github/workflows/
+        continue-on-error: true
+
+  static-analysis-code:
+    name: Code Quality & Security Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plataforma-recursos/services/api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: plataforma-recursos/services/api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax & Integrity verification
+        run: |
+          find . -maxdepth 3 -name "*.js" ! -path "*/node_modules/*" -exec node --check {} +
+
+      - name: Dependency vulnerability audit
+        run: |
+          npm audit --audit-level=high || true
+
+  api-tests:
+    name: Backend API Unit & Integration Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plataforma-recursos/services/api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: plataforma-recursos/services/api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run automated test suite
+        run: npm test
