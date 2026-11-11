@@ -41,8 +41,11 @@ gera vetores L2-normalizados para `faiss.IndexFlatIP` e mantém um manifesto
 com `resourceId`, `chunkId`, título, tema, hash do texto e visibilidade.
 Reindexações preservam vetores de recursos inalterados e remoções publicam uma
 nova geração sem chamar o Ollama. Recuperação, RAG, recomendação e clustering
-ficam para as tarefas seguintes. Esta separação evita que o health check
-descarregue modelos ou execute operações de inferência dispendiosas.
+continuam separados do health check. A TASK-09 usa `faiss.Clustering` em modo
+spherical k-means sobre a geração publicada e filtra primeiro os `allowed_ids`,
+devolvendo grupos, centroides e palavras-chave através de `POST /cluster`.
+Esta separação evita que o health check descarregue modelos ou execute
+operações de inferência dispendiosas.
 
 ## Validação
 

@@ -90,6 +90,7 @@ class Cluster(Contract):
     clusterId: int = Field(ge=0)
     resourceIds: list[ResourceId] = Field(min_length=1, max_length=10000)
     keywords: list[ShortText] = Field(max_length=20)
+    centroid: list[float] = Field(min_length=1, max_length=4096)
 
 
 class ClusterResponse(Contract):
