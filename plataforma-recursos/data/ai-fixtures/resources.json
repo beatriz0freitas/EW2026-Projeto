@@ -1,0 +1,529 @@
+[
+  {
+    "_id": "663e00000000000000000001",
+    "metadata": {
+      "resource": {
+        "titulo": "Introdução a Sistemas Distribuídos e Modelos de Falhas",
+        "descricao": "Aborda os conceitos fundamentais de sistemas distribuídos, assincronia, passagem de mensagens e ordenação temporal com relógios lógicos de Lamport e relógios vetoriais. Analisa detalhadamente modelos de falhas, desde falhas de paragem (crash-stop e crash-recovery) até falhas bizantinas arbitrárias, estabelecendo os limites teóricos de detetores de falhas e impossibilidade de consenso com FLP.",
+        "tema": "Sistemas Distribuídos",
+        "hashtags": [
+          "sistemas-distribuidos",
+          "falhas",
+          "lamport",
+          "flp"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 184,
+    "ratingAvg": 4.8
+  },
+  {
+    "_id": "663e00000000000000000002",
+    "metadata": {
+      "resource": {
+        "titulo": "Algoritmos de Consenso: De Paxos ao Raft Prático",
+        "descricao": "Estudo comparativo dos protocolos de consenso distribuído em ambientes com falhas não-bizantinas. Explica a teoria matemática e fases de eleição do Paxos e decompõe o algoritmo Raft em eleição de líder, replicação de registo (log replication) e segurança de commit. Inclui exemplos práticos de implementação de máquinas de estados replicadas em clusters de alta disponibilidade.",
+        "tema": "Sistemas Distribuídos",
+        "hashtags": [
+          "consenso",
+          "raft",
+          "paxos",
+          "maquinas-de-estados"
+        ],
+        "tipo": "slides",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 242,
+    "ratingAvg": 4.9
+  },
+  {
+    "_id": "663e00000000000000000003",
+    "metadata": {
+      "resource": {
+        "titulo": "Replicação de Dados, Consistência Eventual e Teorema CAP",
+        "descricao": "Explora as estratégias de replicação síncrona e assíncrona, modelos de consistência forte (linearizabilidade e serializabilidade) versus consistência eventual. Discute as implicações práticas do Teorema CAP e PACELC no desenho de bases de dados distribuídas modernas, apresentando estruturas de dados replicadas sem conflitos (CRDTs) e algoritmos anti-entropia.",
+        "tema": "Sistemas Distribuídos",
+        "hashtags": [
+          "replicacao",
+          "teorema-cap",
+          "crdt",
+          "consistencia-eventual"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 156,
+    "ratingAvg": 4.6
+  },
+  {
+    "_id": "663e00000000000000000004",
+    "metadata": {
+      "resource": {
+        "titulo": "Transações Distribuídas e o Padrão Saga em Microsserviços",
+        "descricao": "Guia avançado sobre a transição de transações ACID tradicionais baseadas em Two-Phase Commit (2PC) para transações de longa duração geridas pelo padrão Saga. Detalha orquestração centralizada versus coreografia orientada a eventos, com estratégias de compensação de transações, gestão de idempotência e tolerância a mensagens duplicadas ou fora de ordem.",
+        "tema": "Sistemas Distribuídos",
+        "hashtags": [
+          "saga",
+          "transacoes",
+          "2pc",
+          "microsservicos"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "admin.teste",
+    "downloadCount": 195,
+    "ratingAvg": 4.7
+  },
+  {
+    "_id": "663e00000000000000000005",
+    "metadata": {
+      "resource": {
+        "titulo": "Relatórios de Falhas Críticas em Clusters de Produção",
+        "descricao": "Documentação interna com análise post-mortem de falhas catastróficas em clusters Kubernetes de produção, incidentes de split-brain em ZooKeeper e perda temporária de quórum etcd durante cortes de energia. Contém configurações de topologia de rede interna confidenciais da instituição.",
+        "tema": "Sistemas Distribuídos",
+        "hashtags": [
+          "post-mortem",
+          "confidencial",
+          "split-brain",
+          "kubernetes"
+        ],
+        "tipo": "relatorio",
+        "visibilidade": "privado"
+      }
+    },
+    "produtor": "admin.teste",
+    "downloadCount": 12,
+    "ratingAvg": 5.0
+  },
+  {
+    "_id": "663e00000000000000000006",
+    "metadata": {
+      "resource": {
+        "titulo": "Segurança na Cadeia de Abastecimento de Software e Workflows CI/CD",
+        "descricao": "Análise aprofundada dos riscos de segurança na cadeia de abastecimento (software supply chain security), focando em pipelines de integração contínua baseadas em GitHub Actions. Detalha vetores de ataque como injeção de comandos em runners, execução de actions de terceiros não confiáveis, poisoning de dependências e falsificação de artefactos de build. Introduz os princípios SLSA, assinatura criptográfica com Sigstore/Cosign e análise estática de segurança preventiva.",
+        "tema": "Segurança Web e Cadeia de Abastecimento",
+        "hashtags": [
+          "supply-chain",
+          "github-actions",
+          "slsa",
+          "ci-cd-security"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 312,
+    "ratingAvg": 4.9
+  },
+  {
+    "_id": "663e00000000000000000007",
+    "metadata": {
+      "resource": {
+        "titulo": "Autenticação Moderna com OAuth 2.0, OpenID Connect e JWT",
+        "descricao": "Manual completo sobre controlo de identidade e delegação de autorização. Explora os fluxos Authorization Code Grant com PKCE, tokens de acesso e refresh tokens criptograficamente assinados com RS256 e HS256, políticas de expiração, mitigação de ataques XSS e CSRF no armazenamento de credenciais no browser e validação de claims.",
+        "tema": "Segurança Web e Cadeia de Abastecimento",
+        "hashtags": [
+          "oauth2",
+          "jwt",
+          "oidc",
+          "autenticacao"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 280,
+    "ratingAvg": 4.8
+  },
+  {
+    "_id": "663e00000000000000000008",
+    "metadata": {
+      "resource": {
+        "titulo": "Prevenção de Vulnerabilidades OWASP Top 10 em Aplicações Web",
+        "descricao": "Catálogo prático de prevenção contra as vulnerabilidades mais prevalentes segundo o consórcio OWASP: injeção de SQL e NoSQL, falhas de autenticação, exposição de dados sensíveis, controlo de acesso quebrado (BOLA/IDOR), desserialização insegura e más configurações de segurança. Apresenta exemplos de código vulnerável em Node.js e as respetivas correções.",
+        "tema": "Segurança Web e Cadeia de Abastecimento",
+        "hashtags": [
+          "owasp",
+          "sql-injection",
+          "idor",
+          "seguranca-web"
+        ],
+        "tipo": "exercicios",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 340,
+    "ratingAvg": 4.9
+  },
+  {
+    "_id": "663e00000000000000000009",
+    "metadata": {
+      "resource": {
+        "titulo": "Análise Estática de Código e Políticas de Vetting Automatizado",
+        "descricao": "Metodologias de verificação automática e análise estática (SAST) em ambientes de desenvolvimento ágil. Explora ferramentas como actionlint, zizmor, ESLint e Bandit para auditoria de más configurações em código e ficheiros YAML de automação. Demonstra como implementar motores de políticas declarativas com Open Policy Agent (OPA/Rego) para aprovar ou rejeitar pull requests e fluxos de trabalho antes da execução.",
+        "tema": "Segurança Web e Cadeia de Abastecimento",
+        "hashtags": [
+          "analise-estatica",
+          "vetting",
+          "opa",
+          "rego",
+          "zizmor"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "admin.teste",
+    "downloadCount": 215,
+    "ratingAvg": 4.9
+  },
+  {
+    "_id": "663e00000000000000000010",
+    "metadata": {
+      "resource": {
+        "titulo": "Auditoria de Segredos e Chaves Criptográficas Internas",
+        "descricao": "Ficheiro reservado de auditoria de conformidade contendo o mapeamento de tokens de serviço, segredos de rotação periódica e chaves privadas de certificados SSL de desenvolvimento. Proibida a disseminação fora do âmbito de administração.",
+        "tema": "Segurança Web e Cadeia de Abastecimento",
+        "hashtags": [
+          "segredos",
+          "auditoria",
+          "privado",
+          "chaves"
+        ],
+        "tipo": "relatorio",
+        "visibilidade": "privado"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 5,
+    "ratingAvg": 5.0
+  },
+  {
+    "_id": "663e00000000000000000011",
+    "metadata": {
+      "resource": {
+        "titulo": "Padrões de Resiliência: Circuit Breaker, Retry e Bulkhead",
+        "descricao": "Estudo de padrões arquiteturais para evitar falhas em cascata em topologias distribuídas de microsserviços. Detalha o ciclo de estados do Circuit Breaker (Fechado, Aberto e Semi-Aberto), políticas exponenciais de retry com jitter aleatório para evitar tempestades de pedidos e isolamento de pools de threads através de Bulkhead. Implementações de referência em gateways e proxies.",
+        "tema": "Arquitetura de Software e Microsserviços",
+        "hashtags": [
+          "resiliencia",
+          "circuit-breaker",
+          "retry",
+          "microsservicos"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 178,
+    "ratingAvg": 4.7
+  },
+  {
+    "_id": "663e00000000000000000012",
+    "metadata": {
+      "resource": {
+        "titulo": "Arquiteturas Orientadas a Eventos com Apache Kafka e RabbitMQ",
+        "descricao": "Fundamentos de desacoplamento temporal e espacial através de mensageria assíncrona. Analisa tópicos particionados, semântica de entrega at-least-once, at-most-once e exactly-once, grupos de consumidores e gestão de offset no Apache Kafka, comparando-o com filas AMQP e exchanges no RabbitMQ.",
+        "tema": "Arquitetura de Software e Microsserviços",
+        "hashtags": [
+          "event-driven",
+          "kafka",
+          "rabbitmq",
+          "mensageria"
+        ],
+        "tipo": "slides",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 210,
+    "ratingAvg": 4.6
+  },
+  {
+    "_id": "663e00000000000000000013",
+    "metadata": {
+      "resource": {
+        "titulo": "Design e Governação de APIs RESTful e Gateways de Entrada",
+        "descricao": "Princípios de maturidade de Richardson para desenho de interfaces RESTful, especificação OpenAPI 3.0 / Swagger, versionamento por URI versus headers, e padrões de Gateway (API Gateway Pattern) para agregação de serviços, terminação TLS, transformação de payloads e roteamento inteligente.",
+        "tema": "Arquitetura de Software e Microsserviços",
+        "hashtags": [
+          "api-gateway",
+          "rest",
+          "openapi",
+          "swagger"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 165,
+    "ratingAvg": 4.5
+  },
+  {
+    "_id": "663e00000000000000000014",
+    "metadata": {
+      "resource": {
+        "titulo": "Estratégias de Rate Limiting e Controlo de Tráfego em APIs",
+        "descricao": "Comparação matemática e computacional de algoritmos de limitação de taxa: Token Bucket, Leaky Bucket, Janela Fixa e Janela Deslizante com contadores Redis. Implementação prática de rate limiting distribuído para proteção de fronteira contra ataques DDoS e consumo abusivo de recursos computacionais.",
+        "tema": "Arquitetura de Software e Microsserviços",
+        "hashtags": [
+          "rate-limiting",
+          "token-bucket",
+          "redis",
+          "ddos"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 142,
+    "ratingAvg": 4.7
+  },
+  {
+    "_id": "663e00000000000000000015",
+    "metadata": {
+      "resource": {
+        "titulo": "Especificações Confidenciais de Integração Bancária",
+        "descricao": "Documento técnico estritamente confidencial com contratos de interface ISO 20022 e chaves de homologação de pagamentos SIBS/Multibanco para a plataforma institucional. Acesso reservado ao perfil de administração.",
+        "tema": "Arquitetura de Software e Microsserviços",
+        "hashtags": [
+          "bancario",
+          "confidencial",
+          "sibs",
+          "iso20022"
+        ],
+        "tipo": "relatorio",
+        "visibilidade": "privado"
+      }
+    },
+    "produtor": "admin.teste",
+    "downloadCount": 4,
+    "ratingAvg": 5.0
+  },
+  {
+    "_id": "663e00000000000000000016",
+    "metadata": {
+      "resource": {
+        "titulo": "Pesquisa Vetorial e Algoritmos de Indexação em Espaços Densos (FAISS/HNSW)",
+        "descricao": "Fundamentos matemáticos da pesquisa por vizinhos mais próximos (Approximate Nearest Neighbors - ANN) em espaços vetoriais de alta dimensionalidade. Estuda a biblioteca FAISS (Facebook AI Similarity Search), explorando estruturas IndexFlatL2, IndexFlatIP (produto interno normalizado), índices com quantização de produto (Product Quantization - IVFPQ) e grafos navegáveis hierárquicos (HNSW). Demonstra aplicações em motores de recomendação semântica e sistemas de RAG.",
+        "tema": "Algoritmos e Estruturas de Dados",
+        "hashtags": [
+          "faiss",
+          "pesquisa-vetorial",
+          "embeddings",
+          "hnsw",
+          "ann"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 298,
+    "ratingAvg": 4.9
+  },
+  {
+    "_id": "663e00000000000000000017",
+    "metadata": {
+      "resource": {
+        "titulo": "Árvores B+ e Estruturas de Armazenamento para Bases de Dados",
+        "descricao": "Estruturas de indexação para dispositivos de armazenamento em bloco. Analisa balanceamento, fator de ramificação, separação de nós internos e folhas em árvores B+, comparando o seu custo de I/O em disco com LSM-Trees (Log-Structured Merge-Trees) utilizadas em motores NoSQL como RocksDB e Cassandra.",
+        "tema": "Algoritmos e Estruturas de Dados",
+        "hashtags": [
+          "arvores-b",
+          "lsm-tree",
+          "indexacao",
+          "estruturas-de-dados"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 188,
+    "ratingAvg": 4.6
+  },
+  {
+    "_id": "663e00000000000000000018",
+    "metadata": {
+      "resource": {
+        "titulo": "Algoritmos de Agrupamento e Clustering Hierárquico e K-Means",
+        "descricao": "Mecanismos de agrupamento não-supervisionado em ciência de dados e recuperação de informação. Explora k-means centrado com inicialização k-means++, clustering aglomerativo hierárquico, cálculo de inércia, métricas de silhueta e otimização de centroides sobre vetores densos através de partições Voronoi com aceleração FAISS Clustering.",
+        "tema": "Algoritmos e Estruturas de Dados",
+        "hashtags": [
+          "clustering",
+          "k-means",
+          "faiss-clustering",
+          "agrupamento"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 175,
+    "ratingAvg": 4.8
+  },
+  {
+    "_id": "663e00000000000000000019",
+    "metadata": {
+      "resource": {
+        "titulo": "Grafos e Algoritmos de Caminho Mais Curto em Redes Complexas",
+        "descricao": "Representação de grafos ponderados dirigidos e algoritmos clássicos de exploração: Dijkstra com fila de prioridades binária e Fibonacci, Bellman-Ford com deteção de ciclos negativos, e algoritmo A* com funções heurísticas admissíveis para otimização de rotas em malhas espaciais.",
+        "tema": "Algoritmos e Estruturas de Dados",
+        "hashtags": [
+          "grafos",
+          "dijkstra",
+          "a-star",
+          "algoritmos"
+        ],
+        "tipo": "slides",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 204,
+    "ratingAvg": 4.7
+  },
+  {
+    "_id": "663e00000000000000000020",
+    "metadata": {
+      "resource": {
+        "titulo": "Exame e Soluções de Algoritmos Avançados 2026",
+        "descricao": "Enunciado oficial e critérios detalhados de correção com soluções comentadas para o exame final de Algoritmos Avançados. Documento estritamente confidencial até à data da avaliação presencial.",
+        "tema": "Algoritmos e Estruturas de Dados",
+        "hashtags": [
+          "exame",
+          "solucoes",
+          "confidencial",
+          "avaliacao"
+        ],
+        "tipo": "exercicios",
+        "visibilidade": "privado"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 8,
+    "ratingAvg": 4.9
+  },
+  {
+    "_id": "663e00000000000000000021",
+    "metadata": {
+      "resource": {
+        "titulo": "Protocolo TLS 1.3: Criptografia de Chave Pública e Handshake Seguro",
+        "descricao": "Análise das melhorias do protocolo TLS 1.3 face às versões anteriores: eliminação de algoritmos obsoletos (como RSA key exchange em favor de ECDHE), redução da latência do aperto de mão para 1-RTT, modo 0-RTT com proteção contra ataques de replay, e cifra autenticada com AEAD (ChaCha20-Poly1305 e AES-GCM).",
+        "tema": "Redes de Computadores e Protocolos",
+        "hashtags": [
+          "tls",
+          "criptografia",
+          "handshake",
+          "seguranca-redes"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 230,
+    "ratingAvg": 4.8
+  },
+  {
+    "_id": "663e00000000000000000022",
+    "metadata": {
+      "resource": {
+        "titulo": "Evolução da Web: De HTTP/1.1 a HTTP/2 e HTTP/3 com Protocolo QUIC",
+        "descricao": "Compara as gerações do protocolo hipertexto. Analisa o pipeline de conexões persistentes em HTTP/1.1, multiplexagem de streams em framing binário em HTTP/2 com o problema de head-of-line blocking no TCP, e a transição definitiva para HTTP/3 operando sobre o protocolo de transporte QUIC baseado em UDP.",
+        "tema": "Redes de Computadores e Protocolos",
+        "hashtags": [
+          "http3",
+          "quic",
+          "http2",
+          "redes"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 265,
+    "ratingAvg": 4.9
+  },
+  {
+    "_id": "663e00000000000000000023",
+    "metadata": {
+      "resource": {
+        "titulo": "Análise de Protocolos de Transporte: Controlo de Congestionamento TCP vs UDP",
+        "descricao": "Mecanismos de fiabilidade e controlo de fluxo na camada de transporte. Descreve controlo de congestionamento no TCP (Slow Start, Congestion Avoidance, Fast Retransmit e algoritmos como Cubic e BBR), comparando-o com datagramas UDP sem garantia de entrega para comunicações multimédia e baixa latência.",
+        "tema": "Redes de Computadores e Protocolos",
+        "hashtags": [
+          "tcp",
+          "udp",
+          "congestionamento",
+          "transporte"
+        ],
+        "tipo": "slides",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 172,
+    "ratingAvg": 4.5
+  },
+  {
+    "_id": "663e00000000000000000024",
+    "metadata": {
+      "resource": {
+        "titulo": "Segurança no Sistema de Resolução de Nomes: DNSSEC e DNS sobre HTTPS",
+        "descricao": "Vulnerabilidades inerentes ao DNS tradicional (DNS poisoning e cache spoofing) e soluções criptográficas de mitigação. Apresenta o funcionamento de assinaturas RRSIG e chaves DNSKEY no DNSSEC, bem como a privacidade na última milha com DNS over HTTPS (DoH) e DNS over TLS (DoT).",
+        "tema": "Redes de Computadores e Protocolos",
+        "hashtags": [
+          "dns",
+          "dnssec",
+          "doh",
+          "privacidade"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 140,
+    "ratingAvg": 4.6
+  },
+  {
+    "_id": "663e00000000000000000025",
+    "metadata": {
+      "resource": {
+        "titulo": "Virtual Private Networks (VPN), WireGuard e Redes Sobrepostas",
+        "descricao": "Arquitetura de tunelamento criptográfico e redes privadas virtuais. Analisa o protocolo WireGuard com base criptográfica Noise Protocol Framework, comparando seu desempenho, simplicidade de código e segurança em relação ao legado OpenVPN e IPsec.",
+        "tema": "Redes de Computadores e Protocolos",
+        "hashtags": [
+          "vpn",
+          "wireguard",
+          "redes-sobrepostas",
+          "tunelamento"
+        ],
+        "tipo": "artigo",
+        "visibilidade": "publico"
+      }
+    },
+    "produtor": "produtor.teste",
+    "downloadCount": 190,
+    "ratingAvg": 4.7
+  }
+]
