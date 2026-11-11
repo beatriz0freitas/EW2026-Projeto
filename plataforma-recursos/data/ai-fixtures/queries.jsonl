@@ -1,0 +1,15 @@
+{"id": "Q01", "query": "Quero aprender mecanismos de consenso e tolerância a falhas em sistemas distribuídos.", "category": "Sistemas Distribuídos"}
+{"id": "Q02", "query": "Como proteger pipelines de CI/CD e evitar ataques à cadeia de abastecimento de software?", "category": "Segurança Web e Cadeia de Abastecimento"}
+{"id": "Q03", "query": "Quais são as melhores práticas para arquitetura de microsserviços e padrões de resiliência como Circuit Breaker?", "category": "Arquitetura de Software e Microsserviços"}
+{"id": "Q04", "query": "Como funciona a pesquisa vetorial e a indexação de embeddings de alta dimensionalidade em espaços densos?", "category": "Algoritmos e Estruturas de Dados"}
+{"id": "Q05", "query": "Explica a autenticação moderna baseada em tokens JWT, OAuth 2.0 e boas práticas de segurança.", "category": "Segurança Web e Cadeia de Abastecimento"}
+{"id": "Q06", "query": "Como funciona o protocolo TLS 1.3 e as melhorias criptográficas no aperto de mão?", "category": "Redes de Computadores e Protocolos"}
+{"id": "Q07", "query": "Quais são as técnicas de replicação de dados, consistência eventual e o impacto do Teorema CAP?", "category": "Sistemas Distribuídos"}
+{"id": "Q08", "query": "Como prevenir as principais vulnerabilidades em aplicações web segundo o catálogo OWASP Top 10?", "category": "Segurança Web e Cadeia de Abastecimento"}
+{"id": "Q09", "query": "Como implementar comunicação assíncrona desacoplada com mensageria e arquiteturas orientadas a eventos?", "category": "Arquitetura de Software e Microsserviços"}
+{"id": "Q10", "query": "Quais as diferenças entre árvores B+ e outras estruturas de dados para armazenamento persistente?", "category": "Algoritmos e Estruturas de Dados"}
+{"id": "Q11", "query": "Quais as vantagens de HTTP/3 e do protocolo de transporte QUIC em relação a versões anteriores?", "category": "Redes de Computadores e Protocolos"}
+{"id": "Q12", "query": "Como implementar algoritmos de rate limiting e proteção de APIs contra sobrecarga de tráfego?", "category": "Arquitetura de Software e Microsserviços"}
+{"id": "Q13", "query": "Como gerir transações de longa duração em microsserviços através do padrão Saga?", "category": "Sistemas Distribuídos"}
+{"id": "Q14", "query": "Quais os métodos de análise estática de código e verificação automatizada com políticas de vetting?", "category": "Segurança Web e Cadeia de Abastecimento"}
+{"id": "Q15", "query": "Como preparar um arroz de marisco tradicional português com coentros frescos?", "category": "Fora de Domínio (Teste de Abstenção)"}
