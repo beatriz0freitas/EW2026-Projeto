@@ -36,9 +36,13 @@ não estritas, IDs malformados e listas de IDs duplicadas. O container runtime
 não inclui dependências de desenvolvimento, executa como utilizador sem
 privilégios e mantém os dados de índice em `/app/data`.
 
-Indexação, embeddings, recuperação, RAG, recomendação e clustering são
-deliberadamente deixados para as TASK-08 a TASK-12. Esta separação evita que o
-health check descarregue modelos ou execute operações de inferência dispendiosas.
+O indexador da TASK-08 normaliza os campos educativos de forma determinística,
+gera vetores L2-normalizados para `faiss.IndexFlatIP` e mantém um manifesto
+com `resourceId`, `chunkId`, título, tema, hash do texto e visibilidade.
+Reindexações preservam vetores de recursos inalterados e remoções publicam uma
+nova geração sem chamar o Ollama. Recuperação, RAG, recomendação e clustering
+ficam para as tarefas seguintes. Esta separação evita que o health check
+descarregue modelos ou execute operações de inferência dispendiosas.
 
 ## Validação
 
