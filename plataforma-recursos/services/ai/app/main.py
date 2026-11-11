@@ -6,9 +6,10 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 
+from app.clustering import FaissClusterEngine
 from app.config import Settings
 from app.ollama_client import OllamaClient, OllamaUnavailable
-from app.schemas import HealthResponse, ModelStatus
+from app.schemas import ClusterRequest, ClusterResponse, HealthResponse, ModelStatus
 
 
 def require_internal_service(
@@ -28,6 +29,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         configuration = settings if settings is not None else Settings.from_env()
         application.state.settings = configuration
         application.state.ollama = OllamaClient(configuration)
+        application.state.cluster_engine = FaissClusterEngine(configuration.faiss_index_path)
         try:
             yield
         finally:
@@ -45,6 +47,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @application.get("/live")
     def live() -> dict[str, str]:
         return {"status": "ok"}
+
+    @application.post(
+        "/cluster",
+        response_model=ClusterResponse,
+        dependencies=[Depends(require_internal_service)],
+        responses={503: {"description": "FAISS index unavailable"}},
+    )
+    def cluster(request: Request, payload: ClusterRequest) -> ClusterResponse:
+        try:
+            clusters = request.app.state.cluster_engine.cluster(
+                payload.allowed_ids, payload.nClusters
+            )
+        except (RuntimeError, ValueError) as error:
+            raise HTTPException(
+                status_code=503, detail={"code": "INDEX_UNAVAILABLE"}
+            ) from error
+        return ClusterResponse(clusters=clusters, indexVersion="published")
 
     @application.get(
         "/health",

@@ -89,6 +89,17 @@ def test_authentication_precedes_ollama_calls(client, session, headers, status):
     session.get.assert_not_called()
 
 
+def test_cluster_endpoint_requires_internal_authentication(client):
+    assert client.post("/cluster", json={"allowed_ids": [], "nClusters": 2}).status_code == 401
+    response = client.post(
+        "/cluster",
+        headers=HEADERS,
+        json={"allowed_ids": [], "nClusters": 2},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"clusters": [], "indexVersion": "published"}
+
+
 @pytest.mark.parametrize("path", ["/docs", "/openapi.json", "/search", "/ask", "/recommend"])
 def test_no_placeholder_ai_or_documentation_routes(client, path):
     assert client.get(path).status_code == 404
