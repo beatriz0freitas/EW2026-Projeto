@@ -100,7 +100,18 @@ def test_cluster_endpoint_requires_internal_authentication(client):
     assert response.json() == {"clusters": [], "indexVersion": "published"}
 
 
-@pytest.mark.parametrize("path", ["/docs", "/openapi.json", "/search", "/ask", "/recommend"])
+def test_search_endpoint_requires_internal_authentication(client):
+    assert client.post("/search", json={"query": "consenso", "allowed_ids": []}).status_code == 401
+    response = client.post(
+        "/search",
+        headers=HEADERS,
+        json={"query": "consenso", "allowed_ids": []},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"items": [], "indexVersion": "none"}
+
+
+@pytest.mark.parametrize("path", ["/docs", "/openapi.json", "/ask", "/recommend"])
 def test_no_placeholder_ai_or_documentation_routes(client, path):
     assert client.get(path).status_code == 404
 
