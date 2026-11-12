@@ -2,21 +2,21 @@
 
 **Projeto:** Plataforma de Recursos Educativos (EW2026)\
 **Candidatura:** Bolsa de Investigação INESC TEC --- Projeto BringTrust (Edital AE2026-0337)\
-**Requisitos Satisfeitos:** *«Sistemas de recomendação baseados em LLMs»* e *«RAGs»* (protocolo de avaliação reproduzível).
+**Competências a demonstrar nas tarefas funcionais:** *«Sistemas de recomendação baseados em LLMs»* e *«RAGs»* (protocolo de avaliação reproduzível).
 
 ---
 
 ## 1. Proveniência e Princípios Éticos
 
 1. **Origem Sintética e Controlada:** O dataset foi concebido para simular um repositório académico real de recursos educativos em Ciências da Computação e Engenharia Informática, sem conter quaisquer dados pessoais, credenciais, segredos industriais ou informação sujeita a direitos de autor restritivos.
-2. **Determinismo e Reprodutibilidade:** Todos os identificadores de recursos (`_id`), metadados e textos de descrição são imutáveis e versionados, permitindo que qualquer membro do júri reconstrua os índices vetoriais do FAISS e obtenha exatamente as mesmas pontuações de similaridade.
+2. **Determinismo e Reprodutibilidade:** Os identificadores (`_id`), metadados e textos estão versionados para permitir reconstrução do índice. Fixar também o digest do modelo, a normalização e as versões das bibliotecas; não se garante igualdade bit a bit de pontuações entre plataformas. O corpus, por si só, não comprova RAG nem recomendação implementados.
 3. **Isolamento de Segurança (ACL):** O dataset inclui intencionalmente recursos públicos e privados para validar que o motor de recuperação e o recomendador nunca expõem conteúdos restritos a utilizadores anónimos ou sem privilégios.
 
 ---
 
 ## 2. Estrutura do Corpus (`resources.json`)
 
-Ficheiro: [`plataforma-recursos/data/ai-fixtures/resources.json`](file:///home/henrique/Desktop/katara/EW/EW2026-Projeto/plataforma-recursos/data/ai-fixtures/resources.json)
+Ficheiro: [`plataforma-recursos/data/ai-fixtures/resources.json`](../../plataforma-recursos/data/ai-fixtures/resources.json)
 - **Total de recursos:** 25
 - **Recursos públicos:** 21 (acessíveis a qualquer utilizador ou visitante anónimo)
 - **Recursos privados:** 4 (para testes de autorização e não-fuga de dados)
@@ -55,7 +55,7 @@ Ficheiro: [`plataforma-recursos/data/ai-fixtures/resources.json`](file:///home/h
 
 ## 3. Conjunto de Necessidades de Aprendizagem (`queries.jsonl`)
 
-Ficheiro: [`plataforma-recursos/data/ai-fixtures/queries.jsonl`](file:///home/henrique/Desktop/katara/EW/EW2026-Projeto/plataforma-recursos/data/ai-fixtures/queries.jsonl)
+Ficheiro: [`plataforma-recursos/data/ai-fixtures/queries.jsonl`](../../plataforma-recursos/data/ai-fixtures/queries.jsonl)
 Contém **15 consultas formuladas em linguagem natural**, simulando as necessidades reais de estudantes universitários:
 
 | ID | Categoria | Necessidade de Aprendizagem (Query) |
@@ -82,7 +82,7 @@ Contém **15 consultas formuladas em linguagem natural**, simulando as necessida
 
 ## 4. Anotações de Relevância (Ground-Truth em `judgments.jsonl`)
 
-Ficheiro: [`plataforma-recursos/data/ai-fixtures/judgments.jsonl`](file:///home/henrique/Desktop/katara/EW/EW2026-Projeto/plataforma-recursos/data/ai-fixtures/judgments.jsonl)
+Ficheiro: [`plataforma-recursos/data/ai-fixtures/judgments.jsonl`](../../plataforma-recursos/data/ai-fixtures/judgments.jsonl)
 
 ### Escala Graduada de Relevância:
 - **3 (Altamente Relevante):** O recurso aborda diretamente o núcleo da dúvida com conceitos exatos e aprofundados.

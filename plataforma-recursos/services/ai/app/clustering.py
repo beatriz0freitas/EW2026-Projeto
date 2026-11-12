@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 from collections import Counter
 from pathlib import Path
@@ -11,6 +10,7 @@ from typing import Any
 import faiss
 import numpy as np
 
+from app.indexer import load_generation
 from app.schemas import Cluster
 
 TOKEN_PATTERN = re.compile(r"[^\W_]+(?:[-'][^\W_]+)*", re.UNICODE)
@@ -84,20 +84,8 @@ class FaissClusterEngine:
         return assignments, centroids
 
     def _load_generation(self) -> tuple[faiss.Index, list[dict[str, Any]]]:
-        try:
-            pointer = json.loads(
-                (self.index_path / "current.json").read_text(encoding="utf-8")
-            )
-            index = faiss.read_index(str(self.index_path / pointer["index"]))
-            manifest = json.loads(
-                (self.index_path / pointer["manifest"]).read_text(encoding="utf-8")
-            )
-            items = manifest["items"]
-        except (OSError, KeyError, TypeError, json.JSONDecodeError, RuntimeError) as error:
-            raise RuntimeError("no valid FAISS generation is available") from error
-        if not isinstance(items, list) or len(items) != index.ntotal:
-            raise RuntimeError("FAISS manifest does not match the index")
-        return index, items
+        index, manifest = load_generation(self.index_path)
+        return index, manifest["items"]
 
 
 def _normalise(vectors: np.ndarray) -> np.ndarray:
