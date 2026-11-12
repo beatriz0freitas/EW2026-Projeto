@@ -1,7 +1,7 @@
 # Arquitetura do Microserviço de IA (TASK-07)
 
 O serviço `plataforma-recursos/services/ai` é um microserviço FastAPI
-interno, acessível apenas na rede Docker da plataforma. A implementação desta
+interno, sem porta publicada no host pelo Docker Compose. A rede bridge é partilhada com os outros serviços e não bloqueia egress. A implementação desta
 tarefa fornece a fundação operacional para as tarefas funcionais seguintes:
 
 - contratos Pydantic estritos para pesquisa, RAG, recomendação e clustering;
@@ -40,7 +40,7 @@ O indexador da TASK-08 normaliza os campos educativos de forma determinística,
 gera vetores L2-normalizados para `faiss.IndexFlatIP` e mantém um manifesto
 com `resourceId`, `chunkId`, título, tema, hash do texto e visibilidade.
 Reindexações preservam vetores de recursos inalterados e remoções publicam uma
-nova geração sem chamar o Ollama. Recuperação, RAG, recomendação e clustering
+nova geração sem chamar o Ollama. Só são indexados metadados explicitamente públicos; o manifesto identifica o modelo por digest e a leitura valida a geração inteira. Ver [INDEXING.md](INDEXING.md) para os comandos, garantias e limites de integração. Recuperação, RAG, recomendação e clustering
 continuam separados do health check. A TASK-09 usa `faiss.Clustering` em modo
 spherical k-means sobre a geração publicada e filtra primeiro os `allowed_ids`,
 devolvendo grupos, centroides e palavras-chave através de `POST /cluster`.
@@ -51,5 +51,4 @@ operações de inferência dispendiosas.
 
 O CI instala as dependências de desenvolvimento e executa Ruff, Bandit e
 pytest sem Ollama nem download de modelos. Também constrói a imagem runtime e
-verifica `/live` em uma rede isolada; `/health` sem Ollama deve responder
-`503`, enquanto a autenticação continua obrigatória.
+verifica `/live` e a rejeição de `/health` sem token numa rede isolada. A validação local com Ollama real confirmou 200 com os modelos instalados e 503 com a dependência indisponível; ver [TASK07_VALIDATION.md](TASK07_VALIDATION.md).

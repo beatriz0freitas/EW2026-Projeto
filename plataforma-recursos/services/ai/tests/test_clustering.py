@@ -8,6 +8,7 @@ from app.indexer import FaissIndexer
 
 
 class VectorEmbedder:
+    model_id = "synthetic-clustering@v1"
     def __init__(self, vectors: list[list[float]]) -> None:
         self.vectors = vectors
 
