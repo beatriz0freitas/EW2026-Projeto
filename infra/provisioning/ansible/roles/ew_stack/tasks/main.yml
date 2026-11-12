@@ -1,0 +1,96 @@
+---
+# Tarefas de provisionamento da role ew_stack
+
+- name: Atualizar cache de pacotes apt
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Instalar pacotes de sistema e dependências base
+  apt:
+    name: "{{ base_packages }}"
+    state: present
+
+- name: Criar diretório para chaveiros APT
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Obter chave GPG oficial do Docker
+  get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+
+- name: Adicionar repositório oficial do Docker às fontes APT
+  apt_repository:
+    repo: "deb [arch={{ ansible_architecture | default('amd64') }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: Instalar Docker Engine e Docker Compose Plugin
+  apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Garantir que o serviço Docker está ativo e habilitado no arranque
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Adicionar utilizador ao grupo docker
+  user:
+    name: "{{ ansible_user | default('vagrant') }}"
+    groups: docker
+    append: yes
+  when: ansible_user is defined or 'vagrant' in ansible_env.USER | default('')
+
+- name: Verificar se o executável Ollama já está instalado
+  stat:
+    path: /usr/local/bin/ollama
+  register: ollama_bin
+
+- name: Descarregar e instalar o serviço Ollama via script oficial
+  shell: "curl -fsSL https://ollama.com/install.sh | sh"
+  when: not ollama_bin.stat.exists
+  args:
+    creates: /usr/local/bin/ollama
+
+- name: Garantir que o serviço systemd do Ollama está ativo
+  systemd:
+    name: ollama
+    state: started
+    enabled: yes
+
+- name: Aguardar que a API do Ollama esteja disponível na porta 11434
+  uri:
+    url: http://127.0.0.1:11434/api/tags
+    method: GET
+    status_code: 200
+  register: ollama_ready
+  until: ollama_ready.status == 200
+  retries: 15
+  delay: 2
+
+- name: Pré-carregar modelo LLM leve no Ollama ({{ ollama_model_llm }})
+  command: "ollama pull {{ ollama_model_llm }}"
+  register: pull_llm
+  changed_when: "'downloading' in pull_llm.stdout or 'success' in pull_llm.stdout"
+  ignore_errors: yes
+
+- name: Pré-carregar modelo de embeddings no Ollama ({{ ollama_model_embedding }})
+  command: "ollama pull {{ ollama_model_embedding }}"
+  register: pull_embed
+  changed_when: "'downloading' in pull_embed.stdout or 'success' in pull_embed.stdout"
+  ignore_errors: yes
+
+- name: Criar ficheiro .env para a plataforma se não existir
+  copy:
+    src: "{{ project_root | default('/vagrant/plataforma-recursos') }}/.env.example"
+    dest: "{{ project_root | default('/vagrant/plataforma-recursos') }}/.env"
+    force: no
+    mode: '0640'
+  ignore_errors: yes

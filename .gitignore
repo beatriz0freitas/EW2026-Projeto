@@ -1,0 +1,44 @@
+# === Root .gitignore for EW2026-Projeto ===
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+venv/
+.venv/
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker local data (not tracked)
+plataforma-recursos/data/aip/*
+!plataforma-recursos/data/aip/.gitkeep
+
+# AI indexes (generated, reconstructible)
+plataforma-recursos/services/ai/data/
+*.faiss
+
+# Ollama model weights (large files)
+ollama_models/
+
+# Ficheiros de planeamento e edital (nunca versionar no repositório)
+AE2026-0337.pdf
+Plano_Expansao_ENGWEB2026_BringTrust.md
+tasks.md

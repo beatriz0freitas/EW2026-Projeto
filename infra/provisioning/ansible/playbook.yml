@@ -1,0 +1,25 @@
+---
+- name: Provisionamento da Stack de Desenvolvimento EW2026 e Ollama
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    docker_packages:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    base_packages:
+      - curl
+      - git
+      - python3-pip
+      - python3-setuptools
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    ollama_model_llm: "{{ ollama_model_llm | default('llama3.2:1b') }}"
+    ollama_model_embedding: "{{ ollama_model_embedding | default('nomic-embed-text') }}"
+
+  roles:
+    - ew_stack

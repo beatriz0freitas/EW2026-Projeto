@@ -1,0 +1,198 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - beatriz
+  pull_request:
+    branches:
+      - main
+      - beatriz
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-analysis-workflows:
+    name: Workflow Static Analysis (actionlint & zizmor)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python for security tools
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install and run actionlint
+        run: |
+          bash -c "$(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)"
+          ./actionlint -color -verbose
+
+      - name: Install and run zizmor (Actions security audit)
+        run: |
+          pip install zizmor
+          zizmor --persona auditor .github/workflows/
+        continue-on-error: true
+
+  static-analysis-code:
+    name: Code Quality & Security Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plataforma-recursos/services/api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: plataforma-recursos/services/api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax & Integrity verification
+        run: |
+          find . -maxdepth 3 -name "*.js" ! -path "*/node_modules/*" -exec node --check {} +
+
+      - name: Dependency vulnerability audit
+        run: |
+          npm audit --audit-level=high || true
+
+  api-tests:
+    name: Backend API Unit & Integration Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plataforma-recursos/services/api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: plataforma-recursos/services/api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run automated test suite
+        run: npm test
+
+  ai-tests:
+    name: AI Unit Tests & Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: plataforma-recursos/services/ai
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            plataforma-recursos/services/ai/requirements.txt
+            plataforma-recursos/services/ai/requirements-dev.txt
+
+      - name: Install AI dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Lint Python
+        run: ruff check --no-cache app tests
+
+      - name: Security analysis
+        run: bandit -q -r app
+
+      - name: Run tests without Ollama or model downloads
+        run: python -m pytest -q
+
+  docker-validation:
+    name: Docker Infrastructure & Image Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose -f plataforma-recursos/docker-compose.yml config --quiet
+        env:
+          INTERNAL_SERVICE_TOKEN: "ci-dummy-internal-token-for-parsing"
+          JWT_SECRET: "ci-dummy-jwt-secret-for-parsing"
+          JWT_REFRESH_SECRET: "ci-dummy-jwt-refresh-secret-for-parsing"
+          SESSION_SECRET: "ci-dummy-session-secret-for-parsing"
+          GOOGLE_CLIENT_ID: "ci-dummy-google-client-id"
+          GOOGLE_CLIENT_SECRET: "ci-dummy-google-client-secret"
+          FACEBOOK_APP_ID: "ci-dummy-facebook-app-id"
+          FACEBOOK_APP_SECRET: "ci-dummy-facebook-app-secret"
+
+      - name: Build API Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: plataforma-recursos/services/api
+          push: false
+          tags: ew2026-api:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify Built Image
+        run: |
+          docker images ew2026-api:ci
+
+      - name: Build AI Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: plataforma-recursos/services/ai
+          target: runtime
+          push: false
+          tags: ew2026-ai:ci
+          load: true
+          cache-from: type=gha,scope=ai
+          cache-to: type=gha,scope=ai,mode=max
+
+      - name: Smoke test AI runtime without external services
+        run: |
+          docker run --detach --name ai-ci --network none \
+            --env INTERNAL_SERVICE_TOKEN=ci-only-test-token ew2026-ai:ci
+          trap 'docker rm -f ai-ci' EXIT
+          docker exec -i ai-ci python - <<'PY'
+          import time
+          import requests
+
+          for attempt in range(30):
+              try:
+                  response = requests.get('http://127.0.0.1:8000/live', timeout=1)
+                  response.raise_for_status()
+                  break
+              except requests.RequestException:
+                  time.sleep(0.2)
+          else:
+              raise SystemExit('AI did not start')
+          assert response.json() == {'status': 'ok'}
+          assert requests.get('http://127.0.0.1:8000/health', timeout=1).status_code == 401
+          PY

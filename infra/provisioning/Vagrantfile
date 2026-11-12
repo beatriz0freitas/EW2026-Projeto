@@ -1,0 +1,38 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile de desenvolvimento para a Plataforma de Recursos (EW2026 / BringTrust)
+# Requisito do Edital: "tecnologias de virtualização, containerização e provisionamento (Docker, Vagrant, Ansible)"
+
+Vagrant.configure("2") do |config|
+  # Imagem base Ubuntu 22.04 LTS (Jammy Jellyfish)
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "ew2026-dev"
+
+  # Encaminhamento de portas para acesso à plataforma no host
+  # Porta pública do Nginx / Gateway
+  config.vm.network "forwarded_port", guest: 16020, host: 16020, auto_correct: true
+  # Porta da API (para testes directos de documentação)
+  config.vm.network "forwarded_port", guest: 16025, host: 16025, auto_correct: true
+
+  # Configuração de recursos de hardware para suportar Docker e Ollama
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "ew2026-dev-vm"
+    vb.memory = 4096
+    vb.cpus = 2
+    # Ativa extensões de virtualização para desempenho de CPU
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+  end
+
+  # Sincronização da diretoria do projeto com /vagrant na VM
+  config.vm.synced_folder ".", "/vagrant", disabled: false
+
+  # Provisionamento automatizado com Ansible
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "ansible/playbook.yml"
+    ansible.inventory_path = "ansible/inventory.ini"
+    ansible.extra_vars = {
+      ansible_python_interpreter: "/usr/bin/python3"
+    }
+  end
+end

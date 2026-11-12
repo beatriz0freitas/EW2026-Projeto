@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "node --check app.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",
