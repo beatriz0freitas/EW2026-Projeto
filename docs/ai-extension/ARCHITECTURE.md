@@ -44,6 +44,11 @@ nova geração sem chamar o Ollama. Só são indexados metadados explicitamente 
 continuam separados do health check. A TASK-09 usa `faiss.Clustering` em modo
 spherical k-means sobre a geração publicada e filtra primeiro os `allowed_ids`,
 devolvendo grupos, centroides e palavras-chave através de `POST /cluster`.
+A TASK-10 constrói um subíndice `IndexFlatIP` exclusivamente com os vetores
+autorizados antes de aplicar `topK`; o endpoint `POST /search` nunca faz
+oversampling global seguido de filtragem. Cada resultado mantém `resourceId`,
+`chunkId`, título, tema, excerto e pontuação de similaridade da geração
+publicada.
 Esta separação evita que o health check descarregue modelos ou execute
 operações de inferência dispendiosas.
 

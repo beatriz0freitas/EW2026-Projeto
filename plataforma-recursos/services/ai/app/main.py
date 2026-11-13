@@ -8,8 +8,17 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 
 from app.clustering import FaissClusterEngine
 from app.config import Settings
+from app.embeddings import OllamaEmbeddingClient
 from app.ollama_client import OllamaClient, OllamaUnavailable
-from app.schemas import ClusterRequest, ClusterResponse, HealthResponse, ModelStatus
+from app.retrieval import FaissRetriever
+from app.schemas import (
+    ClusterRequest,
+    ClusterResponse,
+    HealthResponse,
+    ModelStatus,
+    SearchRequest,
+    SearchResponse,
+)
 
 
 def require_internal_service(
@@ -30,10 +39,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.settings = configuration
         application.state.ollama = OllamaClient(configuration)
         application.state.cluster_engine = FaissClusterEngine(configuration.faiss_index_path)
+        application.state.query_embeddings = OllamaEmbeddingClient(configuration)
+        application.state.retriever = FaissRetriever(
+            configuration.faiss_index_path, application.state.query_embeddings
+        )
         try:
             yield
         finally:
             application.state.ollama.close()
+            application.state.query_embeddings.close()
 
     application = FastAPI(
         title="EW2026 Internal AI",
@@ -64,6 +78,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 status_code=503, detail={"code": "INDEX_UNAVAILABLE"}
             ) from error
         return ClusterResponse(clusters=clusters, indexVersion="published")
+
+    @application.post(
+        "/search",
+        response_model=SearchResponse,
+        dependencies=[Depends(require_internal_service)],
+        responses={503: {"description": "FAISS index or embedding service unavailable"}},
+    )
+    def search(request: Request, payload: SearchRequest) -> SearchResponse:
+        try:
+            return request.app.state.retriever.search(
+                payload.query, payload.allowed_ids, payload.topK
+            )
+        except (RuntimeError, ValueError, OllamaUnavailable) as error:
+            raise HTTPException(
+                status_code=503, detail={"code": "RETRIEVAL_UNAVAILABLE"}
+            ) from error
 
     @application.get(
         "/health",
