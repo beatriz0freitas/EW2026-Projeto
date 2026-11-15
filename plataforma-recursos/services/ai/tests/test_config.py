@@ -14,9 +14,12 @@ def test_missing_or_whitespace_token_rejected(token):
     ("ollama_connect_timeout_seconds", 0), ("ollama_read_timeout_seconds", -1),
     ("ollama_read_timeout_seconds", float("inf")), ("ollama_max_attempts", 0),
     ("ollama_max_attempts", 4), ("ollama_retry_backoff_seconds", -1),
-    ("ollama_base_url", "file:///etc/passwd"), ("ollama_base_url", "http://user:secret@ollama"),
-    ("ollama_base_url", "http://ollama/api/tags"), ("ollama_base_url", "http://ollama?token=secret"),
-    ("ollama_base_url", "http://ollama:99999"), ("llm_model", " "),
+    ("ollama_base_url", "file:///etc/passwd"),
+    ("ollama_base_url", "http://user:secret@ollama"),
+    ("ollama_base_url", "http://ollama/api/tags"),
+    ("ollama_base_url", "http://ollama?token=secret"),
+    ("ollama_base_url", "http://ollama:99999"),
+    ("llm_model", " "),
 ])
 def test_invalid_configuration_rejected(field, value):
     with pytest.raises(ValidationError):
