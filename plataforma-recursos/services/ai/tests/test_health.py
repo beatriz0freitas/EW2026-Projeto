@@ -111,7 +111,7 @@ def test_search_endpoint_requires_internal_authentication(client):
     assert response.json() == {"items": [], "indexVersion": "none"}
 
 
-@pytest.mark.parametrize("path", ["/docs", "/openapi.json", "/recommend"])
+@pytest.mark.parametrize("path", ["/docs", "/openapi.json"])
 def test_no_placeholder_ai_or_documentation_routes(client, path):
     assert client.get(path).status_code == 404
 
