@@ -11,6 +11,7 @@ from app.config import Settings
 from app.embeddings import OllamaEmbeddingClient
 from app.ollama_client import OllamaClient, OllamaUnavailable
 from app.rag import OllamaGenerationClient, RagEngine
+from app.recommender import RecommenderEngine
 from app.retrieval import FaissRetriever
 from app.schemas import (
     AskRequest,
@@ -19,6 +20,8 @@ from app.schemas import (
     ClusterResponse,
     HealthResponse,
     ModelStatus,
+    RecommendRequest,
+    RecommendResponse,
     SearchRequest,
     SearchResponse,
 )
@@ -48,6 +51,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         application.state.generation = OllamaGenerationClient(configuration)
         application.state.rag = RagEngine(
+            application.state.retriever,
+            application.state.generation,
+            configuration.llm_model,
+        )
+        application.state.recommender = RecommenderEngine(
             application.state.retriever,
             application.state.generation,
             configuration.llm_model,
@@ -119,6 +127,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except (RuntimeError, ValueError, OllamaUnavailable) as error:
             raise HTTPException(
                 status_code=503, detail={"code": "RAG_UNAVAILABLE"}
+            ) from error
+
+    @application.post(
+        "/recommend",
+        response_model=RecommendResponse,
+        dependencies=[Depends(require_internal_service)],
+        responses={503: {"description": "Recommender service unavailable"}},
+    )
+    def recommend(request: Request, payload: RecommendRequest) -> RecommendResponse:
+        try:
+            return request.app.state.recommender.recommend(
+                payload.learningGoal, payload.allowed_ids, payload.topK
+            )
+        except (RuntimeError, ValueError, OllamaUnavailable) as error:
+            raise HTTPException(
+                status_code=503, detail={"code": "RECOMMENDER_UNAVAILABLE"}
             ) from error
 
     @application.get(
