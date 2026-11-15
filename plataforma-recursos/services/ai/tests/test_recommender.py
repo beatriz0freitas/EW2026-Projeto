@@ -4,9 +4,9 @@ import json
 
 import pytest
 
+from app.ollama_client import OllamaUnavailable
 from app.recommender import RecommenderEngine
-from app.schemas import RecommendResponse, SearchItem, SearchResponse
-
+from app.schemas import SearchItem, SearchResponse
 
 # Test resource IDs
 IDS = [
@@ -92,9 +92,13 @@ def make_valid_response(recommendations: list[dict]) -> str:
 
 
 # Test fixture for a basic engine
+# Default value for generator_payload - must not be a function call
+_DEFAULT_GENERATOR_PAYLOAD = make_valid_response([])
+
+
 def create_engine(
     retriever_responses: dict[str, SearchResponse] | None = None,
-    generator_payload: str | Exception = make_valid_response([]),
+    generator_payload: str | Exception = _DEFAULT_GENERATOR_PAYLOAD,
     metadata: dict[str, dict] | None = None,
 ) -> tuple[RecommenderEngine, Retriever, Generator]:
     """Create a recommender engine with mock components."""
@@ -224,7 +228,6 @@ class TestFallbackMechanism:
             make_search_item(IDS[1], "Titulo 2", "Tema", "Excerto 2", 0.90),
         ]
 
-        from app.ollama_client import OllamaUnavailable
         key = make_key(IDS[0], IDS[1])
         engine, _, _ = create_engine(
             {key: SearchResponse(items=items, indexVersion="v1")},
