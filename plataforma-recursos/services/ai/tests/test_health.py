@@ -111,9 +111,20 @@ def test_search_endpoint_requires_internal_authentication(client):
     assert response.json() == {"items": [], "indexVersion": "none"}
 
 
-@pytest.mark.parametrize("path", ["/docs", "/openapi.json", "/ask", "/recommend"])
+@pytest.mark.parametrize("path", ["/docs", "/openapi.json", "/recommend"])
 def test_no_placeholder_ai_or_documentation_routes(client, path):
     assert client.get(path).status_code == 404
+
+
+def test_ask_endpoint_requires_internal_authentication(client):
+    assert client.post("/ask", json={"question": "consenso", "allowed_ids": []}).status_code == 401
+    response = client.post(
+        "/ask",
+        headers=HEADERS,
+        json={"question": "consenso", "allowed_ids": []},
+    )
+    assert response.status_code == 200
+    assert response.json()["insufficientEvidence"] is True
 
 
 def test_startup_fails_without_token(monkeypatch):

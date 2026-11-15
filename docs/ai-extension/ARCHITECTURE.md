@@ -49,6 +49,12 @@ autorizados antes de aplicar `topK`; o endpoint `POST /search` nunca faz
 oversampling global seguido de filtragem. Cada resultado mantém `resourceId`,
 `chunkId`, título, tema, excerto e pontuação de similaridade da geração
 publicada.
+A TASK-11 acrescenta `POST /ask`: o contexto é composto apenas pelos excertos
+já autorizados pelo retriever, delimitado contra prompt injection, e enviado
+ao Ollama local com timeout de geração separado. A resposta JSON é validada
+contra os pares `resourceId`/`chunkId` recuperados; JSON inválido, citações
+inventadas, falhas do modelo ou evidência insuficiente produzem abstinência
+segura sem citações.
 Esta separação evita que o health check descarregue modelos ou execute
 operações de inferência dispendiosas.
 
