@@ -9,10 +9,9 @@ from typing import Any, Protocol
 
 from pydantic import ValidationError
 
-from app.config import Settings
 from app.ollama_client import OllamaUnavailable
 from app.retrieval import FaissRetriever
-from app.schemas import RecommendResponse, Recommendation, SearchItem
+from app.schemas import Recommendation, RecommendResponse, SearchItem
 
 
 class GenerationProvider(Protocol):
@@ -213,12 +212,12 @@ class RecommenderEngine:
         
         user = (
             f"Objetivo de Aprendizagem: {learning_goal}\n\n"
-            f"Recursos Candidatos:\n"
+            "Recursos Candidatos:\n"
             + "\n\n".join(candidate_blocks)
             + "\n\n"
-            + f'Formato obrigatório: {{"recommendations": [{{ "resourceId": "...", '
-            + f'"rank": 1, "reason": "...", "relevanceScore": 0.0-1.0, '
-            + f'"supportingChunkIds": ["..."] }}]}}'
+            + 'Formato obrigatório: {"recommendations": [{ "resourceId": "...", '
+            + '"rank": 1, "reason": "...", "relevanceScore": 0.0-1.0, '
+            + '"supportingChunkIds": ["..."] }]}'
         )
         
         return system, user
