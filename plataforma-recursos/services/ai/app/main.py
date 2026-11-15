@@ -1,4 +1,4 @@
-"""FastAPI entrypoint; functional AI routes arrive in subsequent tasks."""
+"""FastAPI entrypoint for the internal AI service."""
 
 import secrets
 from contextlib import asynccontextmanager
@@ -10,8 +10,11 @@ from app.clustering import FaissClusterEngine
 from app.config import Settings
 from app.embeddings import OllamaEmbeddingClient
 from app.ollama_client import OllamaClient, OllamaUnavailable
+from app.rag import OllamaGenerationClient, RagEngine
 from app.retrieval import FaissRetriever
 from app.schemas import (
+    AskRequest,
+    AskResponse,
     ClusterRequest,
     ClusterResponse,
     HealthResponse,
@@ -43,11 +46,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.retriever = FaissRetriever(
             configuration.faiss_index_path, application.state.query_embeddings
         )
+        application.state.generation = OllamaGenerationClient(configuration)
+        application.state.rag = RagEngine(
+            application.state.retriever,
+            application.state.generation,
+            configuration.llm_model,
+        )
         try:
             yield
         finally:
             application.state.ollama.close()
             application.state.query_embeddings.close()
+            application.state.generation.close()
 
     application = FastAPI(
         title="EW2026 Internal AI",
@@ -93,6 +103,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except (RuntimeError, ValueError, OllamaUnavailable) as error:
             raise HTTPException(
                 status_code=503, detail={"code": "RETRIEVAL_UNAVAILABLE"}
+            ) from error
+
+    @application.post(
+        "/ask",
+        response_model=AskResponse,
+        dependencies=[Depends(require_internal_service)],
+        responses={503: {"description": "Retrieval service unavailable"}},
+    )
+    def ask(request: Request, payload: AskRequest) -> AskResponse:
+        try:
+            return request.app.state.rag.answer(
+                payload.question, payload.allowed_ids, payload.topK
+            )
+        except (RuntimeError, ValueError, OllamaUnavailable) as error:
+            raise HTTPException(
+                status_code=503, detail={"code": "RAG_UNAVAILABLE"}
             ) from error
 
     @application.get(
