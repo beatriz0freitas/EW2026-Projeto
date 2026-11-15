@@ -10,6 +10,7 @@ const ratingsRouter = require('./ratings')
 const newsRouter = require('./news')
 const exportRouter = require('./export')
 const auditRouter = require('./audit')
+const aiRouter = require('./ai')
 
 const router = express.Router()
 
@@ -24,5 +25,6 @@ router.use('/', ratingsRouter)
 router.use('/news', newsRouter)
 router.use('/', exportRouter)
 router.use('/', auditRouter)
+router.use('/ai', aiRouter)
 
 module.exports = router
