@@ -202,7 +202,9 @@ def validar_tamanhos(ficheiros: List[Path], max_ficheiro: int, max_total: int) -
     return erros
 
 
-def enviar_recurso(token: str, payload: Dict[str, str], ficheiros: List[Path]) -> Tuple[bool, str, str]:
+def enviar_recurso(
+    token: str, payload: Dict[str, str], ficheiros: List[Path]
+) -> Tuple[bool, str, str]:
     handles = []
     multipart = []
 
@@ -225,7 +227,8 @@ def enviar_recurso(token: str, payload: Dict[str, str], ficheiros: List[Path]) -
             handle.close()
 
     if resposta.ok:
-        dados = resposta.json() if "application/json" in resposta.headers.get("content-type", "") else {}
+        content_type = resposta.headers.get("content-type", "")
+        dados = resposta.json() if "application/json" in content_type else {}
         return True, str(dados.get("resourceId") or dados.get("recursoId") or "?"), ""
 
     try:
@@ -235,8 +238,13 @@ def enviar_recurso(token: str, payload: Dict[str, str], ficheiros: List[Path]) -
     return False, "", f"HTTP_{resposta.status_code}: {erro}"
 
 
-def imprimir_resumo(total: int, sucesso: int, ignorados: int, falhas: List[Tuple[str, str]]) -> None:
-    print(f"\nTotal: {total}  |  Sucesso: {sucesso}  |  Ignorados: {ignorados}  |  Falhas: {len(falhas)}")
+def imprimir_resumo(
+    total: int, sucesso: int, ignorados: int, falhas: List[Tuple[str, str]]
+) -> None:
+    print(
+        f"\nTotal: {total}  |  Sucesso: {sucesso}  |  "
+        f"Ignorados: {ignorados}  |  Falhas: {len(falhas)}"
+    )
     for nome, razao in falhas:
         print(f"  - {nome}: {razao}")
 
@@ -263,11 +271,14 @@ def ingerir(args: argparse.Namespace, token: str, diretorio: Path) -> int:
 
     for item in items:
         total += 1
-        ficheiros, ficheiros_ignorados = filtrar_ficheiros_permitidos(recolher_ficheiros(item, modo))
+        ficheiros, ficheiros_ignorados = filtrar_ficheiros_permitidos(
+            recolher_ficheiros(item, modo)
+        )
         if not ficheiros:
             print(f"\n==> {item.name}\n  ERRO: sem ficheiros permitidos")
             if ficheiros_ignorados:
-                print(f"  Ignorados por extensão não suportada: {', '.join(f.name for f in ficheiros_ignorados)}")
+                files_list = ', '.join(f.name for f in ficheiros_ignorados)
+                print(f"  Ignorados por extensão não suportada: {files_list}")
             falhas.append((item.name, "SEM_FICHEIROS_PERMITIDOS"))
             continue
 
@@ -281,7 +292,8 @@ def ingerir(args: argparse.Namespace, token: str, diretorio: Path) -> int:
 
         print(f"\n==> {item.name}  [{len(ficheiros)} ficheiro(s)]  título: {titulo}")
         if ficheiros_ignorados:
-            print(f"  Aviso: ignorados por extensão não suportada: {', '.join(f.name for f in ficheiros_ignorados)}")
+            files_list = ', '.join(f.name for f in ficheiros_ignorados)
+            print(f"  Aviso: ignorados por extensão não suportada: {files_list}")
 
         nomes_locais = {ficheiro.name for ficheiro in ficheiros}
         duplicado_por_titulo = titulo in titulos_existentes
@@ -325,7 +337,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("input_dir", help="Diretório com ficheiros ou subpastas de recursos")
     parser.add_argument("--token", default="", help="Token JWT (produtor ou admin)")
-    parser.add_argument("--only", default="", help="Processar apenas estes items (separados por vírgula)")
+    parser.add_argument(
+        "--only", default="",
+        help="Processar apenas estes items (separados por vírgula)"
+    )
     parser.add_argument("--dry-run", action="store_true", help="Simula sem enviar dados")
     return parser.parse_args()
 

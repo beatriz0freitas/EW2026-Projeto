@@ -15,7 +15,8 @@ router.post('/recommend', recommend)
  * POST /api/ai/ask
  * Ask a question using RAG with citations
  * Body: { question: string, topK?: number }
- * Response: { answer: string, citations: Array, insufficientEvidence: boolean, model: string, indexVersion: string }
+ * Response: { answer: string, citations: Array, insufficientEvidence: boolean,
+ *   model: string, indexVersion: string }
  */
 router.post('/ask', ask)
 

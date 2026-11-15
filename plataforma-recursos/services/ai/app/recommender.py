@@ -1,4 +1,5 @@
-"""Two-phase pedagogical recommender: FAISS candidate retrieval + LLM reranking with justification."""
+"""Two-phase pedagogical recommender:
+FAISS candidate retrieval + LLM reranking."""
 
 from __future__ import annotations
 
@@ -199,7 +200,8 @@ class RecommenderEngine:
                 f'<<<CANDIDATE id="{candidate["resourceId"]}" index="{idx}">\n'
                 f'Título: {candidate["title"]}\n'
                 f'Tema: {candidate["theme"]}\n'
-                f'Excerto: {candidate["excerpt"][:500]}{ "..." if len(candidate["excerpt"]) > 500 else ""}\n'
+                f'Excerto: {candidate["excerpt"][:500]}'
+                f'{" ..." if len(candidate["excerpt"]) > 500 else ""}\n'
                 f'Downloads: {candidate["downloadCount"]}\n'
                 f'Avaliação: {candidate["ratingAvg"]:.1f}\n'
                 f'Hashtags: {", ".join(candidate["hashtags"][:5])}\n'
@@ -331,7 +333,10 @@ class RecommenderEngine:
                 Recommendation(
                     resourceId=item.resourceId,
                     rank=rank,
-                    reason=f"Recomendação baseada em similaridade semântica (score: {item.score:.4f})",
+                    reason=(
+                        f"Recomendação baseada em similaridade semântica "
+                        f"(score: {item.score:.4f})"
+                    ),
                     relevanceScore=float(item.score),
                     supportingChunkIds=[item.chunkId],
                 )
