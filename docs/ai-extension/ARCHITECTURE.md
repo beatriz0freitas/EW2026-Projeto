@@ -63,3 +63,36 @@ operações de inferência dispendiosas.
 O CI instala as dependências de desenvolvimento e executa Ruff, Bandit e
 pytest sem Ollama nem download de modelos. Também constrói a imagem runtime e
 verifica `/live` e a rejeição de `/health` sem token numa rede isolada. A validação local com Ollama real confirmou 200 com os modelos instalados e 503 com a dependência indisponível; ver [TASK07_VALIDATION.md](TASK07_VALIDATION.md).
+
+## Integração com a plataforma (T13–T18)
+
+A arquitetura anterior descrevia o microserviço isolado. A extensão liga-o à
+plataforma existente sem o expor publicamente:
+
+- **Backend Node (`services/api`):** `services/api/routes/ai.js` monta
+  `optionalAuth` (sem token, apenas recursos públicos) e delega em
+  `controllers/aiController.js`, que calcula primeiro `allowed_ids` via
+  `visibilityQuery(req.user)`, chama o microserviço através de `lib/aiClient.js`
+  (fetch nativo, `X-Internal-Token`) e revalida cada item da resposta contra a
+  ACL antes de responder — defesa em profundidade.
+- **Interface Pug (`services/interface`):** `routes/ai.js` com `requireSession` e
+  vistas `views/ai/recommend.pug` e `views/ai/ask.pug`. O controller da interface
+  resolve os títulos via `GET /api/resources/:id` (com fallback para o ID) e
+  apresenta citações clicáveis, rank, score e abstinência. A navegação vive em
+  `views/layout.pug`.
+- **Documentação:** `services/api/swagger.yaml` descreve os quatro endpoints
+  `/api/ai/*` com os contratos espelhados nos schemas Pydantic.
+- **CD:** `.github/workflows/publish.yml` publica imagens multi-arch no GHCR
+  com tags `sha-<SHA>` imutáveis; o rollback está descrito em
+  [DEPLOYMENT_AND_ROLLBACK.md](DEPLOYMENT_AND_ROLLBACK.md).
+
+Fluxo de um pedido de recomendação:
+
+```
+Interface (Pug, sessão)
+  → API Node [optionalAuth → allowed_ids (MongoDB/ACL) → aiClient]
+    → Serviço ai (FastAPI) [validação Pydantic → FAISS → LLM local → validação de saída]
+      → Ollama (llama3.2:1b / nomic-embed-text, rede interna)
+  ← resposta revalidada item a item pela ACL
+← render server-side com justificações e citações
+```
