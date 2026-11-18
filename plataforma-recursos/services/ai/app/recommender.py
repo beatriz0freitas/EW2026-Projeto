@@ -13,6 +13,11 @@ from app.ollama_client import OllamaUnavailable
 from app.retrieval import FaissRetriever
 from app.schemas import Recommendation, RecommendResponse, SearchItem
 
+# Upper bound on each candidate excerpt embedded in the reranking prompt.  A large
+# pool with long excerpts overflowed the 2048-token context of llama3.2:1b and made
+# every reranking attempt hit the generation timeout on CPU (14/15 in 16/11/2026).
+RERANK_EXCERPT_CHARS = 200
+
 
 class GenerationProvider(Protocol):
     """Abstraction for the LLM generation client."""
@@ -48,6 +53,7 @@ class RecommenderEngine:
         fallback_model: str,
         metadata_provider: MetadataProvider | None = None,
         candidate_count: int = 15,
+        rerank_pool_size: int = 5,
         generation_timeout: float = 60.0,
     ) -> None:
         self.retriever = retriever
@@ -55,6 +61,7 @@ class RecommenderEngine:
         self.fallback_model = fallback_model
         self.metadata_provider = metadata_provider
         self.candidate_count = candidate_count
+        self.rerank_pool_size = max(1, rerank_pool_size)
         self.generation_timeout = generation_timeout
 
     def recommend(
@@ -108,18 +115,21 @@ class RecommenderEngine:
                 indexVersion=candidates.indexVersion,
             )
         
-        # Phase 3: Build reranking prompt and get LLM response
+        # Phase 3: Build reranking prompt and get LLM response.  The LLM only sees
+        # the top candidates from the FAISS-ordered pool; the rest stay available
+        # for the semantic fallback, keeping recall while shrinking the prompt.
+        rerank_pool = enriched_candidates[: self.rerank_pool_size]
         system_prompt, user_prompt = self._build_reranking_prompt(
-            learning_goal, enriched_candidates, top_k
+            learning_goal, rerank_pool, top_k
         )
-        
+
         try:
             raw_response = self.generator(system_prompt, user_prompt)
-            
+
             # Phase 4: Validate and parse response
             try:
                 validated = self._validate_response(
-                    raw_response, enriched_candidates, top_k
+                    raw_response, rerank_pool, top_k
                 )
                 return RecommendResponse(
                     method="llm_rerank",
@@ -199,8 +209,8 @@ class RecommenderEngine:
                 f'<<<CANDIDATE id="{candidate["resourceId"]}" index="{idx}">\n'
                 f'Título: {candidate["title"]}\n'
                 f'Tema: {candidate["theme"]}\n'
-                f'Excerto: {candidate["excerpt"][:500]}'
-                f'{" ..." if len(candidate["excerpt"]) > 500 else ""}\n'
+                f'Excerto: {candidate["excerpt"][:RERANK_EXCERPT_CHARS]}'
+                f'{" ..." if len(candidate["excerpt"]) > RERANK_EXCERPT_CHARS else ""}\n'
                 f'Downloads: {candidate["downloadCount"]}\n'
                 f'Avaliação: {candidate["ratingAvg"]:.1f}\n'
                 f'Hashtags: {", ".join(candidate["hashtags"][:5])}\n'

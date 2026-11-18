@@ -21,6 +21,7 @@ class Settings(BaseModel):
     ollama_retry_backoff_seconds: float = Field(default=0.25, ge=0, le=2, allow_inf_nan=False)
     ollama_embedding_timeout_seconds: float = Field(default=120, gt=0, le=600, allow_inf_nan=False)
     ollama_generation_timeout_seconds: float = Field(default=60, gt=0, le=600, allow_inf_nan=False)
+    ollama_num_predict: int = Field(default=512, gt=0, le=4096, allow_inf_nan=False)
     embedding_batch_size: int = Field(default=16, ge=1, le=64)
 
     @field_validator("internal_service_token")

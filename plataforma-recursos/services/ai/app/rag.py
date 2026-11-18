@@ -46,6 +46,7 @@ class OllamaGenerationClient:
                     "model": self.settings.llm_model,
                     "stream": False,
                     "format": "json",
+                    "options": {"num_predict": self.settings.ollama_num_predict},
                     "messages": [
                         {"role": "system", "content": system},
                         {"role": "user", "content": user},
