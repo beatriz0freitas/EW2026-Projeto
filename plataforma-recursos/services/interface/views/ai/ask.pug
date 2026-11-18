@@ -1,0 +1,56 @@
+extends ../layout
+
+block content
+	section.pagina-listagem
+		section.page-hero.page-hero--compact.page-hero--single
+			.page-hero__content
+				p.page-eyebrow Inteligência artificial
+				h1 Perguntar aos Recursos
+				p.page-hero__lead Faz uma pergunta e um modelo local responde com base apenas nos recursos educativos a que tens acesso, com citações clicáveis.
+
+		section.section-card
+			.cabecalho-secao
+				div
+					h2 A tua pergunta
+					p.w3-text-grey A resposta é gerada a partir do conteúdo dos recursos visíveis — nunca de fontes externas.
+			form.resource-form(action='/ai/ask' method='post')
+				.resource-form-grid.resource-form-grid--two
+					.form-field
+						.field-label-row
+							label(for='question') Pergunta
+							span.field-badge.field-badge--required Obrigatório
+						textarea#question.w3-input(name='question' rows='4' maxlength='500' required placeholder='Ex.: Que recursos explicam como funciona o algoritmo de Raft?')= question || ''
+						p.field-feedback Até 500 caracteres. A resposta cita os excertos usados.
+					.form-field
+						.field-label-row
+							label(for='topK') Nº de excertos recuperados
+						select#topK.w3-select(name='topK')
+							each value in topKOptions || []
+								option(value=value selected=value === topK) #{value} excertos
+						p.field-feedback Quantos excertos o modelo pode usar como contexto.
+					.form-actions
+						button.w3-button.botao-principal(type='submit') Perguntar
+
+		if !error && (answer || citations || typeof insufficientEvidence !== 'undefined')
+			section.section-card
+				.cabecalho-secao
+					div
+						h2 Resposta
+						p.w3-text-grey Gerada automaticamente por modelo local — valida sempre com as fontes.
+				if insufficientEvidence
+					.empty-state.ai-abstention(role='status')
+						strong Não há evidência suficiente nos recursos visíveis.
+						p O modelo não encontrou, nos recursos a que tens acesso, conteúdo suficiente para responder com confiança. Reformula a pergunta ou explora o catálogo.
+					if answer
+						p.ai-answer= answer
+				else if answer
+					p.ai-answer= answer
+				if model
+					p.w3-text-grey.w3-small Modelo local: #{model}.
+				if citations && citations.length
+					h3.ai-citations__heading Fontes citadas
+					.ai-stack
+						each citation in citations
+							.ai-source
+								a(href=citation.href)= citation.titulo
+								span Excerto #{citation.chunkId}

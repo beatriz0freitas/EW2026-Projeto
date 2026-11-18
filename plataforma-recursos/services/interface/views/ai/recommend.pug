@@ -1,0 +1,57 @@
+extends ../layout
+
+block content
+	section.pagina-listagem
+		section.page-hero.page-hero--compact.page-hero--single
+			.page-hero__content
+				p.page-eyebrow Inteligência artificial
+				h1 Recomendações IA
+				p.page-hero__lead Descreve o teu objetivo de aprendizagem e um modelo local sugere recursos visíveis com justificação pedagógica.
+
+		- const recommendationsList = Array.isArray(recommendations) ? recommendations : []
+		section.section-card
+			.cabecalho-secao
+				div
+					h2 Objetivo de aprendizagem
+					p.w3-text-grey O objetivo é enviado à plataforma, que só considera recursos a que tens acesso.
+			form.resource-form(action='/ai/recommend' method='post')
+				.resource-form-grid.resource-form-grid--two
+					.form-field
+						.field-label-row
+							label(for='learningGoal') O que queres aprender?
+							span.field-badge.field-badge--required Obrigatório
+						textarea#learningGoal.w3-input(name='learningGoal' rows='4' maxlength='500' required placeholder='Ex.: Quero aprender tolerância a falhas e consenso em sistemas distribuídos')= learningGoal || ''
+						p.field-feedback Descrito em texto livre, até 500 caracteres.
+					.form-field
+						.field-label-row
+							label(for='topK') Número de recomendações
+						select#topK.w3-select(name='topK')
+							each value in topKOptions || []
+								option(value=value selected=value === topK) #{value} recursos
+						p.field-feedback Apenas recursos visíveis para a tua conta são considerados.
+					.form-actions
+						button.w3-button.botao-principal(type='submit') Gerar recomendações
+
+		if !error && (recommendations || methodLabel || model)
+			section.section-card
+				.cabecalho-secao
+					div
+						h2 Sugestões
+						p.w3-text-grey= methodLabel
+				if model
+					p.w3-text-grey.w3-small Modelo local: #{model}. Confirma sempre as fontes antes de estudar.
+				if !recommendationsList.length
+					.empty-state
+						p Não foram encontrados recursos visíveis compatíveis com o objetivo indicado.
+				else
+					ol.ai-stack
+						each item in recommendationsList
+							li.ai-card
+								span.ai-card__rank(aria-label='Posição')= item.rank
+								.ai-card__body
+									strong.ai-card__title
+										a(href=item.href)= item.titulo
+									p.ai-card__reason= item.reason
+								.ai-card__score
+									strong #{item.scorePercent}%
+									span relevância
