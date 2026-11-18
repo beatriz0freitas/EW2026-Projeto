@@ -188,6 +188,83 @@ components:
         publicadoEm:
           type: string
           format: date-time
+    AiCitation:
+      type: object
+      properties:
+        resourceId:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b10
+        chunkId:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b10-5f1a2b3c4d5e
+    AiSearchItem:
+      type: object
+      properties:
+        resourceId:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b10
+        chunkId:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b10-5f1a2b3c4d5e
+        score:
+          type: number
+          format: float
+          example: 0.87
+        title:
+          type: string
+          example: Consenso em Sistemas Distribuidos
+        theme:
+          type: string
+          example: Sistemas Distribuidos
+        excerpt:
+          type: string
+          example: Fragmento do recurso com o conteudo relevante para a query.
+    AiRecommendation:
+      type: object
+      properties:
+        resourceId:
+          type: string
+          example: 663d8af2d6b8fd24f7a22b10
+        rank:
+          type: integer
+          minimum: 1
+          example: 1
+        reason:
+          type: string
+          example: Cobre consenso e tolerancia a falhas, alinhado com o objetivo indicado.
+        relevanceScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.92
+        supportingChunkIds:
+          type: array
+          items:
+            type: string
+          example: ["663d8af2d6b8fd24f7a22b10-5f1a2b3c4d5e"]
+    AiCluster:
+      type: object
+      properties:
+        clusterId:
+          type: integer
+          example: 0
+        resourceIds:
+          type: array
+          items:
+            type: string
+          example: ["663d8af2d6b8fd24f7a22b10", "663d8af2d6b8fd24f7a22b11"]
+        keywords:
+          type: array
+          items:
+            type: string
+          example: ["consenso", "raft", "replicacao"]
+        centroid:
+          type: array
+          items:
+            type: number
+            format: float
+          example: [0.012, -0.034, 0.077]
 paths:
   /api/openapi.json:
     get:
@@ -1162,6 +1239,278 @@ paths:
                 additionalProperties: true
         '403':
           description: Permissoes insuficientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ai/recommend:
+    post:
+      tags: [AI]
+      summary: Recomendacoes pedagogicas com reranking por LLM local
+      description: >
+        Recebe um objetivo de aprendizagem e devolve topK recursos visiveis para o utilizador
+        (autenticado ou anonimo), reordenados por um modelo local com justificacao pedagogica.
+        Serve apenas recursos autorizados pela ACL; quando o LLM nao responde a tempo, devolve
+        ordenacao por similaridade vetorial com method: semantic_fallback.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [learningGoal]
+              properties:
+                learningGoal:
+                  type: string
+                  example: Quero aprender tolerancia a falhas e consenso em sistemas distribuidos
+                topK:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+                  example: 5
+      responses:
+        '200':
+          description: Recomendacoes com justificacao
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  method:
+                    type: string
+                    enum: [llm_rerank, semantic_fallback]
+                    example: llm_rerank
+                  recommendations:
+                    type: array
+                    maxItems: 20
+                    items:
+                      $ref: '#/components/schemas/AiRecommendation'
+                  model:
+                    type: string
+                    nullable: true
+                    example: llama3.2:1b
+                  indexVersion:
+                    type: string
+                    example: 20261112T153000Z
+        '400':
+          description: Objetivo de aprendizagem ausente ou invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token invalido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Microservico de IA indisponivel (Ollama ou indice)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ai/ask:
+    post:
+      tags: [AI]
+      summary: Pergunta com RAG e citacoes validadas
+      description: >
+        Responde a uma pergunta usando apenas excertos de recursos visiveis para o utilizador,
+        com citacoes validadas contra a ACL. Quando nao ha evidencia suficiente, devolve
+        insufficientEvidence: true em vez de inventar conteudo.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question:
+                  type: string
+                  example: Que recursos explicam como funciona o algoritmo de Raft?
+                topK:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+                  example: 5
+      responses:
+        '200':
+          description: Resposta fundamentada com citacoes ou abstinencia
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  answer:
+                    type: string
+                    example: Os excertos recuperados explicam a eleicao de lider e a replicacao de log...
+                  citations:
+                    type: array
+                    maxItems: 20
+                    items:
+                      $ref: '#/components/schemas/AiCitation'
+                  insufficientEvidence:
+                    type: boolean
+                    example: false
+                  model:
+                    type: string
+                    example: llama3.2:1b
+                  indexVersion:
+                    type: string
+                    example: 20261112T153000Z
+        '400':
+          description: Pergunta ausente ou invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token invalido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Microservico de IA indisponivel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ai/search:
+    post:
+      tags: [AI]
+      summary: Pesquisa vetorial semantica (FAISS)
+      description: >
+        Pesquisa por similaridade densa apenas entre os recursos autorizados para o utilizador,
+        devolvendo excertos com pontuacao de similaridade.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  example: tipos de falhas e algoritmos de consenso
+                topK:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+                  example: 5
+      responses:
+        '200':
+          description: Excertos ordenados por similaridade
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  items:
+                    type: array
+                    maxItems: 20
+                    items:
+                      $ref: '#/components/schemas/AiSearchItem'
+                  indexVersion:
+                    type: string
+                    example: 20261112T153000Z
+        '400':
+          description: Query ausente ou invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token invalido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Microservico de IA indisponivel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ai/cluster:
+    post:
+      tags: [AI]
+      summary: Agrupamento tematico de recursos (FAISS k-means)
+      description: >
+        Agrupa os recursos visiveis para o utilizador por proximidade semantica usando
+        clustering FAISS, com palavras-chave descritivas por cluster.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nClusters:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+                  example: 5
+      responses:
+        '200':
+          description: Clusters tematicos com centroides
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  clusters:
+                    type: array
+                    maxItems: 20
+                    items:
+                      $ref: '#/components/schemas/AiCluster'
+                  indexVersion:
+                    type: string
+                    example: 20261112T153000Z
+        '400':
+          description: nClusters invalido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token invalido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Microservico de IA indisponivel
           content:
             application/json:
               schema:
