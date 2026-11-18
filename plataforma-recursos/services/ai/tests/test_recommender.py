@@ -558,6 +558,60 @@ class TestRerankingAltersOrder:
         assert response.recommendations[1].resourceId == IDS[0]
 
 
+class TestRerankPool:
+    """Verify only the top rerank_pool_size candidates reach the LLM prompt (T15 fix)."""
+
+    def test_pool_limits_prompt_and_validation(self):
+        """Candidates outside the pool never appear in the prompt nor get validated."""
+        pool_ids = [f"663e000000000000000000{i:02d}" for i in range(1, 11)]
+        items = [
+            make_search_item(pool_ids[i], f"Titulo {i}", "Tema", f"excerto {i}", 0.90 - i * 0.01)
+            for i in range(10)
+        ]
+        key = make_key(*pool_ids)
+        engine, _, generator = create_engine(
+            {key: SearchResponse(items=items, indexVersion="v1")},
+            make_valid_response([
+                {
+                    # Rank 1 slot but pointing at an out-of-pool candidate: the
+                    # recommender must reject the whole response instead of trusting it.
+                    "resourceId": pool_ids[9],
+                    "rank": 1,
+                    "reason": "fora da pool",
+                    "relevanceScore": 0.99,
+                    "supportingChunkIds": [f"{pool_ids[9]}:chunk0"],
+                }
+            ]),
+        )
+
+        response = engine.recommend("Teste", pool_ids, 3)
+
+        system_prompt, user_prompt = generator.calls[0]
+        for candidate_id in pool_ids[:5]:
+            assert candidate_id in user_prompt
+        for candidate_id in pool_ids[5:]:
+            assert candidate_id not in user_prompt
+        assert isinstance(system_prompt, str) and system_prompt
+        assert response.method == "semantic_fallback"
+        assert [rec.resourceId for rec in response.recommendations] == pool_ids[:3]
+
+    def test_pool_respects_top_k_when_smaller(self):
+        """With top_k larger than the pool the prompt still sends at most pool_size."""
+        engine, _, generator = create_engine(
+            {
+                make_key(IDS[0]): SearchResponse(
+                    items=[make_search_item(IDS[0], "T", "Tema", "e", 0.9)], indexVersion="v1"
+                )
+            }
+        )
+
+        response = engine.recommend("Teste", [IDS[0]], 5)
+
+        assert response.method == "llm_rerank"
+        assert generator.calls[0][1].count(f"{IDS[0]}:chunk0") == 1
+
+
+
 class TestParameterValidation:
     """Test parameter validation."""
 
