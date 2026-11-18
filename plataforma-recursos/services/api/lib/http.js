@@ -37,6 +37,12 @@ function jsonError(res, status, errorOrOptions) {
 	return res.status(status).json(payload)
 }
 
+function jsonSuccess(res, data = {}) {
+	const { status = 'ok', ...rest } = data || {}
+
+	return res.status(200).json({ ok: true, status, ...rest })
+}
+
 function invalidId(res) {
 	return jsonError(res, 400, { code: 'INVALID_ID', message: 'id inválido' })
 }
@@ -49,6 +55,7 @@ module.exports = {
 	getPagination,
 	totalPages,
 	jsonError,
+	jsonSuccess,
 	invalidId,
 	isMongoId,
 }

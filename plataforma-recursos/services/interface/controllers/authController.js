@@ -54,6 +54,7 @@ function showLogin(req, res) {
 			resources: 'Recursos',
 			posts: 'Comunidade',
 			data: 'Dados',
+			ai: 'Recomendações IA',
 		}
 		const targetLabel = labels[String(req.query.target || '').trim()] || 'essa área'
 		inlineError = `Precisa de autenticação prévia para aceder a ${targetLabel}.`

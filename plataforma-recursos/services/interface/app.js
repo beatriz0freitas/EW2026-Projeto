@@ -14,6 +14,7 @@ const resourcesRouter = require('./routes/resources')
 const postsRouter = require('./routes/posts')
 const adminRouter = require('./routes/admin')
 const dataRouter = require('./routes/data')
+const aiRouter = require('./routes/ai')
 const swaggerDocument = YAML.load('./swagger.yaml')
 
 const app = express()
@@ -96,6 +97,7 @@ app.use('/auth', authRouter)
 app.use('/resources', resourcesRouter)
 app.use('/posts', postsRouter)
 app.use('/data', dataRouter)
+app.use('/ai', aiRouter)
 app.use('/admin', adminRouter)
 
 app.use((req, res) => {

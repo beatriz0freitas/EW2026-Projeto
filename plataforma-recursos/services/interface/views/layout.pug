@@ -15,6 +15,8 @@ html(lang='pt')
 		- const resourcesTarget = user ? '/resources' : '/auth/login?requireAuth=1&target=resources'
 		- const postsTarget = user ? '/posts' : '/auth/login?requireAuth=1&target=posts'
 		- const dataTarget = user ? '/data' : '/auth/login?requireAuth=1&target=data'
+		- const aiRecommendTarget = user ? '/ai/recommend' : '/auth/login?requireAuth=1&target=ai'
+		- const aiAskTarget = user ? '/ai/ask' : '/auth/login?requireAuth=1&target=ai'
 		.app-shell
 			header.app-header
 				.section-shell.app-header__inner(class=isAuthPage ? 'app-header__inner--auth' : '')
@@ -34,6 +36,8 @@ html(lang='pt')
 							a.app-nav__link(class=user && isActivePath('/resources') ? 'is-active' : '' href=resourcesTarget aria-disabled=user ? 'false' : 'true') Recursos
 							a.app-nav__link(class=user && isActivePath('/posts') ? 'is-active' : '' href=postsTarget aria-disabled=user ? 'false' : 'true') Comunidade
 							a.app-nav__link(class=user && isActivePath('/data') ? 'is-active' : '' href=dataTarget aria-disabled=user ? 'false' : 'true') Dados
+							a.app-nav__link(class=user && isActivePath('/ai/recommend') ? 'is-active' : '' href=aiRecommendTarget aria-disabled=user ? 'false' : 'true') Recomendações IA
+							a.app-nav__link(class=user && isActivePath('/ai/ask') ? 'is-active' : '' href=aiAskTarget aria-disabled=user ? 'false' : 'true') Perguntar aos Recursos
 							if user && user.role === 'admin'
 								a.app-nav__link(class=isActivePath('/admin') ? 'is-active' : '' href='/admin/users') Administração
 						.app-session
@@ -72,6 +76,8 @@ html(lang='pt')
 						a(href=resourcesTarget) Recursos
 						a(href=postsTarget) Comunidade
 						a(href=dataTarget) Dados
+						a(href=aiRecommendTarget) Recomendações IA
+						a(href=aiAskTarget) Perguntar aos Recursos
 						if user && user.role === 'admin'
 							a(href='/admin/users') Administração
 		script(src='/javascripts/interface-publica.js')
