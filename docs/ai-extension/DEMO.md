@@ -62,7 +62,7 @@ especificação em `docs/ai-extension/DATASET.md`.
 CPU com `llama3.2:1b` e `nomic-embed-text` (detalhes: `BASELINE.md`,
 `EVALUATION.md`).
 
-**Testes?** 70 testes da API (14 adversariais) + 174 testes do serviço de IA;
+**Testes?** 70 testes da API (14 adversariais) + 196 testes do serviço de IA;
 todos verdes no CI online e no ambiente local demonstrado.
 
 **E se algo falhar em produção?** `DEPLOYMENT_AND_ROLLBACK.md` — tags imutáveis

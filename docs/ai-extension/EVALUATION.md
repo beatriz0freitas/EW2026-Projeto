@@ -33,6 +33,25 @@ A baseline lexical pode ter nDCG@5 superior à Precision@5 porque o nDCG conside
 
 O reranking LLM não pôde ser comparado por qualidade porque nenhuma resposta foi aceite. A taxa elevada de timeout e o truncamento de prompts indicam que a configuração de CPU/contexto atual não suporta este reranking com fiabilidade. A única resposta JSON sintaticamente válida também foi rejeitada pelo validador do recomendador. Isto demonstra uma limitação operacional, não evidência de que o reranking melhora ou piora a relevância. A query fora de domínio Q15 avalia abstenção nos testes de RAG, mas não é um julgamento de recomendação.
 
+## Re-execução a 18/11/2026: pool de reranking reduzido
+
+Após a execução de 16/11, o `RecommenderEngine` passou a submeter ao LLM apenas os primeiros 5 candidatos FAISS (novo parâmetro `rerank_pool_size`, omissão 5) com excertos truncados a 200 carateres e `num_predict=512`, mantendo o resto do pool para o fallback semântico. O prompt degrava do limite de 2048 tokens do `llama3.2:1b` e reduz o custo de pre-fill em CPU. A validação de citações não foi afetada: continua a rejeitar respostas com chunkIds fora dos candidatos.
+
+O benchmark foi repetido no mesmo corpus (15 consultas), Ollama 0.6.0 em CPU com os mesmos digests dos modelos (`llama3.2:1b@baf6a787fdff…`, `nomic-embed-text@0a109f422b47…`), Python 3.14.7, 8 CPUs lógicas, ~7 GiB de RAM, com `OLLAMA_GENERATION_TIMEOUT_SECONDS=120` no ambiente de medição (nenhuma geração excedeu 45 s, portanto o timeout de 60 s por omissão do serviço teria igualmente bastado nesta amostra).
+
+| Método | Queries executadas | Precision@5 média | nDCG@5 média | Latência média (ms) | p50 (ms) | p95 (ms) | JSON válido |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Lexical | 15/15 | 0,3333 | 0,7674 | 0,657 | 0,551 | 2,061 | n/a |
+| Vetorial FAISS | 15/15 | 0,4400 | 0,8073 | 88,793 | 80,889 | 163,185 | n/a |
+| FAISS + reranking LLM | **3/15 rerank aceites** | 0,4667 (nas 3 aceites) | 0,6495 (nas 3 aceites) | 35 515 | 37 210 | 44 780 | 10/15 |
+
+Leitura honesta dos resultados:
+
+- **Zero timeouts na fase LLM** (antes 14/15): o gargalo operacional estava no tamanho do prompt, não no modelo em si. 3/15 respostas superaram a validação completa (Q01 com Precision@5 0,8 e nDCG@5 0,588; Q03; Q11) — é a primeira evidência de reordenação LLM aceite neste projeto, embora a taxa de aceitação continue baixa.
+- **0/15 → 3/15 aceites**, com a qualidade medida sobre apenas 3 respostas: a comparação direta das médias com os métodos de recuperação completa não é estatisticamente significativa e não deve ser apresentada como vitória do LLM.
+- Os restantes 12 casos degradaram para `semantic_fallback`: 7 com JSON sintaticamente válido rejeitado pelo validador (quase sempre `supportingChunkIds` divergente do chunk exato do candidato — o validador de citações de TASK-14 a funcionar como previsto) e 5 com JSON inválido. A opção deliberada foi manter a validação estrita e aceitar a queda de aceitação, em vez de afrouxar o sistema de não-invenção de citações.
+- A latência p95 de ~45 s confirma que o reranking por LLM 1B em CPU permanece marginalmente viável em tempo real; o fallback semântico cobre o resto: latência e disponibilidade sacrificam-se à determinismo dos dados, nunca o contrário.
+
 ## Repetir o benchmark
 
 Com Ollama acessível e os modelos já instalados (o script não descarrega modelos). Para o contentor usado nesta execução, o endereço foi `http://172.17.0.2:11434`; confirma o IP atual com `docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ew2026-task-validation-ollama`.
@@ -46,4 +65,4 @@ EMBEDDING_MODEL=nomic-embed-text \
 python3 services/ai/evaluation/evaluate.py
 ```
 
-O comando reescreve `docs/ai-extension/EXPERIMENTS.csv` com uma linha por query e método e imprime as médias, p50 e p95. Neste benchmark o método LLM teve 0/15 reranks aceites; essa falha está documentada como resultado empírico e não deve ser confundida com uma medida de qualidade do ranking LLM.
+O comando reescreve `docs/ai-extension/EXPERIMENTS.csv` com uma linha por query e método e imprime as médias, p50 e p95. A configuração atual do recomendador submete top 5 candidatos ao LLM (`rerank_pool_size=5`); os resultados desatualizados de cada execução ficam no histórico do git. A taxa de aceitação do reranking é reportada tal como medida e não deve ser confundida com uma medida de qualidade do ranking LLM.

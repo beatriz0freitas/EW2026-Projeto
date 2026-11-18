@@ -3,12 +3,12 @@
 **Candidata:** Ana Beatriz Freitas
 **Candidatura:** Bolsa de Investigação INESC TEC — Projeto BringTrust (Edital AE2026-0337)
 **Repositório público:** https://github.com/beatriz0freitas/EW2026-Projeto (branch `beatriz`)
-**Última atualização do dossiê:** 18/11/2026, commit `341c2a86739a053891d210a6e111b20bf4d1b9b6`
+**Última atualização do dossiê:** 18/11/2026, commit `aff84a4c8dc599e54cd4911dbf0db2ed4d560e25`
 
 Este índice mapeia cada requisito do edital para evidência técnica verificável:
 commits públicos, execuções de GitHub Actions, testes automatizados e documentos
 de medições. Todos os links são públicos e auditáveis. Os números indicados foram
-confirmados localmente na data do dossiê (70 testes da API e 174 do serviço de IA aprovados).
+confirmados localmente na data do dossiê (70 testes da API e 196 do serviço de IA aprovados).
 
 ---
 
@@ -28,7 +28,7 @@ confirmados localmente na data do dossiê (70 testes da API e 174 do serviço de
 
 | Item | Evidência |
 | :--- | :--- |
-| Recomendador em duas fases: candidatos FAISS + reranking estruturado por LLM local com justificação e `semantic_fallback` | Commit [24d68a3](https://github.com/beatriz0freitas/EW2026-Projeto/commit/24d68a349b17377cfe254b21d0440e13053e161b) (T12); `services/ai/app/recommender.py`; 174 testes do serviço (`tests/test_recommender.py`) |
+| Recomendador em duas fases: candidatos FAISS + reranking estruturado por LLM local com justificação e `semantic_fallback` | Commit [24d68a3](https://github.com/beatriz0freitas/EW2026-Projeto/commit/24d68a349b17377cfe254b21d0440e13053e161b) (T12); `services/ai/app/recommender.py`; 196 testes do serviço (`tests/test_recommender.py`) |
 | Benchmark honesto com métricas reais (inclui a limitação operacional do reranking no hardware, nunca escondida) | Commit [095424d](https://github.com/beatriz0freitas/EW2026-Projeto/commit/095424dc4717f23eb7a6d5adce06d898d4759a5e) (T15); [EVALUATION.md](../EVALUATION.md); [EXPERIMENTS.csv](../EXPERIMENTS.csv) |
 | Explicação pedagógica do porquê de cada recomendação | Esquema `Recommendation` (`reason`, `relevanceScore`, `supportingChunkIds`) e jusante na interface (T17, commit [6d33d00](https://github.com/beatriz0freitas/EW2026-Projeto/commit/6d33d009c33d9ad163e074c41e397ee17019f375)) |
 
@@ -37,13 +37,13 @@ confirmados localmente na data do dossiê (70 testes da API e 174 do serviço de
 | Item | Evidência |
 | :--- | :--- |
 | Pipeline RAG com contexto delimitado contra injeção, citações validadas em código e abstinência `insufficientEvidence` | Commit [6296e68](https://github.com/beatriz0freitas/EW2026-Projeto/commit/6296e68591bf70998a5cf64d9218a38d4ed38a8b); [SECURITY.md](../SECURITY.md) |
-| Resposta com abstinência quando a evidência é insuficiente | Testes em `services/ai/tests/test_rag.py` (suite de 174 testes) e consulta fora de domínio Q15 do corpus |
+| Resposta com abstinência quando a evidência é insuficiente | Testes em `services/ai/tests/test_rag.py` (suite de 196 testes) e consulta fora de domínio Q15 do corpus |
 
 #### "Pipelines CI/CD e GitHub Actions"
 
 | Item | Evidência |
 | :--- | :--- |
-| CI com análise estática de workflows (actionlint, zizmor), auditoria de dependências, testes da API e do serviço de IA, validação Docker e builds | Commits [72525c9](https://github.com/beatriz0freitas/EW2026-Projeto/commit/72525c966dfcc4e29000144cb2dd2b0f34285847) (T02) e [c997e69](https://github.com/beatriz0freitas/EW2026-Projeto/commit/c997e6960a83fb1af5752a5b84a38cc38c23999b) (T03); `.github/workflows/ci.yml`; 18 execuções históricas, todas bem-sucedidas: [run #1](https://github.com/beatriz0freitas/EW2026-Projeto/actions/runs/43264309090) (12/11/2026), [run #18](https://github.com/beatriz0freitas/EW2026-Projeto/actions/runs/44295987766) (18/11/2026, no commit atual) |
+| CI com análise estática de workflows (actionlint, zizmor), auditoria de dependências, testes da API e do serviço de IA, validação Docker e builds | Commits [72525c9](https://github.com/beatriz0freitas/EW2026-Projeto/commit/72525c966dfcc4e29000144cb2dd2b0f34285847) (T02) e [c997e69](https://github.com/beatriz0freitas/EW2026-Projeto/commit/c997e6960a83fb1af5752a5b84a38cc38c23999b) (T03); `.github/workflows/ci.yml`; 23 execuções registadas, incluindo falhas intermédias durante o desenvolvimento (ex.: run #22, falha de permissões da cache do buildx num PR). A última execução, [run #23](https://github.com/beatriz0freitas/EW2026-Projeto/actions/runs/44338544524) (18/11/2026, no commit atual `aff84a4`), tem os cinco jobs aprovados |
 | CD de publicação multi-arquitetura no GHCR com tags imutáveis `sha-<SHA>` e `latest` | Commit [b4621dd](https://github.com/beatriz0freitas/EW2026-Projeto/commit/b4621dd05d2ef24246d93590d3667e5cafa6e613) (T16); `.github/workflows/publish.yml`; [DEPLOYMENT_AND_ROLLBACK.md](../DEPLOYMENT_AND_ROLLBACK.md). **Nota honesta:** a execução remota desta pipeline ainda não ocorreu (requer push de tag `v*`); a validação foi estática (actionlint, zizmor) |
 | Documentação OpenAPI dos endpoints `/api/ai/*` testável no Swagger UI | Commit [341c2a8](https://github.com/beatriz0freitas/EW2026-Projeto/commit/341c2a86739a053891d210a6e111b20bf4d1b9b6) (T18); `services/api/swagger.yaml` |
 
@@ -89,10 +89,10 @@ confirmados localmente na data do dossiê (70 testes da API e 174 do serviço de
 
 ## 2. Evidência transversal (testes e integridade)
 
-- **Suite API (Node):** 70 testes aprovados, incluindo 14 adversariais de segurança — ver [job do run #18](https://github.com/beatriz0freitas/EW2026-Projeto/actions/runs/44295987766/job/134773023812).
-- **Suite AI (Python):** 174 testes aprovados sem Ollama nem downloads — ver [job do run #18](https://github.com/beatriz0freitas/EW2026-Projeto/actions/runs/44295987766/job/134773024256).
+- **Suite API (Node):** 70 testes aprovados, incluindo 14 adversariais de segurança — ver [job do run #23](https://github.com/beatriz0freitas/EW2026-Projeto/actions/runs/44338544524/job/134921806610).
+- **Suite AI (Python):** 196 testes aprovados sem Ollama nem downloads — ver [job do run #23](https://github.com/beatriz0freitas/EW2026-Projeto/actions/runs/44338544524/job/134921806343).
 - **Baseline inicial (46/46 testes, hardware, commit base):** [BASELINE.md](../BASELINE.md) (T01).
-- **CI ininterrupto:** 18 execuções, todas `success`, desde 12/11/2026 (run #1) até 18/11/2026 (run #18, commit HEAD).
+- **Execuções de CI:** 23 execuções registadas desde 12/11/2026 (run #1) até 18/11/2026 (run #23, commit HEAD `aff84a4`). O histórico não é "all green": existem cancelamentos e pelo menos uma falha intermédia (run #22, export de cache do buildx sem scope de escrita), corrigida em `aff84a4`; a última execução está totalmente verde.
 - **Integridade da branch:** histórico da branch `beatriz` publicado sem reescritas; o commit base antes das extensões (`b9a4784`) está auditado em [BASELINE.md](../BASELINE.md).
 
 ## 3. Pendências e limitações declaradas
@@ -101,9 +101,10 @@ Para conformidade com exigência de honestidade do dossiê:
 
 1. **Publish GHCR (T16)** não foi executado remotamente; workflow válido e com rollback documentado. Indicadores de execução: nenhum pacote publicado até 18/11/2026.
 2. **Navegação ao vivo da interface (T17)** em `localhost:16020` não foi gravada; a submissão funcional foi verificada por testes de controller/HTTP stubados e render smoke dos templates.
-3. **Reranking LLM (T12/T15):** no benchmark, 0/15 respostas LLM foram aceites dentro do timeout de 60 s (CPU); o recomendador degrada para `semantic_fallback`. Reportado tal como medido.
-4. **Reconciliação do roteiro:** os módulos de T09 a T11 (clustering, retrieval, RAG) têm commits, testes e CI verdes, mas o estado no roteiro permanece por validar/reconciliar.
+3. **Reranking LLM (T12/T15):** no benchmark de 16/11/2026, 0/15 respostas LLM foram aceites dentro do timeout de 60 s (CPU) com 15 candidatos por prompt; o recomendador degrada para `semantic_fallback`. Em 18/11/2026 o pool por prompt foi reduzido (top 5, excertos de 200 carateres) e o benchmark foi repetido: **3/15 respostas aceites** (primeira reordenação LLM aceite), zero timeouts, latência p95 de ~45 s; relatório completo em [EVALUATION.md](../EVALUATION.md).
+4. **Reconciliação do roteiro:** os módulos de T09 a T11 (clustering, retrieval, RAG) têm commits, testes e CI verdes; os estados no roteiro foram reconciliados a 18/11/2026.
 5. **Provisionamento Vagrant/Ansible (T04)** validado por sintaxe; não há gravação de uma VM completa provisionada de ponta a ponta.
+6. **Extração de PDFs (T20):** `pdf_extractor.py` é um módulo de ingestão offline (sanitização, chunks 500/100, offsets) validado por 20 testes unitários com PDFs e ZIPs sintéticos; ainda não está ligado ao índice FAISS operacional nem foi exercitado contra um pacote AIP real gerado pela plataforma.
 
 ## 4. Como conferir
 
