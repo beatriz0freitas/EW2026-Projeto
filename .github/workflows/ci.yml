@@ -135,6 +135,11 @@ jobs:
   docker-validation:
     name: Docker Infrastructure & Image Build
     runs-on: ubuntu-latest
+    # Write access to the Actions Cache is required for buildx `cache-to: type=gha`;
+    # without it the cache export fails with "token has no writable scopes".
+    permissions:
+      contents: read
+      actions: write # buildx gha cache export needs Actions Cache write access
     steps:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
