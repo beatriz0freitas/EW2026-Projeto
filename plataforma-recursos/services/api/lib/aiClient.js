@@ -1,31 +1,37 @@
-const axios = require('axios')
 const { config } = require('./config')
-const { jsonError } = require('./http')
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://ai:8000'
 const INTERNAL_SERVICE_TOKEN = config.internal.serviceToken
+const REQUEST_TIMEOUT_MS = 30000
 
 class AiClient {
-	constructor() {
-		this.client = axios.create({
-			baseURL: AI_SERVICE_URL,
-			timeout: 30000,
-			validateStatus: (status) => status < 500,
-		})
-	}
-
-	async _makeRequest(method, endpoint, data, allowedIds) {
+	async _makeRequest(path, { method = 'GET', data, requireOkStatus = true } = {}) {
+		const controller = new AbortController()
+		const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+		let response
 		try {
-			const response = await this.client.request({
+			response = await fetch(`${AI_SERVICE_URL}${path}`, {
 				method,
-				url: endpoint,
 				headers: {
+					Accept: 'application/json',
+					...(data !== undefined ? { 'Content-Type': 'application/json' } : {}),
 					'X-Internal-Token': INTERNAL_SERVICE_TOKEN,
-					'Content-Type': 'application/json',
 				},
-				data: { ...data, allowed_ids: allowedIds },
+				body: data !== undefined ? JSON.stringify(data) : undefined,
+				signal: controller.signal,
 			})
+		} catch (error) {
+			if (error.name === 'AbortError') {
+				throw new Error('ai service: request timeout')
+			}
+			throw new Error('ai service: connection refused - service may be down')
+		} finally {
+			clearTimeout(timeout)
+		}
 
+		const payload = await response.json().catch(() => null)
+
+		if (requireOkStatus) {
 			if (response.status === 401) {
 				throw new Error('ai service: unauthorized - check INTERNAL_SERVICE_TOKEN')
 			}
@@ -33,19 +39,19 @@ class AiClient {
 				throw new Error('ai service: forbidden - invalid token')
 			}
 			if (response.status >= 400) {
-				throw new Error(`ai service: ${response.status} - ${JSON.stringify(response.data)}`)
+				throw new Error(`ai service: ${response.status} - ${JSON.stringify(payload)}`)
 			}
-
-			return response.data
-		} catch (error) {
-			if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') {
-				throw new Error('ai service: connection refused - service may be down')
-			}
-			if (error.code === 'ETIMEDOUT') {
-				throw new Error('ai service: request timeout')
-			}
-			throw error
 		}
+
+		return { status: response.status, data: payload }
+	}
+
+	async _request(method, endpoint, data, allowedIds) {
+		const { data: payload } = await this._makeRequest(endpoint, {
+			method,
+			data: { ...data, allowed_ids: allowedIds },
+		})
+		return payload
 	}
 
 	/**
@@ -56,7 +62,7 @@ class AiClient {
 	 * @returns {Promise<Object>} - Recommendation response with method, recommendations, model, indexVersion
 	 */
 	async recommend(learningGoal, allowedIds, topK = 5) {
-		return this._makeRequest('POST', '/recommend', { learningGoal, topK }, allowedIds)
+		return this._request('POST', '/recommend', { learningGoal, topK }, allowedIds)
 	}
 
 	/**
@@ -67,7 +73,7 @@ class AiClient {
 	 * @returns {Promise<Object>} - RAG response with answer, citations, insufficientEvidence, model, indexVersion
 	 */
 	async ask(question, allowedIds, topK = 5) {
-		return this._makeRequest('POST', '/ask', { question, topK }, allowedIds)
+		return this._request('POST', '/ask', { question, topK }, allowedIds)
 	}
 
 	/**
@@ -78,7 +84,7 @@ class AiClient {
 	 * @returns {Promise<Object>} - Search response with items and indexVersion
 	 */
 	async search(query, allowedIds, topK = 5) {
-		return this._makeRequest('POST', '/search', { query, topK }, allowedIds)
+		return this._request('POST', '/search', { query, topK }, allowedIds)
 	}
 
 	/**
@@ -88,7 +94,7 @@ class AiClient {
 	 * @returns {Promise<Object>} - Cluster response with clusters and indexVersion
 	 */
 	async cluster(allowedIds, nClusters = 5) {
-		return this._makeRequest('POST', '/cluster', { nClusters }, allowedIds)
+		return this._request('POST', '/cluster', { nClusters }, allowedIds)
 	}
 
 	/**
@@ -97,16 +103,12 @@ class AiClient {
 	 */
 	async health() {
 		try {
-			const response = await this.client.get('/health', {
-				headers: {
-					'X-Internal-Token': INTERNAL_SERVICE_TOKEN,
-				},
-			})
-			if (response.status === 200) {
-				return response.data
+			const { status, data } = await this._makeRequest('/health')
+			if (status === 200) {
+				return data
 			}
 			return { status: 'unavailable', ollama: 'unreachable' }
-		} catch (error) {
+		} catch {
 			return { status: 'unavailable', ollama: 'unreachable' }
 		}
 	}
@@ -117,12 +119,8 @@ class AiClient {
 	 */
 	async isAlive() {
 		try {
-			const response = await this.client.get('/live', {
-				headers: {
-					'X-Internal-Token': INTERNAL_SERVICE_TOKEN,
-				},
-			})
-			return response.status === 200
+			const { status } = await this._makeRequest('/live')
+			return status === 200
 		} catch {
 			return false
 		}

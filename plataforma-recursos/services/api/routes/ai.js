@@ -1,7 +1,12 @@
 const express = require('express')
 const { recommend, ask, search, cluster } = require('../controllers/aiController')
+const { optionalAuth } = require('../middleware/auth')
 
 const router = express.Router()
+
+// Sem token, req.user fica undefined e o ACL restringe a recursos públicos.
+// Com Bearer token válido, o ACL passa a incluir recursos próprios/privados autorizados.
+router.use(optionalAuth)
 
 /**
  * POST /api/ai/recommend
