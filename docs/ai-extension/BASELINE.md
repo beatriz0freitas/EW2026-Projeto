@@ -3,8 +3,7 @@
 **Projeto:** Plataforma de Recursos Educativos (EW2026)\
 **Repositório:** `beatriz0freitas/EW2026-Projeto`\
 **Branch de trabalho:** `beatriz`\
-**Data de auditoria:** 10/11/2026\
-**Commit base:** `b9a4784` (`Merge pull request #17 from luis444coelho/katara`)
+**Commit base:** `503b109` (`Merge pull request #17 from luis444coelho/katara`)
 
 ---
 

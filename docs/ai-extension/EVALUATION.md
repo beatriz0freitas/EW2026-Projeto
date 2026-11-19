@@ -4,7 +4,7 @@
 
 O benchmark compara três abordagens nas 15 consultas anotadas do corpus TASK-06: pesquisa lexical em título/tema/hashtags, similaridade vetorial FAISS e candidatos FAISS reordenados pelo recomendador com LLM local. O corpus contém 21 recursos públicos e 4 privados; apenas os públicos participam na recuperação. O script cria o índice numa pasta temporária e não altera o índice operacional.
 
-Execução efetuada em **16/11/2026**, Linux x86_64, Python 3.14.7, 8 CPUs lógicas e 7,4 GiB de RAM (hardware descrito em [BASELINE.md](BASELINE.md)). O serviço foi Ollama 0.6.0, executado em CPU, com `llama3.2:1b` quantizado Q8_0 e `nomic-embed-text` F16. Os digests foram `llama3.2:1b@baf6a787fdffd633537aa2eb51cfd54cb93ff08e28040095462bb63daf552878` e `nomic-embed-text@0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f`. O limite de geração do serviço foi 60 s. O modelo truncou prompts acima do contexto de 2048 tokens.
+Execução efetuada em Linux x86_64, Python 3.14.7, 8 CPUs lógicas e 7,4 GiB de RAM (hardware descrito em [BASELINE.md](BASELINE.md)). O serviço foi Ollama 0.6.0, executado em CPU, com `llama3.2:1b` quantizado Q8_0 e `nomic-embed-text` F16. Os digests foram `llama3.2:1b@baf6a787fdffd633537aa2eb51cfd54cb93ff08e28040095462bb63daf552878` e `nomic-embed-text@0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f`. O limite de geração do serviço foi 60 s. O modelo truncou prompts acima do contexto de 2048 tokens.
 
 ## Metodologia
 
@@ -33,9 +33,9 @@ A baseline lexical pode ter nDCG@5 superior à Precision@5 porque o nDCG conside
 
 O reranking LLM não pôde ser comparado por qualidade porque nenhuma resposta foi aceite. A taxa elevada de timeout e o truncamento de prompts indicam que a configuração de CPU/contexto atual não suporta este reranking com fiabilidade. A única resposta JSON sintaticamente válida também foi rejeitada pelo validador do recomendador. Isto demonstra uma limitação operacional, não evidência de que o reranking melhora ou piora a relevância. A query fora de domínio Q15 avalia abstenção nos testes de RAG, mas não é um julgamento de recomendação.
 
-## Re-execução a 18/11/2026: pool de reranking reduzido
+## Re-execução com pool de reranking reduzido
 
-Após a execução de 16/11, o `RecommenderEngine` passou a submeter ao LLM apenas os primeiros 5 candidatos FAISS (novo parâmetro `rerank_pool_size`, omissão 5) com excertos truncados a 200 carateres e `num_predict=512`, mantendo o resto do pool para o fallback semântico. O prompt degrava do limite de 2048 tokens do `llama3.2:1b` e reduz o custo de pre-fill em CPU. A validação de citações não foi afetada: continua a rejeitar respostas com chunkIds fora dos candidatos.
+Após a execução inicial, o `RecommenderEngine` passou a submeter ao LLM apenas os primeiros 5 candidatos FAISS (novo parâmetro `rerank_pool_size`, omissão 5) com excertos truncados a 200 carateres e `num_predict=512`, mantendo o resto do pool para o fallback semântico. O prompt degrava do limite de 2048 tokens do `llama3.2:1b` e reduz o custo de pre-fill em CPU. A validação de citações não foi afetada: continua a rejeitar respostas com chunkIds fora dos candidatos.
 
 O benchmark foi repetido no mesmo corpus (15 consultas), Ollama 0.6.0 em CPU com os mesmos digests dos modelos (`llama3.2:1b@baf6a787fdff…`, `nomic-embed-text@0a109f422b47…`), Python 3.14.7, 8 CPUs lógicas, ~7 GiB de RAM, com `OLLAMA_GENERATION_TIMEOUT_SECONDS=120` no ambiente de medição (nenhuma geração excedeu 45 s, portanto o timeout de 60 s por omissão do serviço teria igualmente bastado nesta amostra).
 

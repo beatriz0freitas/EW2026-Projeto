@@ -1,7 +1,7 @@
 # TASK-07 — validação do serviço FastAPI
 
-Verificação local concluída em 12/11/2026. O scaffolding já estava no commit
-`1f2cf25`; esta revisão confirma os critérios operacionais sem criar commits.
+Verificação local concluída. O scaffolding já estava no commit
+`5306009`; esta revisão confirma os critérios operacionais sem criar commits.
 
 | Critério | Evidência |
 | --- | --- |

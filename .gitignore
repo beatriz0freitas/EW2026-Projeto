@@ -38,7 +38,7 @@ plataforma-recursos/services/ai/data/
 # Ollama model weights (large files)
 ollama_models/
 
-# Ficheiros internos de planeamento (nunca versionar no repositório)
-plano_interno.pdf
-Plano_Expansao_ENGWEB2026_.md
+# Ficheiros internos de planeamento
+Plano_Expansao_*.md
 tasks.md
+docs/ai-extension/EVIDENCE/

@@ -137,7 +137,7 @@ modelo, falhas de embeddings, dimensões/NaN/zero, snapshot vazio, remoção do
 último vetor, corrupção, publicação interrompida, retorno a gerações existentes
 e escritas concorrentes.
 
-Execução real em 12/11/2026: Python 3.11.18, FAISS 1.16.0, Ollama 0.6.0,
+Execução real: Python 3.11.18, FAISS 1.16.0, Ollama 0.6.0,
 CPU, `OMP_NUM_THREADS=1`, corpus com 25 recursos (21 públicos, 4 privados).
 
 | Verificação | Resultado observado |

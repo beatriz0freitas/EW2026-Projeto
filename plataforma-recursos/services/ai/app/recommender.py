@@ -15,7 +15,7 @@ from app.schemas import Recommendation, RecommendResponse, SearchItem
 
 # Upper bound on each candidate excerpt embedded in the reranking prompt.  A large
 # pool with long excerpts overflowed the 2048-token context of llama3.2:1b and made
-# every reranking attempt hit the generation timeout on CPU (14/15 in 16/11/2026).
+# every reranking attempt hit the generation timeout on CPU (14 of 15 in the initial benchmark).
 RERANK_EXCERPT_CHARS = 200
 
 

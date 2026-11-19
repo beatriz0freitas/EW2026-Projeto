@@ -1,8 +1,7 @@
 # Especificação do Corpus de Avaliação e Ground-Truth (TASK-06)
 
 **Projeto:** Plataforma de Recursos Educativos (EW2026)\
-\
-**Competências a demonstrar nas tarefas funcionais:** *«Sistemas de recomendação baseados em LLMs»* e *«RAGs»* (protocolo de avaliação reproduzível).
+**Âmbito:** Sistemas de recomendação baseados em LLMs e RAGs (protocolo de avaliação reproduzível).
 
 ---
 

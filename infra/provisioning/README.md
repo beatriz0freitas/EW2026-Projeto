@@ -1,7 +1,6 @@
 # Provisionamento Automatizado da Plataforma EW2026 (Docker, Vagrant, Ansible)
 
 **Projeto:** Plataforma de Recursos Educativos (EW2026)\
-\
 **Âmbito:** Virtualização, containerização e provisionamento (Docker, Vagrant, Ansible)
 
 ---

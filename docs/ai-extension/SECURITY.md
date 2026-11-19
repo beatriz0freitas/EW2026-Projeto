@@ -337,5 +337,4 @@ Localização: `plataforma-recursos/services/api/testes/adversarialAi.test.js`
 Este documento e as mitigações foram implementadas como parte do projeto EW2026.
 
 
-**Revisão:** 12/11/2026
 **Versão:** 1.0
